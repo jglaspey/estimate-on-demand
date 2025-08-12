@@ -9,7 +9,7 @@
         "testStrategy": "1. Verify project builds without errors\n2. Confirm TypeScript configuration is working correctly\n3. Test that Tailwind CSS is properly configured with custom theme\n4. Ensure all specified routes render without errors\n5. Validate responsive behavior at specified breakpoints\n6. Test accessibility compliance with automated tools",
         "priority": "high",
         "dependencies": [],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -130,77 +130,121 @@
       {
         "id": 3,
         "title": "Database Schema and API Routes",
-        "description": "Set up PostgreSQL database with the required schema and create API routes for job data management according to the data requirements section.",
-        "details": "1. Set up PostgreSQL database connection with connection pooling\n2. Create database schema for jobs, documents, extracted_data, and rule_analysis tables\n3. Implement JSONB columns for flexible data storage\n4. Create API routes for job creation, retrieval, and updates\n5. Implement document storage and retrieval endpoints\n6. Add authentication middleware for API security\n7. Set up rate limiting for API protection\n8. Implement input validation and sanitization\n9. Create database indexes for performance optimization\n10. Set up automated backup procedures",
-        "testStrategy": "1. Test database connection and query performance\n2. Verify all API endpoints return correct data structures\n3. Test authentication and authorization mechanisms\n4. Validate input sanitization prevents SQL injection\n5. Test rate limiting functionality\n6. Verify database indexes improve query performance\n7. Test backup and restore procedures",
-        "priority": "high",
+        "description": "Validate workflow assumptions using an iterative, discovery-driven approach to database schema design based on actual data patterns from real documents.",
+        "status": "pending",
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "priority": "high",
+        "details": "1. Start with LLM selection and testing for extraction capabilities\n2. Build extraction pipeline prototypes to process sample documents\n3. Analyze response patterns from real PDFs to understand data structures\n4. Design schema based on actual data patterns, not assumptions\n5. Test reliability with varied document corpus\n6. Validate that extracted data supports all 4 business rules\n7. Implement flexible schema with JSONB columns for iterative refinement\n8. Create prototype API routes for testing extraction pipeline\n9. Document data patterns and schema evolution\n10. Develop migration path to final schema design",
+        "testStrategy": "1. Test LLM extraction accuracy with sample documents\n2. Verify extraction pipeline handles various document formats\n3. Validate schema flexibility for different data patterns\n4. Test business rule application against extracted data\n5. Verify schema supports all required queries\n6. Test schema migration approaches\n7. Validate API prototype endpoints with sample data",
         "subtasks": [
           {
             "id": 1,
-            "title": "Database Connection Setup",
-            "description": "Set up PostgreSQL database connection with proper configuration and connection pooling",
-            "dependencies": [],
-            "details": "1. Install required PostgreSQL client libraries\n2. Configure database connection parameters (host, port, credentials)\n3. Implement connection pooling for efficient resource management\n4. Create environment variables for database credentials\n5. Set up error handling for connection failures\n6. Implement reconnection logic\n7. Create database utility functions for common operations",
+            "title": "LLM Selection and Testing",
+            "description": "Evaluate and select appropriate LLM models for document extraction based on accuracy and reliability with our document types.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [],
+            "details": "1. Research available LLM models suitable for document extraction\n2. Create benchmark tests with sample documents\n3. Evaluate extraction accuracy across different document formats\n4. Test performance with varying document complexities\n5. Analyze cost implications of different models\n6. Document strengths and limitations of each model\n7. Make final selection with justification",
+            "testStrategy": "1. Measure extraction accuracy against manually labeled data\n2. Test processing time for different document sizes\n3. Evaluate consistency across multiple runs\n4. Compare results across different models"
           },
           {
             "id": 2,
-            "title": "Database Schema Design and Implementation",
-            "description": "Create the database schema with tables for jobs, documents, extracted_data, and rule_analysis with appropriate relationships",
-            "dependencies": [],
-            "details": "1. Design table structures with appropriate data types\n2. Implement JSONB columns for flexible data storage\n3. Create foreign key relationships between tables\n4. Add timestamp fields for created_at and updated_at\n5. Set up appropriate constraints and default values\n6. Create migration scripts for schema changes\n7. Document the schema design with ERD diagrams",
+            "title": "Extraction Pipeline Prototype",
+            "description": "Build prototype extraction pipelines to process sample documents and generate structured data for analysis.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              1
+            ],
+            "details": "1. Develop document preprocessing components\n2. Create prompt engineering strategies for extraction\n3. Implement extraction logic with selected LLM\n4. Build post-processing for extracted data\n5. Create data validation components\n6. Implement error handling and retry logic\n7. Document pipeline architecture and components",
+            "testStrategy": "1. Test end-to-end extraction with sample documents\n2. Verify data structure consistency\n3. Validate error handling with malformed documents\n4. Measure processing time and resource usage"
           },
           {
             "id": 3,
-            "title": "Core API Route Implementation",
-            "description": "Create the primary API routes for job and document management with proper request/response handling",
-            "dependencies": [],
-            "details": "1. Implement job creation endpoint\n2. Create job retrieval endpoints (single and list views)\n3. Add job update and status change endpoints\n4. Implement document upload endpoints\n5. Create document retrieval and download endpoints\n6. Set up proper response formatting\n7. Implement error handling with appropriate HTTP status codes",
+            "title": "Response Pattern Analysis",
+            "description": "Analyze extraction results from real PDFs to identify common data patterns and structures for schema design.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              2
+            ],
+            "details": "1. Process diverse document corpus through extraction pipeline\n2. Catalog data fields and their relationships\n3. Identify common patterns and variations\n4. Document field types and validation rules\n5. Analyze frequency of optional fields\n6. Map relationships between extracted entities\n7. Create data pattern documentation",
+            "testStrategy": "1. Verify pattern identification across document types\n2. Validate completeness of field cataloging\n3. Test relationship mapping accuracy\n4. Ensure all business-critical fields are identified"
           },
           {
             "id": 4,
-            "title": "Authentication and Security Implementation",
-            "description": "Add authentication middleware and security measures to protect API routes",
-            "dependencies": [],
-            "details": "1. Implement JWT-based authentication\n2. Create middleware for verifying authentication tokens\n3. Set up role-based access control\n4. Implement rate limiting for API protection\n5. Add request logging for security monitoring\n6. Set up CORS configuration\n7. Create secure password handling if needed",
+            "title": "Schema Design Based on Actual Data",
+            "description": "Design database schema based on actual extraction patterns rather than assumptions, with flexibility for evolution.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              3
+            ],
+            "details": "1. Create initial schema based on extraction patterns\n2. Design flexible JSONB columns for evolving data\n3. Implement core tables for jobs, documents, and extracted data\n4. Define relationships between entities\n5. Create indexes for common query patterns\n6. Document schema with ERD diagrams\n7. Develop schema migration strategy for iterative refinement",
+            "testStrategy": "1. Test schema with sample extracted data\n2. Verify query performance for common operations\n3. Validate flexibility for handling variations\n4. Test migration paths for schema evolution"
           },
           {
             "id": 5,
-            "title": "Input Validation and Sanitization",
-            "description": "Implement comprehensive input validation and sanitization to prevent security vulnerabilities",
-            "dependencies": [],
-            "details": "1. Create validation schemas for all API endpoints\n2. Implement input sanitization to prevent SQL injection\n3. Add validation for file uploads (size, type, content)\n4. Create custom validation error messages\n5. Implement request body parsing and validation middleware\n6. Add validation for query parameters\n7. Create tests for validation logic",
+            "title": "Reliability Testing with Document Corpus",
+            "description": "Test extraction reliability and schema flexibility with a varied document corpus representing real-world scenarios.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              4
+            ],
+            "details": "1. Collect diverse document samples from stakeholders\n2. Process entire corpus through extraction pipeline\n3. Store results in prototype database\n4. Analyze extraction success rates and failure patterns\n5. Identify edge cases and problematic document types\n6. Document reliability metrics and limitations\n7. Refine extraction pipeline based on findings",
+            "testStrategy": "1. Measure extraction success rate across document types\n2. Identify and categorize failure patterns\n3. Test schema flexibility with edge cases\n4. Validate data integrity in database storage"
           },
           {
             "id": 6,
-            "title": "Database Performance Optimization",
-            "description": "Optimize database performance through indexing, query optimization, and monitoring",
-            "dependencies": [],
-            "details": "1. Create database indexes for frequently queried fields\n2. Optimize complex queries with proper joins\n3. Implement query caching where appropriate\n4. Set up database query logging for performance monitoring\n5. Create database maintenance procedures\n6. Implement pagination for large result sets\n7. Add database performance testing",
+            "title": "Business Rule Validation",
+            "description": "Validate that extracted data supports all 4 business rules and identify any gaps or modifications needed.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              5
+            ],
+            "details": "1. Map business rules to required data fields\n2. Test rule application against extracted data\n3. Identify missing or inconsistent data patterns\n4. Analyze rule validation success rates\n5. Document rule implementation requirements\n6. Create test cases for each business rule\n7. Refine extraction to support all rules",
+            "testStrategy": "1. Test each business rule against sample data\n2. Measure rule validation success rates\n3. Verify rule application consistency\n4. Validate error handling for incomplete data"
           },
           {
             "id": 7,
-            "title": "Backup and Recovery Procedures",
-            "description": "Set up automated backup procedures and recovery mechanisms for the database",
-            "dependencies": [],
-            "details": "1. Configure automated database backups\n2. Implement backup rotation and retention policies\n3. Create backup verification procedures\n4. Document recovery procedures\n5. Set up monitoring for backup success/failure\n6. Implement point-in-time recovery capability\n7. Create disaster recovery documentation",
+            "title": "Prototype API Implementation",
+            "description": "Create prototype API routes for testing the extraction pipeline and data storage with minimal authentication.",
             "status": "pending",
+            "dependencies": [
+              4
+            ],
+            "details": "1. Implement document upload endpoint\n2. Create extraction trigger endpoint\n3. Build job status query endpoint\n4. Implement results retrieval endpoint\n5. Add basic authentication for testing\n6. Create documentation for API usage\n7. Implement error handling and logging",
+            "testStrategy": "1. Test API endpoints with sample requests\n2. Verify correct handling of various document types\n3. Validate error responses\n4. Test authentication mechanisms"
+          },
+          {
+            "id": 8,
+            "title": "Database Connection Setup",
+            "description": "Set up PostgreSQL database connection with proper configuration and connection pooling for optimal performance.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "1. Install required PostgreSQL client libraries\n2. Configure database connection parameters in environment variables\n3. Implement connection pooling to manage concurrent connections\n4. Create database utility functions for common operations\n5. Set up error handling for database connection issues\n6. Add logging for database operations\n7. Create a database initialization script",
             "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Schema Evolution Documentation",
+            "description": "Document the schema evolution process and create a roadmap for transitioning to the final production schema.",
+            "status": "pending",
+            "dependencies": [
+              6
+            ],
+            "details": "1. Document initial schema design and rationale\n2. Create schema version tracking system\n3. Document identified schema limitations and solutions\n4. Develop migration scripts for schema evolution\n5. Create schema finalization roadmap\n6. Document data migration strategies\n7. Create schema validation tests",
+            "testStrategy": "1. Verify documentation completeness\n2. Test migration scripts with sample data\n3. Validate schema versions maintain data integrity\n4. Test schema validation procedures"
+          },
+          {
+            "id": 10,
+            "title": "Extraction Pipeline Refinement",
+            "description": "Refine the extraction pipeline based on testing results to improve accuracy and reliability.",
+            "status": "pending",
+            "dependencies": [
+              5,
+              6
+            ],
+            "details": "1. Analyze extraction failure patterns\n2. Refine prompt engineering strategies\n3. Implement specialized handling for problematic document types\n4. Optimize preprocessing for improved accuracy\n5. Enhance post-processing validation\n6. Document refinement process and results\n7. Create final extraction pipeline architecture",
+            "testStrategy": "1. Compare extraction accuracy before and after refinement\n2. Test handling of previously problematic documents\n3. Validate improved success rates\n4. Measure performance impacts of refinements"
           }
         ]
       },
@@ -982,7 +1026,7 @@
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-12T22:32:09.183Z",
+      "updated": "2025-08-12T22:33:59.681Z",
       "description": "Tasks for master context"
     }
   }
