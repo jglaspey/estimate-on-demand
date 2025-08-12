@@ -1,0 +1,961 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project Setup with Next.js, TypeScript, and Tailwind CSS",
+        "description": "Initialize the project repository with Next.js framework, TypeScript for type safety, and Tailwind CSS for styling as specified in the implementation phases.",
+        "details": "1. Create a new Next.js project with TypeScript support\n2. Install and configure Tailwind CSS with the specified color palette\n3. Set up project structure following Next.js best practices\n4. Configure ESLint and Prettier for code quality\n5. Set up basic routing structure according to the specified page structure\n6. Initialize Git repository with appropriate .gitignore\n7. Configure environment variables for development\n8. Set up the typography system with Inter and JetBrains Mono fonts\n9. Implement the design system tokens (colors, spacing, etc.)\n10. Create base layout components with responsive breakpoints",
+        "testStrategy": "1. Verify project builds without errors\n2. Confirm TypeScript configuration is working correctly\n3. Test that Tailwind CSS is properly configured with custom theme\n4. Ensure all specified routes render without errors\n5. Validate responsive behavior at specified breakpoints\n6. Test accessibility compliance with automated tools",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Next.js and TypeScript Project Initialization",
+            "description": "Create a new Next.js project with TypeScript support and initialize Git repository with appropriate configuration.",
+            "dependencies": [],
+            "details": "1. Install Node.js and npm if not already installed\n2. Run 'npx create-next-app@latest' with TypeScript option\n3. Initialize Git repository with 'git init'\n4. Create .gitignore file with appropriate entries for Next.js\n5. Make initial commit with project setup\n6. Configure environment variables (.env.local, .env.example)\n7. Test the initial build to ensure everything works",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Tailwind CSS Installation and Theme Configuration",
+            "description": "Install and configure Tailwind CSS with custom color palette, typography system, and responsive breakpoints.",
+            "dependencies": [],
+            "details": "1. Install Tailwind CSS, PostCSS, and autoprefixer\n2. Create tailwind.config.js with project paths\n3. Configure custom color palette as specified\n4. Set up typography system with Inter and JetBrains Mono fonts\n5. Define responsive breakpoints in the configuration\n6. Implement design system tokens (colors, spacing, etc.)\n7. Create a theme test page to verify configurations",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Project Structure and Routing Setup",
+            "description": "Establish the project folder structure following Next.js best practices and implement the basic routing structure.",
+            "dependencies": [],
+            "details": "1. Create folder structure (pages, components, lib, styles, etc.)\n2. Set up basic routing according to specified page structure\n3. Create placeholder pages for main routes\n4. Implement layout components (Header, Footer, Layout)\n5. Set up responsive base layouts with appropriate breakpoints\n6. Create navigation components\n7. Test routing to ensure all pages are accessible",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Code Quality Tools Configuration",
+            "description": "Set up and configure ESLint, Prettier, TypeScript, and other code quality tools with appropriate rules.",
+            "dependencies": [],
+            "details": "1. Install ESLint and required plugins\n2. Configure ESLint rules in .eslintrc.js\n3. Install and configure Prettier\n4. Create .prettierrc with project formatting rules\n5. Set up TypeScript configuration in tsconfig.json\n6. Configure lint-staged and husky for pre-commit hooks\n7. Add npm scripts for linting and formatting\n8. Test the setup by fixing sample lint errors",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Base Component Library Setup",
+            "description": "Create foundational UI components using Tailwind CSS with responsive design and accessibility features.",
+            "dependencies": [],
+            "details": "1. Create Button component with variants\n2. Implement Form components (Input, Select, Checkbox, etc.)\n3. Create Card and Container components\n4. Implement Alert and Notification components\n5. Create Modal and Dialog components\n6. Set up Icon system with appropriate accessibility attributes\n7. Implement responsive utility components\n8. Create a component showcase page to verify all components",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Document Upload Interface Implementation",
+        "description": "Create a drag-and-drop file upload interface with visual feedback, document previews, and validation as specified in US-001 through US-005.",
+        "details": "1. Implement UploadInterface component with drag-and-drop functionality\n2. Create visual states: Default, Hover, Uploading, Success, Error\n3. Add file type validation for PDFs with clear error messages\n4. Implement multi-file upload support with individual progress tracking\n5. Create document thumbnail previews with file type badges\n6. Add file size validation (10MB limit)\n7. Implement WebSocket connection for real-time upload progress\n8. Create error handling with recovery instructions\n9. Store uploaded files in the file system with organized structure\n10. Implement basic malware scanning for security",
+        "testStrategy": "1. Test drag-and-drop functionality across supported browsers\n2. Verify all visual states render correctly\n3. Test file validation with valid and invalid file types\n4. Confirm multi-file upload works with progress indicators\n5. Test error handling with corrupted PDFs\n6. Validate file size restrictions\n7. Test upload performance with files approaching size limits",
+        "priority": "high",
+        "dependencies": [
+          1,
+          "11"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Core Drag-and-Drop Upload Interface",
+            "description": "Implement the foundational drag-and-drop file upload interface with basic visual states and component structure.",
+            "dependencies": [],
+            "details": "1. Create UploadInterface React component with drag-and-drop functionality\n2. Implement visual states: Default, Hover, Uploading, Success, Error\n3. Design responsive layout for the upload area\n4. Add file selection via traditional button as alternative to drag-and-drop\n5. Implement basic file selection handling",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "File Validation System",
+            "description": "Implement comprehensive file validation including type checking, size limits, and user feedback.",
+            "dependencies": [],
+            "details": "1. Create file type validation for PDFs with clear error messages\n2. Implement file size validation with 10MB limit\n3. Add validation for file names and potential duplicates\n4. Create user-friendly error messages for validation failures\n5. Implement client-side validation before upload begins",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Real-time Upload Progress Tracking",
+            "description": "Implement WebSocket connection and progress indicators for real-time upload status feedback.",
+            "dependencies": [],
+            "details": "1. Set up WebSocket connection for real-time upload progress\n2. Create individual progress tracking for multiple files\n3. Implement progress bar UI components\n4. Add upload speed and time remaining indicators\n5. Handle connection interruptions gracefully",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Document Preview Generation",
+            "description": "Create thumbnail previews for uploaded documents with file information and type indicators.",
+            "dependencies": [],
+            "details": "1. Implement document thumbnail preview generation\n2. Create file type badges for visual identification\n3. Add file metadata display (size, upload date, type)\n4. Implement preview loading states\n5. Create fallback preview for unsupported file types",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Error Handling and Recovery",
+            "description": "Implement comprehensive error handling with user recovery options for various failure scenarios.",
+            "dependencies": [],
+            "details": "1. Create error handling system for upload failures\n2. Implement retry functionality for failed uploads\n3. Add clear recovery instructions for common errors\n4. Create error logging for debugging purposes\n5. Implement graceful degradation for unsupported browsers",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "File Storage and Security Features",
+            "description": "Implement secure file storage with organized structure and basic security scanning.",
+            "dependencies": [],
+            "details": "1. Create organized file system structure for uploaded documents\n2. Implement basic malware scanning for security\n3. Add file encryption for sensitive documents\n4. Create secure file naming convention to prevent exploits\n5. Implement file cleanup for abandoned uploads",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Database Schema and API Routes",
+        "description": "Set up PostgreSQL database with the required schema and create API routes for job data management according to the data requirements section.",
+        "details": "1. Set up PostgreSQL database connection with connection pooling\n2. Create database schema for jobs, documents, extracted_data, and rule_analysis tables\n3. Implement JSONB columns for flexible data storage\n4. Create API routes for job creation, retrieval, and updates\n5. Implement document storage and retrieval endpoints\n6. Add authentication middleware for API security\n7. Set up rate limiting for API protection\n8. Implement input validation and sanitization\n9. Create database indexes for performance optimization\n10. Set up automated backup procedures",
+        "testStrategy": "1. Test database connection and query performance\n2. Verify all API endpoints return correct data structures\n3. Test authentication and authorization mechanisms\n4. Validate input sanitization prevents SQL injection\n5. Test rate limiting functionality\n6. Verify database indexes improve query performance\n7. Test backup and restore procedures",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Database Connection Setup",
+            "description": "Set up PostgreSQL database connection with proper configuration and connection pooling",
+            "dependencies": [],
+            "details": "1. Install required PostgreSQL client libraries\n2. Configure database connection parameters (host, port, credentials)\n3. Implement connection pooling for efficient resource management\n4. Create environment variables for database credentials\n5. Set up error handling for connection failures\n6. Implement reconnection logic\n7. Create database utility functions for common operations",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Database Schema Design and Implementation",
+            "description": "Create the database schema with tables for jobs, documents, extracted_data, and rule_analysis with appropriate relationships",
+            "dependencies": [],
+            "details": "1. Design table structures with appropriate data types\n2. Implement JSONB columns for flexible data storage\n3. Create foreign key relationships between tables\n4. Add timestamp fields for created_at and updated_at\n5. Set up appropriate constraints and default values\n6. Create migration scripts for schema changes\n7. Document the schema design with ERD diagrams",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Core API Route Implementation",
+            "description": "Create the primary API routes for job and document management with proper request/response handling",
+            "dependencies": [],
+            "details": "1. Implement job creation endpoint\n2. Create job retrieval endpoints (single and list views)\n3. Add job update and status change endpoints\n4. Implement document upload endpoints\n5. Create document retrieval and download endpoints\n6. Set up proper response formatting\n7. Implement error handling with appropriate HTTP status codes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Authentication and Security Implementation",
+            "description": "Add authentication middleware and security measures to protect API routes",
+            "dependencies": [],
+            "details": "1. Implement JWT-based authentication\n2. Create middleware for verifying authentication tokens\n3. Set up role-based access control\n4. Implement rate limiting for API protection\n5. Add request logging for security monitoring\n6. Set up CORS configuration\n7. Create secure password handling if needed",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Input Validation and Sanitization",
+            "description": "Implement comprehensive input validation and sanitization to prevent security vulnerabilities",
+            "dependencies": [],
+            "details": "1. Create validation schemas for all API endpoints\n2. Implement input sanitization to prevent SQL injection\n3. Add validation for file uploads (size, type, content)\n4. Create custom validation error messages\n5. Implement request body parsing and validation middleware\n6. Add validation for query parameters\n7. Create tests for validation logic",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Database Performance Optimization",
+            "description": "Optimize database performance through indexing, query optimization, and monitoring",
+            "dependencies": [],
+            "details": "1. Create database indexes for frequently queried fields\n2. Optimize complex queries with proper joins\n3. Implement query caching where appropriate\n4. Set up database query logging for performance monitoring\n5. Create database maintenance procedures\n6. Implement pagination for large result sets\n7. Add database performance testing",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Backup and Recovery Procedures",
+            "description": "Set up automated backup procedures and recovery mechanisms for the database",
+            "dependencies": [],
+            "details": "1. Configure automated database backups\n2. Implement backup rotation and retention policies\n3. Create backup verification procedures\n4. Document recovery procedures\n5. Set up monitoring for backup success/failure\n6. Implement point-in-time recovery capability\n7. Create disaster recovery documentation",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "PDF Viewer Component with Highlighting",
+        "description": "Implement a PDF viewer component with page navigation, zoom controls, and text highlighting functionality as specified in the DocumentViewer component requirements.",
+        "details": "1. Integrate PDF.js for PDF rendering\n2. Create DocumentViewer component with modal overlay\n3. Implement zoom controls and page navigation\n4. Add dynamic text highlighting linked to form fields\n5. Create split-screen layout with PDF viewer on left\n6. Implement click-to-highlight functionality\n7. Add keyboard navigation support for accessibility\n8. Optimize rendering performance for large documents\n9. Implement basic responsive view for mobile devices\n10. Add loading states for PDF processing",
+        "testStrategy": "1. Test PDF rendering across different document types\n2. Verify zoom and navigation controls work correctly\n3. Test highlighting functionality with various text formats\n4. Validate keyboard navigation for accessibility\n5. Test performance with large multi-page documents\n6. Verify responsive behavior on different screen sizes\n7. Test modal overlay behavior",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "PDF.js Integration and Basic Viewer Setup",
+            "description": "Integrate PDF.js library and implement the basic DocumentViewer component with modal overlay functionality.",
+            "dependencies": [],
+            "details": "1. Research and select appropriate PDF.js version\n2. Set up PDF.js with webpack/bundler configuration\n3. Create basic DocumentViewer component structure\n4. Implement modal overlay with proper z-index handling\n5. Add loading states for PDF processing\n6. Create basic error handling for failed PDF loads\n7. Test with various PDF document types",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Navigation and Zoom Controls Implementation",
+            "description": "Implement page navigation and zoom controls for the PDF viewer with intuitive UI.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "1. Create page navigation controls (prev/next/goto page)\n2. Implement page number indicator and total pages display\n3. Add zoom in/out buttons with percentage display\n4. Implement zoom to fit width/page options\n5. Create split-screen layout with PDF viewer on left\n6. Add thumbnail navigation sidebar (optional)\n7. Test navigation with multi-page documents of varying sizes",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Text Highlighting Functionality",
+            "description": "Implement text highlighting capabilities with click-to-highlight and form field linking.",
+            "dependencies": [
+              "4.1",
+              "4.2"
+            ],
+            "details": "1. Create text layer for highlighting over PDF rendering\n2. Implement click-to-highlight functionality\n3. Add dynamic text highlighting linked to form fields\n4. Create highlight color options and styles\n5. Implement highlight persistence between page navigation\n6. Add highlight removal functionality\n7. Test highlighting with various text formats and PDF structures",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Performance Optimization",
+            "description": "Optimize the PDF viewer for performance with large documents and complex highlighting.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3"
+            ],
+            "details": "1. Implement lazy loading of PDF pages\n2. Optimize rendering performance for large documents\n3. Add caching mechanisms for viewed pages\n4. Implement worker threads for PDF processing when appropriate\n5. Optimize highlight rendering for documents with many highlights\n6. Add debouncing for zoom and navigation actions\n7. Benchmark and optimize memory usage",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Accessibility Implementation",
+            "description": "Ensure the PDF viewer meets accessibility standards with keyboard navigation and screen reader support.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3"
+            ],
+            "details": "1. Add keyboard navigation support for all controls\n2. Implement focus management within the viewer\n3. Add ARIA attributes for screen reader compatibility\n4. Create keyboard shortcuts for common actions\n5. Ensure proper tab order throughout the component\n6. Add high contrast mode support\n7. Test with screen readers and keyboard-only navigation",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Responsive Design Implementation",
+            "description": "Make the PDF viewer responsive across different screen sizes and devices.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4"
+            ],
+            "details": "1. Implement basic responsive view for mobile devices\n2. Create collapsible controls for small screens\n3. Optimize touch interactions for mobile use\n4. Implement responsive split-screen layout\n5. Add orientation change handling\n6. Create mobile-specific navigation patterns\n7. Test across various device sizes and orientations",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "LLM Integration for Document Data Extraction",
+        "description": "Research and implement LLM integration for extracting data from insurance documents with structured output and confidence scores as specified in US-006 through US-010.",
+        "details": "1. Research LLM options (Claude, GPT-4, etc.) for document processing\n2. Implement PDF to image conversion for LLM vision processing\n3. Create structured JSON schemas for consistent data extraction\n4. Implement retry logic with exponential backoff for API failures\n5. Set up usage tracking and cost management\n6. Create confidence score calculation for extracted fields\n7. Implement WebSocket connection for real-time updates\n8. Add error handling for extraction failures\n9. Create fallback strategies for unreliable API responses\n10. Optimize extraction performance to meet 90-second target",
+        "testStrategy": "1. Test extraction accuracy across various document formats\n2. Verify structured output matches required schemas\n3. Validate confidence score accuracy\n4. Test retry logic with simulated API failures\n5. Verify real-time updates via WebSockets\n6. Measure extraction performance against 90-second target\n7. Test with edge cases and poorly formatted documents",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "LLM Research and Selection",
+            "description": "Research and evaluate different LLM options (Claude, GPT-4, etc.) for document processing capabilities, comparing features, costs, and performance metrics.",
+            "dependencies": [],
+            "details": "1. Create evaluation criteria for LLM selection (accuracy, cost, API reliability, etc.)\n2. Test sample documents with different LLM providers\n3. Compare vision capabilities for document processing\n4. Analyze rate limits and pricing structures\n5. Document findings and make final recommendation",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Document Preprocessing Pipeline",
+            "description": "Implement the document preprocessing pipeline including PDF to image conversion for LLM vision processing and optimization for different document types.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "1. Implement PDF to image conversion with appropriate resolution\n2. Create preprocessing steps for image enhancement\n3. Implement document type detection\n4. Add metadata extraction from document properties\n5. Set up caching for processed documents to improve performance",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Structured JSON Schema Design",
+            "description": "Create structured JSON schemas for consistent data extraction from insurance documents, ensuring all required fields are properly defined with types and validation rules.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "1. Define schema for policy information extraction\n2. Create schema for coverage details\n3. Design schema for property information\n4. Implement validation rules for each field\n5. Document schema specifications for team reference",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "LLM API Integration with Retry Logic",
+            "description": "Implement the core LLM API integration with retry logic, exponential backoff, and proper error handling for API failures.",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3"
+            ],
+            "details": "1. Create LLM service wrapper class\n2. Implement retry logic with exponential backoff\n3. Add request timeout handling\n4. Set up API key rotation for reliability\n5. Implement request batching for efficiency\n6. Add detailed logging for API interactions",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Confidence Score Implementation",
+            "description": "Develop and implement the confidence score calculation system for extracted fields, including calibration and threshold setting.",
+            "dependencies": [
+              "5.3",
+              "5.4"
+            ],
+            "details": "1. Design confidence score algorithm based on LLM output\n2. Implement field-level confidence calculation\n3. Create document-level aggregate confidence metrics\n4. Set up confidence thresholds for automatic vs. manual review\n5. Add visual indicators for confidence levels in the UI",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Real-time Update System",
+            "description": "Implement WebSocket connection and event system for real-time updates during document extraction process.",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "1. Set up WebSocket server for real-time communication\n2. Create event system for extraction progress updates\n3. Implement client-side WebSocket connection\n4. Add reconnection logic for dropped connections\n5. Create UI components for displaying extraction progress",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Error Handling and Fallback Strategies",
+            "description": "Implement comprehensive error handling for extraction failures and create fallback strategies for unreliable API responses.",
+            "dependencies": [
+              "5.4",
+              "5.5"
+            ],
+            "details": "1. Implement error classification system\n2. Create fallback extraction strategies for common failures\n3. Add manual override capabilities for failed extractions\n4. Implement partial extraction handling\n5. Create error reporting and analytics",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Performance Optimization and Cost Management",
+            "description": "Optimize extraction performance to meet the 90-second target and implement usage tracking and cost management systems.",
+            "dependencies": [
+              "5.4",
+              "5.6",
+              "5.7"
+            ],
+            "details": "1. Set up usage tracking for API calls\n2. Implement cost allocation by job/client\n3. Create budget alerts and limits\n4. Optimize extraction pipeline for performance\n5. Implement caching strategies to reduce API calls\n6. Add performance monitoring and reporting",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Job Dashboard with Real-Time Updates",
+        "description": "Create the main JobDashboard component with real-time updates, job details form, and inline editing functionality as specified in the real-time data extraction phase.",
+        "details": "1. Implement JobDashboard component with fixed header and scrollable content\n2. Create job details form with editable fields\n3. Set up WebSocket connection for live updates\n4. Implement progressive field population with animations\n5. Add inline editing with save/cancel states\n6. Create confidence score indicators for extracted fields\n7. Implement source location linking between form fields and PDF\n8. Add loading, active, complete, and error states\n9. Create persistent sidebar with navigation\n10. Implement form validation for edited fields",
+        "testStrategy": "1. Test real-time updates with WebSocket connection\n2. Verify inline editing functionality\n3. Test form validation with valid and invalid inputs\n4. Validate source location linking accuracy\n5. Test performance with large datasets\n6. Verify all component states render correctly\n7. Test WebSocket reconnection on network failures",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5,
+          "11"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Base Dashboard UI Structure",
+            "description": "Create the foundational JobDashboard component with fixed header, scrollable content area, and persistent sidebar navigation.",
+            "dependencies": [],
+            "details": "1. Create JobDashboard container component\n2. Implement fixed header with job title and status indicators\n3. Build scrollable content area with proper overflow handling\n4. Create persistent sidebar with navigation links\n5. Implement responsive layout for different screen sizes\n6. Add loading skeleton states for initial render",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop Job Details Form Components",
+            "description": "Create the form components for displaying and editing job details with inline editing functionality and confidence score indicators.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "1. Create form field components with edit/view modes\n2. Implement inline editing with save/cancel states\n3. Add confidence score indicators for extracted fields\n4. Create visual styling for different confidence levels\n5. Implement source location linking between form fields and PDF\n6. Add tooltips for field explanations and editing instructions",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement WebSocket Integration for Real-Time Updates",
+            "description": "Set up WebSocket connection for receiving real-time updates from the backend and implement progressive field population with animations.",
+            "dependencies": [
+              "6.1",
+              "6.2"
+            ],
+            "details": "1. Establish WebSocket connection with the backend\n2. Create message handlers for different update types\n3. Implement progressive field population as data arrives\n4. Add animations for newly populated fields\n5. Handle connection errors and reconnection logic\n6. Implement fallback polling mechanism for WebSocket failures",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Dashboard State Management",
+            "description": "Create comprehensive state management for the dashboard including loading, active, complete, and error states with appropriate visual indicators.",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3"
+            ],
+            "details": "1. Define state management structure for the dashboard\n2. Implement loading states with progress indicators\n3. Create active state for ongoing extraction\n4. Add complete state with success indicators\n5. Implement error states with recovery options\n6. Create state transitions with appropriate animations",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Form Validation and Error Handling",
+            "description": "Add client-side validation for edited fields with appropriate error messages and validation rules based on field types.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "1. Define validation rules for different field types\n2. Implement client-side validation for edited fields\n3. Create inline error messages with clear instructions\n4. Add visual indicators for invalid fields\n5. Implement form-level validation before submission\n6. Create validation summary for multiple errors",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Optimize Dashboard for Responsiveness and Performance",
+            "description": "Ensure the dashboard is responsive across different devices and optimize performance for handling large datasets and real-time updates.",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4",
+              "6.5"
+            ],
+            "details": "1. Implement responsive design breakpoints for different screen sizes\n2. Optimize rendering performance with virtualization for large datasets\n3. Add lazy loading for dashboard components\n4. Implement debouncing for frequent state updates\n5. Add performance monitoring for critical user interactions\n6. Create compressed view modes for mobile devices",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Business Rule Analyzer Implementation",
+        "description": "Implement the four business rule analyzers (Ridge Cap, Starter Strip, Drip Edge, Ice & Water Barrier) with logic flows as specified in section 5.",
+        "details": "1. Create base RuleAnalyzer class with common functionality\n2. Implement RidgeCapAnalyzer with specified logic flow\n3. Create StarterStripAnalyzer with coverage calculation\n4. Implement DripEdgeAnalyzer with perimeter calculations\n5. Create IceWaterBarrierAnalyzer with code compliance checks\n6. Implement cost calculation for each rule recommendation\n7. Add confidence scoring for analysis results\n8. Create evidence collection for supporting recommendations\n9. Implement status determination logic\n10. Add user decision tracking and modification support",
+        "testStrategy": "1. Test each analyzer with various input scenarios\n2. Verify cost calculations are accurate\n3. Validate evidence collection functionality\n4. Test with edge cases and incomplete data\n5. Verify status determination logic\n6. Test user decision tracking\n7. Validate performance under load",
+        "priority": "high",
+        "dependencies": [
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Base RuleAnalyzer Class Architecture",
+            "description": "Design and implement the base RuleAnalyzer class with common functionality that will be inherited by all specific rule analyzers.",
+            "dependencies": [],
+            "details": "Implement abstract methods for analysis, evidence collection, confidence scoring, and cost calculation. Include shared utility methods for data validation, status determination, and result formatting. Define interfaces for rule analyzer components and establish the inheritance hierarchy.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement RidgeCapAnalyzer",
+            "description": "Create the RidgeCapAnalyzer class that extends the base RuleAnalyzer with ridge cap specific logic flow.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement StarterStripAnalyzer",
+            "description": "Create the StarterStripAnalyzer class with coverage calculation logic and roof edge detection.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement perimeter calculation for roof edges requiring starter strip. Add logic to detect existing starter strip from document data. Include material quantity calculations based on roof dimensions. Implement specialized evidence collection and confidence scoring for starter strip recommendations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement DripEdgeAnalyzer",
+            "description": "Create the DripEdgeAnalyzer class with perimeter calculations and code compliance checks.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement eave and rake edge detection algorithms. Add local building code compliance validation based on property location. Calculate material requirements based on perimeter measurements. Include specialized evidence collection for drip edge recommendations with reference to local code requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement IceWaterBarrierAnalyzer",
+            "description": "Create the IceWaterBarrierAnalyzer with climate zone detection and code compliance checks.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement climate zone determination based on property location. Add logic for detecting ice damming risk factors. Include code compliance validation for different jurisdictions. Calculate coverage area and material requirements. Implement specialized evidence collection with climate data references.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Cost Calculation System",
+            "description": "Create a comprehensive cost calculation system for all rule analyzers with line item breakdown.",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4",
+              "7.5"
+            ],
+            "details": "Implement material cost lookup from pricing database. Add labor cost estimation based on installation complexity. Include markup calculations and tax considerations. Create detailed line item breakdown for each recommendation. Implement cost comparison between different material options.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement Evidence Collection System",
+            "description": "Create a robust evidence collection system that gathers and organizes supporting data for rule recommendations.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement User Decision Tracking",
+            "description": "Create a system to track and store user decisions on rule recommendations with modification support.",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4",
+              "7.5",
+              "7.6",
+              "7.7"
+            ],
+            "details": "Implement decision state management (Accept/Edit/Reject). Add justification field for user notes. Create modification history tracking. Implement recalculation triggers when parameters are modified. Add decision export functionality for reporting. Create notification system for pending decisions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Business Rule UI Components",
+        "description": "Create the BusinessRuleCard components with status indicators, evidence panels, and decision controls as specified in US-011 through US-016.",
+        "details": "1. Implement BusinessRuleCard component with expandable sections\n2. Create status indicators for different rule states\n3. Implement evidence section with source document references\n4. Add decision buttons (Accept/Edit/Reject) with confirmation dialogs\n5. Create cost calculator showing line item pricing changes\n6. Implement notes field for custom justifications\n7. Add visual evidence highlighting and diagrams\n8. Create plain English reasoning explanations\n9. Implement individual rule cards for each analysis type\n10. Add animation and transition effects",
+        "testStrategy": "1. Test all visual states of rule cards\n2. Verify expandable sections work correctly\n3. Test decision buttons and confirmation dialogs\n4. Validate cost calculator accuracy\n5. Test notes field functionality\n6. Verify evidence highlighting\n7. Test accessibility compliance",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7,
+          "11"
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Base BusinessRuleCard Component",
+            "description": "Implement the core BusinessRuleCard component with expandable sections and layout structure",
+            "dependencies": [],
+            "details": "- Create component skeleton with TypeScript interfaces\n- Implement expandable/collapsible functionality\n- Design responsive layout for different screen sizes\n- Add container for status indicators, evidence panels, and controls\n- Create component documentation and usage examples\n- Implement accessibility features (ARIA attributes, keyboard navigation)",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Status Indicators Implementation",
+            "description": "Create visual status indicators for different rule states (pending, accepted, rejected, etc.)",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "- Design status indicator components with appropriate colors\n- Implement different visual states (pending, accepted, rejected, needs review)\n- Add tooltips explaining each status\n- Create animations for status transitions\n- Ensure color contrast meets accessibility standards\n- Add status change event handlers",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Evidence Panel Development",
+            "description": "Implement the evidence section with source document references, highlighting, and plain English explanations",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "- Create collapsible evidence panel component\n- Implement document reference display with links\n- Add visual evidence highlighting functionality\n- Create diagram display capabilities\n- Implement plain English reasoning explanations\n- Add evidence source attribution and confidence indicators",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Decision Controls Implementation",
+            "description": "Add decision buttons (Accept/Edit/Reject) with confirmation dialogs and notes field",
+            "dependencies": [
+              "8.1",
+              "8.2"
+            ],
+            "details": "- Create decision button group component\n- Implement confirmation dialog for each action\n- Add notes field for custom justifications\n- Create state management for decision tracking\n- Implement validation for required notes on certain actions\n- Add keyboard shortcuts for common actions",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Cost Calculator Component",
+            "description": "Create cost calculator showing line item pricing changes and financial impact",
+            "dependencies": [
+              "8.1",
+              "8.3"
+            ],
+            "details": "- Implement cost calculator component with line items\n- Create visual indicators for price increases/decreases\n- Add total cost calculation functionality\n- Implement comparison between original and new costs\n- Create expandable detailed view for cost breakdown\n- Add currency formatting and localization support",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Animation and Transition Effects",
+            "description": "Implement animations and transitions for card interactions and state changes",
+            "dependencies": [
+              "8.1",
+              "8.2",
+              "8.3",
+              "8.4",
+              "8.5"
+            ],
+            "details": "- Add smooth expand/collapse animations\n- Implement transition effects for status changes\n- Create loading/processing animations\n- Add micro-interactions for better user feedback\n- Ensure animations can be disabled for reduced motion preferences\n- Optimize animations for performance",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Report Generation System",
+        "description": "Implement the report generation system with summary dashboard, multiple export formats, and download functionality as specified in US-017 through US-021.",
+        "details": "1. Create summary dashboard showing all decisions and total impact\n2. Implement PDF report generation with professional formatting\n3. Add Excel report generation with detailed calculations\n4. Create Word report option with customizable templates\n5. Implement direct download functionality\n6. Add report preview with professional formatting\n7. Create total cost impact and line-by-line breakdown\n8. Implement immediate download without queuing\n9. Add report generation progress indicators\n10. Create data validation before report generation",
+        "testStrategy": "1. Test report generation with various input data\n2. Verify PDF formatting is professional and consistent\n3. Test Excel report calculations\n4. Validate Word report templates\n5. Test download functionality across browsers\n6. Verify report preview accuracy\n7. Test with large datasets for performance",
+        "priority": "medium",
+        "dependencies": [
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Summary Dashboard Implementation",
+            "description": "Create a summary dashboard that displays all decisions and total impact with a clean, intuitive interface.",
+            "dependencies": [],
+            "details": "1. Design dashboard layout with decision summary section\n2. Implement total impact calculation logic\n3. Create visual components for impact metrics\n4. Add filtering capabilities by decision type\n5. Implement responsive design for various screen sizes\n6. Add data refresh functionality\n7. Create loading states for dashboard components",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "PDF Report Generation",
+            "description": "Implement PDF report generation with professional formatting, including headers, footers, and branded elements.",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "1. Integrate PDF generation library\n2. Design professional report template with company branding\n3. Implement dynamic content population from decision data\n4. Add headers, footers, and page numbering\n5. Create table of contents generation\n6. Implement image and chart embedding\n7. Add digital signature support\n8. Optimize for print quality",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Excel Report Functionality",
+            "description": "Develop Excel report generation with detailed calculations, formulas, and multiple worksheets for comprehensive analysis.",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "1. Integrate Excel generation library\n2. Create worksheet templates for different data categories\n3. Implement formula generation for calculations\n4. Add conditional formatting for data visualization\n5. Create pivot table templates for data analysis\n6. Implement chart generation from decision data\n7. Add metadata and documentation sheets",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Word Report with Templates",
+            "description": "Create Word report generation with customizable templates, allowing users to select different formats and content sections.",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "1. Integrate Word document generation library\n2. Design multiple report templates with different styles\n3. Create template selection interface\n4. Implement dynamic content population based on template\n5. Add support for custom fields and sections\n6. Create template preview functionality\n7. Implement template caching for performance",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Download System Implementation",
+            "description": "Implement direct download functionality with immediate download without queuing and progress indicators.",
+            "dependencies": [
+              "9.2",
+              "9.3",
+              "9.4"
+            ],
+            "details": "1. Create unified download manager service\n2. Implement browser-compatible file download triggers\n3. Add progress tracking with WebSockets\n4. Create download history tracking\n5. Implement retry mechanism for failed downloads\n6. Add support for large file handling\n7. Create download cancellation functionality",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Report Preview Functionality",
+            "description": "Add report preview with professional formatting before download, allowing users to verify content and appearance.",
+            "dependencies": [
+              "9.2",
+              "9.3",
+              "9.4"
+            ],
+            "details": "1. Create preview rendering component\n2. Implement preview generation for all report types\n3. Add zoom and navigation controls for preview\n4. Create print functionality from preview\n5. Implement preview caching for performance\n6. Add annotation capabilities to preview\n7. Create mobile-friendly preview version",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Data Validation System",
+            "description": "Implement data validation before report generation to ensure accuracy and completeness of all report data.",
+            "dependencies": [],
+            "details": "1. Create validation rules for all data types\n2. Implement validation pipeline before report generation\n3. Add error and warning notification system\n4. Create data correction suggestions\n5. Implement validation report with issues list\n6. Add validation bypass with confirmation for edge cases\n7. Create validation logging for audit purposes",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Deployment and Production Setup",
+        "description": "Set up the production environment on Railway with PostgreSQL, monitoring, and logging as specified in the deployment phase.",
+        "details": "1. Configure Railway deployment with PostgreSQL\n2. Set up production environment variables\n3. Implement monitoring and logging systems\n4. Configure automated backups with point-in-time recovery\n5. Set up SSL certificates and security headers\n6. Implement performance monitoring\n7. Create error tracking and alerting\n8. Set up CI/CD pipeline for automated deployments\n9. Implement load balancing for scalability\n10. Create documentation for maintenance procedures",
+        "testStrategy": "1. Test deployment process with staging environment\n2. Verify database connections in production\n3. Test backup and restore procedures\n4. Validate monitoring and alerting systems\n5. Test performance under load\n6. Verify security configurations\n7. Test CI/CD pipeline with sample changes",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Railway Platform Configuration",
+            "description": "Set up the Railway platform with the necessary configuration for hosting the application and connecting to PostgreSQL database.",
+            "dependencies": [],
+            "details": "1. Create Railway project and configure resources\n2. Set up PostgreSQL database instance on Railway\n3. Configure connection pooling for database\n4. Set up production environment variables\n5. Configure domain settings and DNS",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Database Production Setup",
+            "description": "Configure the production PostgreSQL database with proper backup strategies and recovery options.",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "1. Set up database schema in production\n2. Configure automated backups with point-in-time recovery\n3. Implement database migration strategy\n4. Set up database user roles and permissions\n5. Configure connection security for database access",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Monitoring and Logging Implementation",
+            "description": "Implement comprehensive monitoring and logging systems to track application performance, errors, and usage.",
+            "dependencies": [
+              "10.1",
+              "10.2"
+            ],
+            "details": "1. Set up application logging with structured log format\n2. Implement error tracking and alerting system\n3. Configure performance monitoring tools\n4. Set up dashboard for system metrics\n5. Configure alert thresholds and notification channels",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Security Configuration",
+            "description": "Implement security measures for the production environment including SSL, security headers, and access controls.",
+            "dependencies": [
+              "10.1"
+            ],
+            "details": "1. Set up SSL certificates for secure connections\n2. Configure security headers (CSP, HSTS, etc.)\n3. Implement rate limiting for API endpoints\n4. Set up firewall rules and access controls\n5. Configure authentication for production environment",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "CI/CD Pipeline Setup",
+            "description": "Create and configure a continuous integration and deployment pipeline for automated testing and deployment.",
+            "dependencies": [
+              "10.1",
+              "10.4"
+            ],
+            "details": "1. Set up GitHub Actions or similar CI/CD tool\n2. Configure automated testing in the pipeline\n3. Implement deployment automation to Railway\n4. Set up staging environment for pre-production testing\n5. Configure load balancing for scalability",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Production Documentation",
+            "description": "Create comprehensive documentation for production environment maintenance, monitoring, and troubleshooting procedures.",
+            "dependencies": [
+              "10.1",
+              "10.2",
+              "10.3",
+              "10.4",
+              "10.5"
+            ],
+            "details": "1. Document deployment architecture and configuration\n2. Create database maintenance procedures\n3. Document monitoring and alerting systems\n4. Create troubleshooting guides for common issues\n5. Document backup and recovery procedures",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "UI/UX Wireframes and Interactive Prototypes Design",
+        "description": "Design comprehensive UI/UX wireframes and interactive prototypes for all user workflows including Document Upload, Data Extraction, Business Rule Analysis, and Report Generation phases with component specifications and visual design system.",
+        "details": "1. Create user flow diagrams for all major workflows:\n   - Document Upload process with validation states\n   - Data Extraction with real-time feedback\n   - Business Rule Analysis with decision points\n   - Report Generation with export options\n\n2. Design wireframes for all key screens:\n   - Upload interface with drag-and-drop area and file previews\n   - Job Dashboard with extraction progress indicators\n   - Business Rule cards with expandable evidence panels\n   - Decision interface with accept/reject controls\n   - Report summary with visualization options\n\n3. Develop interactive prototypes using Figma or Adobe XD:\n   - Include all state transitions and animations\n   - Create clickable navigation between screens\n   - Simulate loading states and progress indicators\n   - Demonstrate error handling and validation feedback\n\n4. Define component specifications:\n   - Document component hierarchy and nesting\n   - Specify props/inputs for each component\n   - Define state management requirements\n   - Document event handlers and callbacks\n\n5. Create visual design system:\n   - Color palette with primary, secondary, and accent colors\n   - Typography scale with heading and body text styles\n   - Form element styles (inputs, buttons, dropdowns)\n   - Data visualization components (charts, graphs)\n   - Status indicators and badges\n\n6. Design responsive layouts:\n   - Desktop-first approach with breakpoints for smaller screens\n   - Define grid system and spacing guidelines\n   - Ensure critical workflows function on tablet devices\n\n7. Document interaction patterns:\n   - Define hover, active, and focus states\n   - Document transitions and animations\n   - Specify loading indicators and progress feedback\n   - Define error and success state visuals\n\n8. Create accessibility guidelines:\n   - Color contrast requirements\n   - Keyboard navigation patterns\n   - Screen reader considerations\n   - Focus management guidelines",
+        "testStrategy": "1. Conduct internal design reviews:\n   - Review wireframes against user stories and requirements\n   - Verify all required screens and states are represented\n   - Ensure design system consistency across all screens\n   - Check component specifications for completeness\n\n2. Perform usability testing with prototype:\n   - Create test scenarios covering all major workflows\n   - Recruit 5-7 testers representing target users\n   - Record sessions and collect qualitative feedback\n   - Measure task completion rates and time-on-task\n\n3. Validate accessibility compliance:\n   - Test color contrast with accessibility tools\n   - Verify keyboard navigation works for all interactions\n   - Review screen reader compatibility\n   - Check focus management across interactive elements\n\n4. Technical feasibility review:\n   - Review with development team for implementation concerns\n   - Identify any technically challenging interactions\n   - Validate state management approach with developers\n   - Ensure responsive layouts are practical to implement\n\n5. Stakeholder presentation and feedback:\n   - Present prototypes to project stakeholders\n   - Collect feedback on visual design and interactions\n   - Document requested changes and prioritize revisions\n   - Obtain final approval before development begins",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "User Flow Diagram Creation",
+            "description": "Create comprehensive user flow diagrams for all major workflows in the application",
+            "dependencies": [],
+            "details": "- Design Document Upload process flow with validation states\n- Map Data Extraction workflow with real-time feedback points\n- Create Business Rule Analysis flow with decision points\n- Design Report Generation flow with export options\n- Include error handling paths and recovery flows\n- Document user entry and exit points\n- Validate flows with stakeholders",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Wireframe Design for Key Screens",
+            "description": "Design detailed wireframes for all key screens in the application",
+            "dependencies": [
+              "11.1"
+            ],
+            "details": "- Create Upload interface with drag-and-drop area and file previews\n- Design Job Dashboard with extraction progress indicators\n- Develop Business Rule cards with expandable evidence panels\n- Design Decision interface with accept/reject controls\n- Create Report summary with visualization options\n- Include all states (empty, loading, error, success)\n- Ensure consistency across all screens",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Interactive Prototype Development",
+            "description": "Develop interactive prototypes using Figma or Adobe XD with all state transitions and animations",
+            "dependencies": [
+              "11.2"
+            ],
+            "details": "- Create clickable navigation between all screens\n- Simulate loading states and progress indicators\n- Demonstrate error handling and validation feedback\n- Include all micro-interactions and transitions\n- Set up realistic data scenarios\n- Create shareable prototype links for stakeholder review\n- Document prototype usage instructions",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Component Specification Documentation",
+            "description": "Define detailed specifications for all UI components to be implemented",
+            "dependencies": [
+              "11.2"
+            ],
+            "details": "- Document component hierarchy and nesting relationships\n- Specify props/inputs for each component\n- Define state management requirements\n- Document event handlers and callbacks\n- Create component naming conventions\n- Specify reusable vs. specific components\n- Include implementation notes for developers",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Visual Design System Creation",
+            "description": "Develop a comprehensive visual design system with color palette, typography, and component styles",
+            "dependencies": [
+              "11.2"
+            ],
+            "details": "- Define color palette with primary, secondary, and accent colors\n- Create typography scale with heading and body text styles\n- Design form element styles (inputs, buttons, dropdowns)\n- Develop data visualization components (charts, graphs)\n- Create status indicators and badges\n- Document spacing and layout guidelines\n- Create exportable design tokens for development",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Responsive Layout Design",
+            "description": "Design responsive layouts for all screens with breakpoints for different device sizes",
+            "dependencies": [
+              "11.2",
+              "11.5"
+            ],
+            "details": "- Implement desktop-first approach with breakpoints for smaller screens\n- Define grid system and spacing guidelines\n- Ensure critical workflows function on tablet devices\n- Document responsive behavior for each component\n- Create mobile-specific interaction patterns where needed\n- Test designs at various viewport sizes\n- Document breakpoint specifications for developers",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Accessibility Guidelines Documentation",
+            "description": "Create comprehensive accessibility guidelines to ensure WCAG compliance",
+            "dependencies": [
+              "11.5"
+            ],
+            "details": "- Define color contrast requirements with examples\n- Document keyboard navigation patterns\n- Specify screen reader considerations for all components\n- Create focus management guidelines\n- Document aria attributes for custom components\n- Include text alternatives for non-text content\n- Create testing checklist for accessibility compliance",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-12T00:49:13.012Z",
+      "updated": "2025-08-12T00:54:17.600Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

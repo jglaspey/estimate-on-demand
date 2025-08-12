@@ -1,0 +1,101 @@
+{
+	"meta": {
+		"generatedAt": "2025-08-12T00:55:51.946Z",
+		"tasksAnalyzed": 11,
+		"totalTasks": 11,
+		"analysisCount": 11,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Project Setup with Next.js, TypeScript, and Tailwind CSS",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the Next.js, TypeScript, and Tailwind CSS project setup into 5 logical subtasks, focusing on initial setup, configuration, styling system, code quality, and project structure.",
+			"reasoning": "This is a standard project setup task with well-defined steps. While it involves multiple technologies (Next.js, TypeScript, Tailwind), these are commonly used together with established patterns. The task is clearly defined with specific implementation details already provided."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Document Upload Interface Implementation",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the document upload interface implementation into 6 subtasks covering the core upload functionality, validation, progress tracking, preview generation, error handling, and security features.",
+			"reasoning": "This task involves complex UI interactions (drag-and-drop), real-time feedback via WebSockets, file processing, and security considerations. It requires both frontend and backend work with multiple states to manage and edge cases to handle."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Database Schema and API Routes",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down the database and API implementation into 7 subtasks covering database setup, schema design, API route creation, authentication, security measures, performance optimization, and backup procedures.",
+			"reasoning": "This task involves complex database design with multiple tables and relationships, API development with authentication and security concerns, and performance considerations. It requires deep technical knowledge across database systems, API design, and security practices."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "PDF Viewer Component with Highlighting",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the PDF viewer implementation into 6 subtasks covering PDF rendering integration, navigation controls, text highlighting functionality, performance optimization, accessibility features, and responsive design.",
+			"reasoning": "PDF rendering and manipulation is inherently complex, especially with interactive highlighting features. This requires integration with external libraries, complex DOM manipulation, and optimization for performance with large documents. Accessibility requirements add another layer of complexity."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "LLM Integration for Document Data Extraction",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Break down the LLM integration for document extraction into 8 subtasks covering LLM research and selection, document preprocessing, schema design, API integration, error handling, performance optimization, real-time updates, and cost management.",
+			"reasoning": "This is one of the most complex tasks, involving cutting-edge AI technology integration, complex document processing, structured data extraction, and real-time feedback. It requires research, experimentation, and handling of unreliable external APIs with appropriate fallback strategies."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Job Dashboard with Real-Time Updates",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the job dashboard implementation into 6 subtasks covering the base dashboard UI, form components with inline editing, WebSocket integration, state management, field validation, and responsive design.",
+			"reasoning": "This task involves complex UI state management with real-time updates via WebSockets, inline editing functionality, and form validation. It requires coordination between multiple components and careful state management to ensure a smooth user experience."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Business Rule Analyzer Implementation",
+			"complexityScore": 9,
+			"recommendedSubtasks": 8,
+			"expansionPrompt": "Break down the business rule analyzer implementation into 8 subtasks covering the base analyzer architecture, individual rule implementations, evidence collection system, confidence scoring, cost calculations, status determination, and user decision tracking.",
+			"reasoning": "This task involves complex business logic implementation with multiple rule types, each with their own calculation methods and evidence requirements. It requires deep domain knowledge, careful algorithm design, and extensive testing to ensure accuracy across various scenarios."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Business Rule UI Components",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the business rule UI components implementation into 6 subtasks covering the base card component, status indicators, evidence display, decision controls, cost calculator, and animation effects.",
+			"reasoning": "This task involves creating complex interactive UI components with multiple states, expandable sections, and decision controls. It requires careful component design, state management, and attention to visual details and animations."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Report Generation System",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down the report generation system into 7 subtasks covering the summary dashboard, PDF report generation, Excel export functionality, Word report templates, download system, preview functionality, and data validation.",
+			"reasoning": "This task involves generating complex reports in multiple formats (PDF, Excel, Word) with professional formatting and detailed calculations. It requires integration with document generation libraries, careful template design, and handling of potentially large datasets."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Deployment and Production Setup",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the deployment and production setup into 6 subtasks covering Railway configuration, database setup, monitoring and logging implementation, security configuration, CI/CD pipeline, and documentation.",
+			"reasoning": "Production deployment involves multiple interconnected systems including hosting, databases, monitoring, security, and automated deployment pipelines. It requires careful configuration and testing to ensure reliability, security, and performance in a production environment."
+		},
+		{
+			"taskId": 11,
+			"taskTitle": "UI/UX Wireframes and Interactive Prototypes Design",
+			"complexityScore": 8,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down the UI/UX design process into 7 subtasks covering user flow diagrams, wireframe creation, interactive prototype development, component specifications, visual design system, responsive layouts, and accessibility guidelines.",
+			"reasoning": "This design task requires comprehensive planning across multiple user workflows and screens, with detailed specifications for components and interactions. It involves both creative and technical aspects, with consideration for usability, accessibility, and implementation feasibility."
+		}
+	]
+}
