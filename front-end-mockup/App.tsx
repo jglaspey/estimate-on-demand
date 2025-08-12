@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button } from './components/ui/button';
-import { Badge } from './components/ui/badge';
+import { Button } from './components/button';
+import { Badge } from './components/badge';
 import { 
   ArrowLeft, 
   Download, 
@@ -23,7 +23,7 @@ import {
   RuleAnalysisResult,
   RoofMeasurements,
   getJobDataById
-} from './lib/mockData';
+} from './types';
 
 type AppMode = 'dashboard' | 'overview' | 'review';
 
