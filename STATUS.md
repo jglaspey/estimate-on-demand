@@ -13,6 +13,8 @@
 - [x] Git repository initialized with clean commit
 - [x] Business rule specifications documented
 - [x] Sample documents and test cases ready
+- [x] Authentication architecture defined (Auth.js v5 + Prisma + invite-only)
+- [x] Production-ready prototype analyzed and documented
 
 ## Next Up 🎯
 
@@ -50,5 +52,7 @@ task-master set-status --id=1.1 --status=done      # Complete subtasks
 - LLM integration research (Task 5.1) can be done in parallel
 - Database schema (Task 3) doesn't depend on UI, can work in parallel
 - All major UI components wait for wireframes/prototypes
+- **Authentication**: Complete implementation plan in `USER-AUTH-GUIDANCE.md`
+- **Prototype**: Production-ready components in `front-end-mockup/` directory
 
 **Ready to build!** 🚀

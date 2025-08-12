@@ -12,7 +12,8 @@ We're building a user-centric tool that transforms document analysis from batch 
 ### Technology Stack
 - **Frontend**: Next.js 15 + React 19 + TypeScript 5.9 + Tailwind CSS 4.x
 - **Backend**: Node.js API routes with Claude SDK integration
-- **Database**: PostgreSQL (via Railway)
+- **Authentication**: Auth.js v5 (NextAuth) + Prisma + invite-only onboarding (see `USER-AUTH-GUIDANCE.md`)
+- **Database**: PostgreSQL (via Railway) + Prisma ORM
 - **Real-time**: WebSockets for live progress updates
 - **Hosting**: Railway for simplified deployment
 - **File Processing**: AI from OpenAI or Anthropic (Possibly use: Claude SDK for document analysis)
@@ -152,9 +153,15 @@ src/
 ```
 ANTHROPIC_API_KEY=xxx
 DATABASE_URL=postgresql://...
-NEXTAUTH_SECRET=xxx
+AUTH_SECRET=xxx
+AUTH_TRUST_HOST=true
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+EMAIL_FROM=noreply@yourdomain.com
+RESEND_API_KEY=xxx
 NEXT_PUBLIC_WS_URL=xxx
 ```
+See `USER-AUTH-GUIDANCE.md` for complete authentication environment setup.
 
 ### File Storage
 - **Development**: Local `/uploads` directory
