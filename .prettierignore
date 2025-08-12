@@ -16,3 +16,11 @@ front-end-mockup
 .taskmaster
 examples
 docs
+
+# IDE and tool config files
+.claude/
+.cursor/
+.gemini/
+.mcp.json
+.vscode/
+.idea/
