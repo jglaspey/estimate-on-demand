@@ -1,103 +1,120 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <header className="text-center space-y-4">
+          <h1 className="text-3xl font-medium text-foreground">
+            EOD Insurance Supplement Analysis System
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Professional insurance supplement analysis with real-time AI processing, 
+            transparent business rule validation, and user-controlled recommendations.
+          </p>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Theme Showcase */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Primary Card */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-medium text-card-foreground">
+              Project Status
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Next.js Setup</span>
+                <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
+                  Complete
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Theme Configuration</span>
+                <span className="px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
+                  In Progress
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Database Setup</span>
+                <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded">
+                  Pending
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary Card */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-medium text-card-foreground">
+              Design System
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-primary rounded"></div>
+                <span className="text-sm">Primary - Professional Dark</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-secondary rounded"></div>
+                <span className="text-sm">Secondary - Light Purple</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-accent rounded"></div>
+                <span className="text-sm">Accent - Neutral Gray</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-destructive rounded"></div>
+                <span className="text-sm">Destructive - Alert Red</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-medium text-card-foreground">
+              Typography Scale
+            </h2>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-medium">Heading 1 - 2xl</h1>
+              <h2 className="text-xl font-medium">Heading 2 - xl</h2>
+              <h3 className="text-lg font-medium">Heading 3 - lg</h3>
+              <h4 className="text-base font-medium">Heading 4 - base</h4>
+              <p className="text-base text-muted-foreground">
+                Body text optimized for document analysis and professional review.
+              </p>
+            </div>
+          </div>
+
+          {/* Business Rules Preview */}
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-medium text-card-foreground">
+              Business Rules
+            </h2>
+            <div className="space-y-3">
+              <div className="p-3 bg-accent rounded border-l-4 border-l-primary">
+                <h4 className="font-medium text-sm">Hip/Ridge Cap Quality</h4>
+                <p className="text-xs text-muted-foreground">ASTM D3161/D7158 compliance validation</p>
+              </div>
+              <div className="p-3 bg-accent rounded border-l-4 border-l-primary">
+                <h4 className="font-medium text-sm">Starter Strip Quality</h4>
+                <p className="text-xs text-muted-foreground">Universal starter vs cut shingles analysis</p>
+              </div>
+              <div className="p-3 bg-accent rounded border-l-4 border-l-primary">
+                <h4 className="font-medium text-sm">Ice & Water Barrier</h4>
+                <p className="text-xs text-muted-foreground">IRC R905.1.2 coverage calculation</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Footer */}
+        <footer className="text-center pt-8 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Built with Next.js 15, TypeScript 5, and Tailwind CSS 4
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Task Master AI • Claude Code Integration
+          </p>
+        </footer>
+      </div>
     </div>
   );
 }
