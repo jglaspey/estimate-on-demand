@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { PrismaClient } from '../../../../src/generated/prisma';
 
 const prisma = new PrismaClient();
@@ -15,32 +16,29 @@ export async function GET(
         documents: {
           include: {
             pages: {
-              orderBy: { pageNumber: 'asc' }
-            }
-          }
+              orderBy: { pageNumber: 'asc' },
+            },
+          },
         },
         mistralExtractions: {
           orderBy: { extractedAt: 'desc' },
-          take: 1
+          take: 1,
         },
         sonnetAnalyses: {
           include: {
-            mistralExtraction: true
+            mistralExtraction: true,
           },
           orderBy: { analyzedAt: 'desc' },
-          take: 1
+          take: 1,
         },
         ruleAnalyses: {
-          orderBy: { analyzedAt: 'desc' }
-        }
-      }
+          orderBy: { analyzedAt: 'desc' },
+        },
+      },
     });
 
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     return NextResponse.json({ job });

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { PrismaClient } from '../../../src/generated/prisma';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const jobs = await prisma.job.findMany({
       include: {
@@ -12,37 +13,37 @@ export async function GET(request: NextRequest) {
             id: true,
             fileName: true,
             pageCount: true,
-            status: true
-          }
+            status: true,
+          },
         },
         mistralExtractions: {
           select: {
             id: true,
             fieldsFound: true,
-            confidence: true
+            confidence: true,
           },
           take: 1,
-          orderBy: { extractedAt: 'desc' }
+          orderBy: { extractedAt: 'desc' },
         },
         sonnetAnalyses: {
           select: {
             id: true,
             overallAssessment: true,
             accuracyScore: true,
-            completenessScore: true
+            completenessScore: true,
           },
           take: 1,
-          orderBy: { analyzedAt: 'desc' }
+          orderBy: { analyzedAt: 'desc' },
         },
         ruleAnalyses: {
           select: {
             ruleType: true,
             status: true,
-            passed: true
-          }
-        }
+            passed: true,
+          },
+        },
       },
-      orderBy: { uploadedAt: 'desc' }
+      orderBy: { uploadedAt: 'desc' },
     });
 
     return NextResponse.json({ jobs });

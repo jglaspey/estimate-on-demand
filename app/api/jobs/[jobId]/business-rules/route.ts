@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserDecision } from '../../../../../src/generated/prisma';
+
+import {
+  PrismaClient,
+  UserDecision,
+} from '../../../../../src/generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -11,24 +15,28 @@ export async function GET(
     const { jobId } = await params;
     const ruleAnalyses = await prisma.ruleAnalysis.findMany({
       where: { jobId },
-      orderBy: [
-        { ruleType: 'asc' },
-        { analyzedAt: 'desc' }
-      ]
+      orderBy: [{ ruleType: 'asc' }, { analyzedAt: 'desc' }],
     });
 
     // Group by rule type, taking the latest analysis for each
-    const latestAnalyses = ruleAnalyses.reduce((acc, analysis) => {
-      if (!acc[analysis.ruleType] || 
-          (analysis.analyzedAt && acc[analysis.ruleType].analyzedAt && 
-           analysis.analyzedAt > acc[analysis.ruleType].analyzedAt!)) {
-        acc[analysis.ruleType] = analysis;
-      }
-      return acc;
-    }, {} as Record<string, typeof ruleAnalyses[0]>);
+    const latestAnalyses = ruleAnalyses.reduce(
+      (acc, analysis) => {
+        const existingAnalysis = acc[analysis.ruleType];
+        if (
+          !existingAnalysis ||
+          (analysis.analyzedAt &&
+            existingAnalysis.analyzedAt &&
+            analysis.analyzedAt > existingAnalysis.analyzedAt)
+        ) {
+          acc[analysis.ruleType] = analysis;
+        }
+        return acc;
+      },
+      {} as Record<string, (typeof ruleAnalyses)[0]>
+    );
 
-    return NextResponse.json({ 
-      businessRules: Object.values(latestAnalyses) 
+    return NextResponse.json({
+      businessRules: Object.values(latestAnalyses),
     });
   } catch (error) {
     console.error('Error fetching business rules:', error);
@@ -41,7 +49,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ jobId: string }> }
+  { params: _params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
     const body = await request.json();
@@ -53,8 +61,8 @@ export async function PATCH(
         userDecision: userDecision as UserDecision,
         userNotes,
         editedValues,
-        decidedAt: new Date()
-      }
+        decidedAt: new Date(),
+      },
     });
 
     return NextResponse.json({ rule: updatedRule });
