@@ -16,7 +16,9 @@ We're building a user-centric tool that transforms document analysis from batch 
 - **Database**: PostgreSQL (via Railway) + Prisma ORM
 - **Real-time**: WebSockets for live progress updates
 - **Hosting**: Railway for simplified deployment
-- **File Processing**: AI from OpenAI or Anthropic (Possibly use: Claude SDK for document analysis)
+- **Document Processing**: Mistral OCR API + Claude SDK (hybrid extraction architecture)
+- **Text Extraction**: Mistral OCR for page-by-page markdown extraction
+- **Field Analysis**: Claude Haiku/Sonnet for business rule processing
 
 ### Key Design Principles
 1. **Transparency**: Users see exactly what AI found and why
@@ -24,6 +26,67 @@ We're building a user-centric tool that transforms document analysis from batch 
 3. **Real-time**: Progress updates via WebSockets
 4. **Visual Evidence**: Highlight source data and reasoning
 5. **Professional Output**: Generate client-ready supplement reports
+
+## 🧠 Document Processing Architecture
+
+### Hybrid Extraction Strategy
+Based on extensive testing, we use a multi-layered approach:
+
+1. **Primary: Mistral OCR** (`/v1/ocr` endpoint)
+   - Page-by-page markdown text extraction 
+   - Structured document annotation with JSON schemas
+   - **Cost**: ~$0.02 per document
+   - **Speed**: 4-5 seconds for 6-page documents
+   - **Accuracy**: Superior field detection (found critical gutter apron missed by direct PDF)
+
+2. **Secondary: Claude Vision** (fallback when needed)
+   - Direct PDF processing for complex layouts
+   - **Cost**: ~$0.011 per document  
+   - **Speed**: 4-6 seconds per document
+   - **Use case**: When OCR confidence is low
+
+3. **Field Analysis: Claude Text Processing**
+   - Business rule application on extracted text
+   - **Cost**: ~$0.001 per analysis
+   - **Speed**: 2-3 seconds
+   - **Accuracy**: Consistent structured output
+
+### Document Storage & Retrieval
+- **Full-page text**: Each page stored as markdown in database
+- **Source mapping**: Text coordinates linked to PDF positions  
+- **Search capability**: Full-text search across all document text
+- **Visual highlighting**: Map extracted fields back to source locations
+
+## 🎨 Interactive Document Review UI
+
+### Split-Pane Architecture
+```
+┌─ Claims Panel (Left 30%) ────┐ ┌─ Document Viewer (Right 70%) ─┐
+│                              │ │                               │
+│ ✓ Hip/Ridge Cap (Found)      │ │ [Formatted Text] [Raw PDF]    │
+│   └─ 6 units, Standard       │ │                               │
+│                              │ │ ┌─ Text View ─────────────┐   │
+│ ⚠ Starter Strip (Missing)    │ │ │ ### Line Items          │   │
+│   └─ Add recommendation      │ │ │ 3b. Hip/Ridge cap -     │   │
+│                              │ │ │ **Standard profile**    │   │ 
+│ ✓ Gutter Apron (Found)       │ │ │ composition shingles    │   │
+│   └─ 171.42 LF, Aluminum     │ │ │ [HIGHLIGHTED]           │   │
+│                              │ │ └─────────────────────────┘   │
+│ ❌ Drip Edge (Not Found)      │ │                               │
+│   └─ Needs supplement        │ │ ┌─ PDF View ──────────────┐   │
+│                              │ │ │ [Raw PDF at exact       │   │
+│ ❌ Ice & Water (Not Found)    │ │ │  same location with     │   │
+│   └─ Calculate coverage      │ │ │  highlighting overlay]   │   │
+│                              │ │ └─────────────────────────┘   │
+└──────────────────────────────┘ └───────────────────────────────┘
+```
+
+### User Interaction Flow
+1. **Click claim item** → Auto-scroll to source text/PDF location
+2. **View evidence** → See highlighted text with reasoning
+3. **Edit/Accept/Reject** → Modify extraction with full audit trail
+4. **Quick confirmation** → Toggle between text and PDF views
+5. **Generate supplement** → Create professional report with references
 
 ## 📋 Core Business Rules
 
@@ -66,11 +129,19 @@ src/
 │   ├── ui/             # Shadcn components  
 │   ├── upload/         # File upload interface
 │   ├── analysis/       # Business rule components
+│   ├── document/       # Interactive document viewer
+│   │   ├── split-pane/ # Claims panel + document viewer
+│   │   ├── text-view/  # Formatted markdown display
+│   │   ├── pdf-view/   # Raw PDF with highlights
+│   │   └── evidence/   # Source highlighting system
 │   └── reports/        # Report generation
 ├── lib/                # Utility functions
 │   ├── claude/         # Claude SDK integration
+│   ├── mistral/        # Mistral OCR integration
+│   ├── extraction/     # Hybrid extraction engines
 │   ├── database/       # Database operations  
-│   ├── pdf/           # PDF processing
+│   ├── pdf/           # PDF processing utilities
+│   ├── coordinates/   # Text-to-PDF mapping
 │   └── websockets/    # Real-time updates
 └── types/             # TypeScript definitions
 ```
@@ -84,9 +155,17 @@ src/
 
 ### Database Schema
 - **jobs**: Main job tracking with status progression
-- **documents**: File storage and processing status
-- **extracted_data**: Structured data from PDFs (JSONB)
+- **documents**: File storage and processing status  
+- **document_pages**: OCR-extracted page text (markdown format)
+  - `page_number`, `markdown_text`, `dimensions`, `image_count`
+  - Full-text search index for fast document search
+- **extracted_fields**: Business rule field extractions
+  - Links to source `document_pages` with text coordinates
+  - User edit history and confidence scores
+- **text_coordinates**: Mapping between extracted text and PDF positions
+  - Enables highlighting and visual evidence display
 - **rule_analysis**: Business rule results and user decisions
+  - Audit trail of accept/edit/reject actions
 
 ### Real-time Updates
 - WebSocket connection per job for live progress
@@ -105,9 +184,14 @@ src/
 
 ### User Flow Requirements
 1. **Upload Phase**: Instant validation with visual feedback
-2. **Extraction Phase**: Real-time field population with sources
-3. **Analysis Phase**: Individual rule cards with evidence
-4. **Review Phase**: Summary of all decisions before report generation
+2. **OCR Processing**: Real-time page-by-page text extraction with progress
+3. **Field Extraction**: Business rule analysis with confidence scoring
+4. **Interactive Review**: Split-pane document analysis interface
+   - Click claim items to see source evidence
+   - Toggle between formatted text and raw PDF views  
+   - Edit/accept/reject extractions with full audit trail
+   - Visual highlighting of source data and reasoning
+5. **Report Generation**: Professional supplement with source references
 
 ### Accessibility
 - Proper ARIA labels for screen readers
@@ -151,14 +235,24 @@ src/
 
 ### Environment Variables
 ```
-ANTHROPIC_API_KEY=xxx
+# AI Services
+ANTHROPIC_API_KEY=xxx           # Claude for field analysis
+MISTRAL_API_KEY=xxx            # Mistral OCR for text extraction
+
+# Database & Infrastructure  
 DATABASE_URL=postgresql://...
 AUTH_SECRET=xxx
 AUTH_TRUST_HOST=true
+
+# Authentication
 GOOGLE_CLIENT_ID=xxx
 GOOGLE_CLIENT_SECRET=xxx
+
+# Communication
 EMAIL_FROM=noreply@yourdomain.com
 RESEND_API_KEY=xxx
+
+# Real-time Updates
 NEXT_PUBLIC_WS_URL=xxx
 ```
 See `USER-AUTH-GUIDANCE.md` for complete authentication environment setup.

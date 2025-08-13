@@ -1,0 +1,50 @@
+{
+  "model": "gpt-5-mini",
+  "provider": "openai",
+  "totalTests": 5,
+  "successfulTests": 0,
+  "averageTime": 0,
+  "totalCost": 0,
+  "results": [
+    {
+      "document": "Evans___Bob_NE_5916_estimate.pdf",
+      "timestamp": "2025-08-13T05:45:18.595Z",
+      "processingTime": 232,
+      "success": false,
+      "data": null,
+      "error": "400 Invalid MIME type. Only image types are supported."
+    },
+    {
+      "document": "Fritch__Jeanne_NE_5919_estimate.pdf",
+      "timestamp": "2025-08-13T05:45:26.567Z",
+      "processingTime": 6972,
+      "success": false,
+      "data": null,
+      "error": "400 Invalid MIME type. Only image types are supported."
+    },
+    {
+      "document": "Gerloff__Brian_estimate.pdf",
+      "timestamp": "2025-08-13T05:45:27.801Z",
+      "processingTime": 229,
+      "success": false,
+      "data": null,
+      "error": "400 Invalid MIME type. Only image types are supported."
+    },
+    {
+      "document": "Gutz__Charlie_NE_6033_estimate.pdf",
+      "timestamp": "2025-08-13T05:45:29.870Z",
+      "processingTime": 1068,
+      "success": false,
+      "data": null,
+      "error": "400 Invalid MIME type. Only image types are supported."
+    },
+    {
+      "document": "Hunt__Jamie_NE_6201_estimate.pdf",
+      "timestamp": "2025-08-13T05:45:32.081Z",
+      "processingTime": 1210,
+      "success": false,
+      "data": null,
+      "error": "400 Invalid MIME type. Only image types are supported."
+    }
+  ]
+}

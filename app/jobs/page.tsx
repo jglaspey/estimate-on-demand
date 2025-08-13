@@ -1,52 +1,102 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface Job {
+  id: string;
+  status: string;
+  fileName: string;
+  fileSize: number;
+  uploadedAt: string;
+  processedAt: string | null;
+  completedAt: string | null;
+  error: string | null;
+  documents: Array<{
+    id: string;
+    fileName: string;
+    pageCount: number;
+    status: string;
+  }>;
+  mistralExtractions: Array<{
+    id: string;
+    fieldsFound: number;
+    confidence: number;
+  }>;
+  sonnetAnalyses: Array<{
+    id: string;
+    overallAssessment: any;
+    accuracyScore: number;
+    completenessScore: number;
+  }>;
+  ruleAnalyses: Array<{
+    ruleType: string;
+    status: string;
+    passed: boolean;
+  }>;
+}
+
 export default function Jobs() {
-  const jobs = [
-    { 
-      id: 'JOB-001', 
-      property: 'Smith Residence', 
-      address: '123 Oak Street', 
-      status: 'Completed', 
-      value: '$3,250',
-      date: '2024-03-15',
-      carrier: 'State Farm'
-    },
-    { 
-      id: 'JOB-002', 
-      property: 'Johnson Property', 
-      address: '456 Pine Avenue', 
-      status: 'In Progress', 
-      value: '$2,150',
-      date: '2024-03-12',
-      carrier: 'Allstate'
-    },
-    { 
-      id: 'JOB-003', 
-      property: 'Williams House', 
-      address: '789 Maple Drive', 
-      status: 'Analysis', 
-      value: '$4,750',
-      date: '2024-03-10',
-      carrier: 'Progressive'
-    },
-    { 
-      id: 'JOB-004', 
-      property: 'Brown Estate', 
-      address: '321 Elm Court', 
-      status: 'Review', 
-      value: '$1,850',
-      date: '2024-03-08',
-      carrier: 'USAA'
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchJobs() {
+      try {
+        const response = await fetch('/api/jobs');
+        if (!response.ok) {
+          throw new Error('Failed to fetch jobs');
+        }
+        const data = await response.json();
+        setJobs(data.jobs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch jobs');
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+
+    fetchJobs();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed': return 'bg-green-100 text-green-800';
-      case 'In Progress': return 'bg-blue-100 text-blue-800';
-      case 'Analysis': return 'bg-yellow-100 text-yellow-800';
-      case 'Review': return 'bg-purple-100 text-purple-800';
+      case 'COMPLETED': return 'bg-green-100 text-green-800';
+      case 'EXTRACTING': return 'bg-blue-100 text-blue-800';
+      case 'ANALYZING': return 'bg-yellow-100 text-yellow-800';
+      case 'FAILED': return 'bg-red-100 text-red-800';
+      case 'PENDING': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
+        <div className="text-lg">Loading jobs...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
+        <div className="text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -98,25 +148,25 @@ export default function Jobs() {
               <thead className="bg-accent">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Job ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Property
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Address
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Carrier
+                    File Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Value
+                    File Size
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
-                    Date
+                    Documents
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
+                    Fields Found
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
+                    Confidence
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
+                    Uploaded
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-accent-foreground uppercase tracking-wider">
                     Actions
@@ -127,16 +177,12 @@ export default function Jobs() {
                 {jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-accent/50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-card-foreground">{job.id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-card-foreground">{job.property}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-muted-foreground">{job.address}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-card-foreground">{job.carrier}</div>
+                      <div className="text-sm font-medium text-card-foreground">{job.fileName}</div>
+                      {job.error && (
+                        <div className="text-xs text-red-500 mt-1 truncate max-w-48" title={job.error}>
+                          {job.error}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}>
@@ -144,10 +190,33 @@ export default function Jobs() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-card-foreground">{job.value}</div>
+                      <div className="text-sm text-muted-foreground">{formatFileSize(job.fileSize)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-muted-foreground">{job.date}</div>
+                      <div className="text-sm text-card-foreground">
+                        {job.documents.length} doc{job.documents.length !== 1 ? 's' : ''}
+                        {job.documents.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {job.documents.reduce((sum, doc) => sum + doc.pageCount, 0)} pages
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-card-foreground">
+                        {job.mistralExtractions.length > 0 ? `${job.mistralExtractions[0].fieldsFound}/5` : '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-card-foreground">
+                        {job.mistralExtractions.length > 0 
+                          ? `${Math.round(job.mistralExtractions[0].confidence * 100)}%` 
+                          : '-'
+                        }
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-muted-foreground">{formatDate(job.uploadedAt)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <a href={`/analysis/${job.id}`} className="text-primary hover:text-primary/90 mr-4">
@@ -167,7 +236,7 @@ export default function Jobs() {
         {/* Pagination */}
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing 1 to 4 of 24 results
+            Showing 1 to {jobs.length} of {jobs.length} results
           </div>
           <div className="flex gap-2">
             <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent">

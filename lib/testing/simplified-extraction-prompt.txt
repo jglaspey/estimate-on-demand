@@ -1,0 +1,40 @@
+Extract these specific values from this insurance roofing estimate. Return exact numbers and text as they appear in the document.
+
+CRITICAL: Look for exact matches of these patterns. Do not interpret or modify values.
+
+## REQUIRED ROOF MEASUREMENTS:
+- Total Area: Look for "Total Area", "Roof Area", or "Area Total" followed by number + "SF"
+- Squares: Total area ÷ 100, or look for "Squares:" or "SQ:"
+- Pitch: Look for slope ratios like "7/12", "5/12", or "Pitch:"
+- Stories: Look for "Stories:", "Story", count of building levels
+
+## REQUIRED MATERIALS:
+- Hip/Ridge Cap: Look for "Hip", "Ridge cap", quantities in LF
+- Starter Strip: Look for "Starter", "universal starter", quantities in LF  
+- Drip Edge: Look for "Drip Edge", "Eaves + Rakes", quantities in LF
+- Gutter Apron: Look for "Counterflashing", "Apron flashing", "Gutter apron"
+- Ice & Water Barrier: Look for "Ice & water", "Ice/Water Shield"
+
+## CRITICAL INSTRUCTIONS:
+1. Extract EXACT numbers as shown (keep all decimals)
+2. If a field is not found, return null (not 0 or empty string)
+3. For descriptions, capture the full line item text
+4. Do not add extra words or interpretations
+
+Return this JSON structure (null for missing fields):
+{
+  "totalArea": number|null,
+  "squares": number|null, 
+  "pitch": "string"|null,
+  "stories": number|null,
+  "hipRidgeCapQuantity": number|null,
+  "hipRidgeCapDescription": "string"|null,
+  "starterStripQuantity": number|null,
+  "starterStripDescription": "string"|null,
+  "dripEdgeQuantity": number|null,
+  "dripEdgeDescription": "string"|null,
+  "gutterApronQuantity": number|null,
+  "gutterApronDescription": "string"|null,
+  "iceWaterBarrierQuantity": number|null,
+  "iceWaterBarrierDescription": "string"|null
+}

@@ -1,0 +1,258 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Main job tracking - central entity for processing workflow
+model Job {
+  id          String   @id @default(cuid())
+  status      JobStatus @default(UPLOADED)
+  fileName    String
+  fileSize    Int
+  uploadedAt  DateTime @default(now())
+  processedAt DateTime?
+  completedAt DateTime?
+  error       String?
+
+  // File storage info
+  filePath    String?
+  fileHash    String?  @unique
+
+  // User tracking (for future auth integration)
+  userId      String?
+
+  // Relations
+  documents   Document[]
+  documentPages DocumentPage[]
+  mistralExtractions MistralExtraction[]
+  sonnetAnalyses SonnetAnalysis[]
+  ruleAnalyses RuleAnalysis[]
+
+  @@map("jobs")
+}
+
+// Document processing tracking
+model Document {
+  id         String   @id @default(cuid())
+  jobId      String
+  fileName   String
+  pageCount  Int?
+  status     DocumentStatus @default(UPLOADED)
+  processedAt DateTime?
+  error      String?
+
+  // File metadata
+  filePath   String?
+  fileSize   Int?
+  mimeType   String?
+
+  // Relations
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  pages      DocumentPage[]
+
+  @@map("documents")
+}
+
+// Full-text storage for each document page  
+model DocumentPage {
+  id           String   @id @default(cuid())
+  documentId   String
+  jobId        String
+  pageNumber   Int      // 1-based page numbering
+  
+  // Full-text content extracted from this page
+  fullText     String   // Complete text content
+  wordCount    Int      @default(0)
+  
+  // Processing metadata
+  extractedAt  DateTime @default(now())
+  extractionMethod String @default("pdf-parse") // pdf-parse, ocr, manual, etc.
+  confidence   Float?   // confidence score for extraction quality
+  
+  // Page dimensions and metadata for UI display
+  width        Int?     // page width in points
+  height       Int?     // page height in points
+  imageCount   Int      @default(0) // number of images on this page
+  
+  // Relations
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@index([jobId, pageNumber])
+  @@map("document_pages")
+}
+
+// Mistral extraction results - handles both text and image PDFs
+model MistralExtraction {
+  id          String   @id @default(cuid())
+  jobId       String
+  
+  // Mistral processing info
+  mistralModel String   @default("mistral-large-latest") // Track Mistral model version
+  inputType    String   // "text-pdf", "image-pdf", "mixed"
+  
+  // Processing metrics
+  processingTime Int    // milliseconds
+  tokenUsage     Json   // { input: number, output: number }
+  cost          Float  @default(0.0)
+  success       Boolean @default(true)
+  error         String?
+
+  // Raw Mistral extraction results - minimal processing
+  rawExtraction  Json   // Complete JSON response from Mistral
+  
+  // Structured business data extracted by Mistral
+  hipRidgeCap    Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
+  starterStrip   Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
+  dripEdge       Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
+  gutterApron    Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
+  iceWaterBarrier Json? // { found: boolean, coverage?: number, description?: string, sourcePageNumber?: number }
+
+  // Mistral confidence and metadata
+  confidence     Float  @default(0.0) // Mistral's confidence in extraction
+  fieldsFound    Int    @default(0)   // Count of business rule fields found
+  
+  extractedAt DateTime @default(now())
+
+  // Relations
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  analyses   SonnetAnalysis[] // Sonnet analyses of this extraction
+
+  @@index([jobId, extractedAt])
+  @@map("mistral_extractions")
+}
+
+// Sonnet 4 analysis of Mistral extractions
+model SonnetAnalysis {
+  id                 String   @id @default(cuid())
+  jobId              String
+  mistralExtractionId String
+  
+  // Sonnet processing info
+  sonnetModel        String   @default("claude-sonnet-4") // Track Sonnet model version
+  analysisType       AnalysisType @default(BUSINESS_RULES) // BUSINESS_RULES, COMPLIANCE, SUPPLEMENT
+  
+  // Processing metrics
+  processingTime     Int    // milliseconds
+  tokenUsage         Json   // { input: number, output: number }
+  cost              Float  @default(0.0)
+  success           Boolean @default(true)
+  error             String?
+
+  // Analysis results
+  overallAssessment  Json   // Sonnet's overall analysis of the extraction quality
+  businessRuleEvaluations Json // Detailed evaluation of each business rule
+  complianceFindings Json   // Compliance assessment results
+  supplementRecommendations Json? // Supplement recommendations if applicable
+  
+  // Quality scores from Sonnet
+  accuracyScore     Float  @default(0.0) // Sonnet's assessment of Mistral accuracy
+  completenessScore Float  @default(0.0) // How complete the extraction is
+  confidenceScore   Float  @default(0.0) // Sonnet's confidence in the analysis
+  
+  analyzedAt        DateTime @default(now())
+
+  // Relations
+  job              Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  mistralExtraction MistralExtraction @relation(fields: [mistralExtractionId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, analyzedAt])
+  @@index([mistralExtractionId])
+  @@map("sonnet_analyses")
+}
+
+// Business rule analysis results
+model RuleAnalysis {
+  id        String   @id @default(cuid())
+  jobId     String
+  ruleType  RuleType
+  
+  // Analysis results
+  status    RuleStatus @default(PENDING)
+  passed    Boolean?
+  confidence Float?    // 0-1 confidence score
+  
+  // Supporting data
+  findings  Json      // Specific findings and evidence
+  recommendation String?
+  reasoning  String?
+  
+  // User decisions
+  userDecision UserDecision @default(PENDING)
+  userNotes    String?
+  editedValues Json?     // User-modified values
+  
+  // Processing info
+  analyzedAt DateTime?
+  decidedAt  DateTime?
+  
+  // Relations
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("rule_analyses")
+}
+
+// Job processing status
+enum JobStatus {
+  UPLOADED      // File received
+  EXTRACTING    // LLM processing in progress
+  ANALYZING     // Business rules analysis
+  REVIEWING     // User review phase
+  GENERATING    // Report generation
+  COMPLETED     // Process finished
+  FAILED        // Processing failed
+  CANCELLED     // User cancelled
+}
+
+// Document processing status  
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Sonnet analysis types
+enum AnalysisType {
+  BUSINESS_RULES    // Analyze business rule compliance
+  COMPLIANCE       // General compliance assessment
+  SUPPLEMENT       // Supplement recommendation analysis
+  QUALITY_CHECK    // Quality assessment of Mistral extraction
+}
+
+// Business rule types
+enum RuleType {
+  HIP_RIDGE_CAP      // Rule 1: Purpose-built vs cut 3-tab
+  STARTER_STRIP      // Rule 2: Universal vs cut shingles
+  DRIP_EDGE         // Rule 3: Rake protection
+  GUTTER_APRON      // Rule 4: Eave protection  
+  ICE_WATER_BARRIER // Rule 5: Code compliance calculation
+}
+
+// Rule analysis status
+enum RuleStatus {
+  PENDING    // Not yet analyzed
+  ANALYZING  // Analysis in progress
+  PASSED     // Rule requirements met
+  FAILED     // Rule requirements not met
+  WARNING    // Potential issues found
+  MANUAL     // Requires manual review
+}
+
+// User decision on recommendations
+enum UserDecision {
+  PENDING   // No decision yet
+  ACCEPTED  // User accepted recommendation
+  MODIFIED  // User modified recommendation
+  REJECTED  // User rejected recommendation
+  MANUAL    // User provided manual input
+}

@@ -1,0 +1,205 @@
+{
+  "model": "claude-haiku-3.5",
+  "provider": "anthropic",
+  "totalTests": 5,
+  "successfulTests": 5,
+  "averageTime": 7878.4,
+  "totalCost": 0.1122456,
+  "results": [
+    {
+      "document": "Evans___Bob_NE_5916_estimate.pdf",
+      "timestamp": "2025-08-13T05:44:23.551Z",
+      "processingTime": 7639,
+      "success": true,
+      "data": {
+        "hipRidgeCap": {
+          "found": true,
+          "quantity": 104.25,
+          "description": "Standard profile - composition shingles",
+          "quality": "purpose-built"
+        },
+        "starterStrip": {
+          "found": true,
+          "quantity": 101.91,
+          "description": "Universal starter course",
+          "type": "universal"
+        },
+        "dripEdge": {
+          "found": true,
+          "quantity": 324.99,
+          "description": null,
+          "location": "rakes"
+        },
+        "gutterApron": {
+          "found": true,
+          "quantity": 37,
+          "description": "Apron flashing",
+          "location": "eaves"
+        },
+        "iceWaterBarrier": {
+          "found": true,
+          "coverage": 389.63,
+          "description": null,
+          "calculation": "SF"
+        }
+      },
+      "cost": 0.028388
+    },
+    {
+      "document": "Fritch__Jeanne_NE_5919_estimate.pdf",
+      "timestamp": "2025-08-13T05:44:33.935Z",
+      "processingTime": 9383,
+      "success": true,
+      "data": {
+        "hipRidgeCap": {
+          "found": true,
+          "quantity": 81.27,
+          "description": "ridge/hip shingles, nails, installation labor, and sales tax",
+          "quality": "purpose-built"
+        },
+        "starterStrip": {
+          "found": true,
+          "quantity": 94.36,
+          "description": "self adhesive starter roll, installation labor, and sales tax",
+          "type": "universal"
+        },
+        "dripEdge": {
+          "found": true,
+          "quantity": 260.75,
+          "description": "Aluminum - Pre-Finish Color",
+          "location": "rakes"
+        },
+        "gutterApron": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "iceWaterBarrier": {
+          "found": true,
+          "coverage": 89.87,
+          "description": "2 course allowance for 2'+ overhang",
+          "calculation": "0.06 SQ per LF"
+        }
+      },
+      "cost": 0.0173392
+    },
+    {
+      "document": "Gerloff__Brian_estimate.pdf",
+      "timestamp": "2025-08-13T05:44:39.045Z",
+      "processingTime": 4108,
+      "success": true,
+      "data": {
+        "hipRidgeCap": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "quality": null
+        },
+        "starterStrip": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "type": null
+        },
+        "dripEdge": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "gutterApron": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "iceWaterBarrier": {
+          "found": false,
+          "coverage": null,
+          "description": null,
+          "calculation": null
+        }
+      },
+      "cost": 0.011126400000000002
+    },
+    {
+      "document": "Gutz__Charlie_NE_6033_estimate.pdf",
+      "timestamp": "2025-08-13T05:44:47.125Z",
+      "processingTime": 7078,
+      "success": true,
+      "data": {
+        "hipRidgeCap": {
+          "found": true,
+          "quantity": 80,
+          "description": "Standard profile - composition shingles",
+          "quality": "purpose-built"
+        },
+        "starterStrip": {
+          "found": true,
+          "quantity": 194,
+          "description": "Universal starter course",
+          "type": "universal"
+        },
+        "dripEdge": {
+          "found": true,
+          "quantity": 394,
+          "description": null,
+          "location": "rakes"
+        },
+        "gutterApron": {
+          "found": null,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "iceWaterBarrier": {
+          "found": true,
+          "coverage": 1165.12,
+          "description": null,
+          "calculation": "SF"
+        }
+      },
+      "cost": 0.02014
+    },
+    {
+      "document": "Hunt__Jamie_NE_6201_estimate.pdf",
+      "timestamp": "2025-08-13T05:44:59.311Z",
+      "processingTime": 11184,
+      "success": true,
+      "data": {
+        "hipRidgeCap": {
+          "found": true,
+          "quantity": 18.5,
+          "description": "Standard profile - composition shingles",
+          "quality": "purpose-built"
+        },
+        "starterStrip": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "type": null
+        },
+        "dripEdge": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "gutterApron": {
+          "found": false,
+          "quantity": null,
+          "description": null,
+          "location": null
+        },
+        "iceWaterBarrier": {
+          "found": false,
+          "coverage": null,
+          "description": null,
+          "calculation": null
+        }
+      },
+      "cost": 0.035252
+    }
+  ]
+}
