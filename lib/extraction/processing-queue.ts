@@ -4,7 +4,8 @@ import {
   type JobProgressEvent,
 } from '@/lib/websocket/socket-handler';
 
-import { mistralService } from './mistral-service';
+// import { mistralService } from './mistral-service'; // Not currently used in dual-phase workflow
+import { smartExtractionService } from './smart-extraction-service';
 
 export interface ProcessingJob {
   jobId: string;
@@ -94,10 +95,12 @@ export class DocumentProcessingQueue {
   }
 
   /**
-   * Process a single job
+   * Process a single job using NEW dual-phase approach
    */
   private async processJob(job: ProcessingJob): Promise<void> {
-    console.log(`Processing job ${job.jobId}, attempt ${job.attempts + 1}`);
+    console.log(
+      `🚀 Starting dual-phase processing for job ${job.jobId}, attempt ${job.attempts + 1}`
+    );
 
     try {
       // Mark as processing
@@ -112,55 +115,47 @@ export class DocumentProcessingQueue {
         },
       });
 
-      // Emit WebSocket event
       this.emitJobProgress(
         job.jobId,
         'PROCESSING',
-        'processing',
-        40,
-        'Extracting text and data from document...'
+        'phase1_starting',
+        20,
+        'Starting fast core info extraction...'
       );
 
-      // Process with Mistral OCR service - handle multiple documents
-      const extractedData = await mistralService.processDocuments(
+      // ⚡ PHASE 1: Lightning-fast core info extraction (30-60 seconds)
+      console.log(`⚡ PHASE 1: Fast core extraction for job ${job.jobId}`);
+      const coreInfo = await smartExtractionService.extractCoreInfoFast(
         job.filePaths,
         job.jobId
       );
 
-      // Mark as completed
+      console.log(`✅ PHASE 1 complete for job ${job.jobId}:`, coreInfo);
+
+      // 🔄 PHASE 2: Full document extraction (parallel, in background)
+      // This runs in parallel and doesn't block the user
+      console.log(
+        `🔄 PHASE 2: Starting background full extraction for job ${job.jobId}`
+      );
+
+      // Don't await this - let it run in background
+      smartExtractionService
+        .extractFullDocumentData(job.filePaths, job.jobId)
+        .then(() => {
+          console.log(`✅ PHASE 2 complete for job ${job.jobId}`);
+          // Phase 2 emits its own progress events and updates job status
+        })
+        .catch(error => {
+          console.error(`❌ PHASE 2 failed for job ${job.jobId}:`, error);
+        });
+
+      // Mark phase 1 as completed - user can see data immediately
       job.status = 'completed';
       this.processingQueue.delete(job.jobId);
 
-      await prisma.job.update({
-        where: { id: job.jobId },
-        data: {
-          status: 'ANALYSIS_READY',
-          updatedAt: new Date(),
-        },
-      });
-
-      // Emit completion WebSocket event
-      const extractedSummary = {
-        documentType: extractedData.classification?.type,
-        hasCustomer: !!extractedData.customerInfo,
-        hasClaim: !!extractedData.claimInfo,
-        hasRoofing: !!extractedData.roofingData,
-        lineItemCount: extractedData.lineItems?.length || 0,
-      };
-
-      this.emitJobProgress(
-        job.jobId,
-        'ANALYSIS_READY',
-        'completed',
-        100,
-        'Document processing complete',
-        extractedSummary
+      console.log(
+        `✅ Job ${job.jobId} ready for user review (Phase 2 continuing in background)`
       );
-
-      console.log(`Successfully processed job ${job.jobId}`);
-
-      // Trigger business rule analysis
-      await this.triggerBusinessRuleAnalysis(job.jobId, extractedData);
     } catch (error) {
       console.error(`Job ${job.jobId} processing failed:`, error);
 
