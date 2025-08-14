@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/database/client';
 
 export async function GET(
@@ -7,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { jobId } = await params;
-    
+
     // Get job from database
     const job = await prisma.job.findUnique({
       where: { id: jobId },
@@ -15,8 +16,8 @@ export async function GET(
         mistralExtractions: {
           orderBy: { extractedAt: 'desc' },
           take: 1,
-        }
-      }
+        },
+      },
     });
 
     if (!job) {
@@ -25,59 +26,59 @@ export async function GET(
 
     // Queue status would go here when processing queue is working
     const queueStatus = null;
-    
+
     // Determine processing stage and progress
     let stage = 'uploaded';
     let progress = 0;
     let message = 'Document uploaded successfully';
-    
+
     switch (job.status) {
       case 'UPLOADED':
         stage = 'uploaded';
         progress = 10;
         message = 'Document uploaded successfully';
         break;
-        
+
       case 'QUEUED':
         stage = 'queued';
         progress = 20;
         message = 'Document queued for processing';
         break;
-        
+
       case 'PROCESSING':
         stage = 'processing';
         progress = 40;
         message = 'Extracting text and data from document...';
         break;
-        
+
       case 'TEXT_EXTRACTED':
         stage = 'extracted';
         progress = 70;
         message = 'Text extraction complete, analyzing business rules...';
         break;
-        
+
       case 'ANALYSIS_READY':
         stage = 'ready';
         progress = 100;
         message = 'Processing complete - ready for review';
         break;
-        
+
       case 'FAILED':
         stage = 'failed';
         progress = 0;
         message = 'Processing failed';
         break;
-        
+
       default:
         stage = 'unknown';
         progress = 0;
         message = `Status: ${job.status}`;
     }
-    
+
     // Include extracted data summary if available
     const extraction = job.mistralExtractions[0];
     let extractedSummary = null;
-    
+
     if (extraction) {
       const data = extraction.extractedData as any;
       extractedSummary = {
@@ -85,7 +86,7 @@ export async function GET(
         confidence: extraction.confidence,
         customerFound: !!extraction.customerName,
         claimFound: !!extraction.claimNumber,
-        fieldsExtracted: data ? Object.keys(data).length : 0
+        fieldsExtracted: data ? Object.keys(data).length : 0,
       };
     }
 
@@ -95,10 +96,13 @@ export async function GET(
       stage,
       progress,
       message,
-      queueInfo: queueStatus ? {
-        attempts: queueStatus.attempts,
-        lastError: queueStatus.lastError
-      } : null,
+      lastError: job.error || null,
+      queueInfo: queueStatus
+        ? {
+            attempts: queueStatus.attempts,
+            lastError: queueStatus.lastError,
+          }
+        : null,
       extractedSummary,
       // Add fields that the progress hook expects
       customerName: job.customerName,
@@ -110,11 +114,11 @@ export async function GET(
       estimator: job.estimator,
       originalEstimate: job.originalEstimate,
       updatedAt: job.updatedAt,
-      processingTime: extraction ? 
-        (new Date(extraction.extractedAt).getTime() - new Date(job.uploadedAt).getTime()) : 
-        null
+      processingTime: extraction
+        ? new Date(extraction.extractedAt).getTime() -
+          new Date(job.uploadedAt).getTime()
+        : null,
     });
-
   } catch (error) {
     console.error('Error fetching job status:', error);
     return NextResponse.json(

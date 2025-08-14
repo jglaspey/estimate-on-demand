@@ -62,15 +62,117 @@
         "id": 2,
         "title": "Document Upload Interface Implementation",
         "description": "Create a drag-and-drop file upload interface with visual feedback, document previews, and validation as specified in US-001 through US-005.",
-        "details": "1. Implement UploadInterface component with drag-and-drop functionality\n2. Create visual states: Default, Hover, Uploading, Success, Error\n3. Add file type validation for PDFs with clear error messages\n4. Implement multi-file upload support with individual progress tracking\n5. Create document thumbnail previews with file type badges\n6. Add file size validation (10MB limit)\n7. Implement WebSocket connection for real-time upload progress\n8. Create error handling with recovery instructions\n9. Store uploaded files in the file system with organized structure\n10. Implement basic malware scanning for security",
-        "testStrategy": "1. Test drag-and-drop functionality across supported browsers\n2. Verify all visual states render correctly\n3. Test file validation with valid and invalid file types\n4. Confirm multi-file upload works with progress indicators\n5. Test error handling with corrupted PDFs\n6. Validate file size restrictions\n7. Test upload performance with files approaching size limits",
-        "priority": "high",
+        "status": "in-progress",
         "dependencies": [
           1,
           "11"
         ],
-        "status": "in-progress",
+        "priority": "high",
+        "details": "1. Implement UploadInterface component with drag-and-drop functionality\n2. Create visual states: Default, Hover, Uploading, Success, Error\n3. Add file type validation for PDFs with clear error messages\n4. Implement multi-file upload support with individual progress tracking\n5. Create document thumbnail previews with file type badges\n6. Add file size validation (10MB limit)\n7. Implement API polling for real-time upload progress\n8. Create error handling with recovery instructions\n9. Store uploaded files in the database with organized structure\n10. Integrate with Mistral OCR API for document text extraction\n11. Implement data extraction for customer details, claim information, addresses, and carrier info\n12. Add database storage for extracted fields with proper validation\n13. Implement two-phase processing: Quick priority fields → Full document extraction\n14. Set up hybrid extraction strategy (Mistral OCR + Claude SDK ready)\n15. Implement proper error handling with retry logic and exponential backoff",
+        "testStrategy": "1. Test drag-and-drop functionality across supported browsers\n2. Verify all visual states render correctly\n3. Test file validation with valid and invalid file types\n4. Confirm multi-file upload works with progress indicators\n5. Test error handling with corrupted PDFs\n6. Validate file size restrictions\n7. Test upload performance with files approaching size limits\n8. Verify OCR extraction accuracy for different document formats\n9. Test database integration with extracted field validation\n10. Validate end-to-end flow from upload to database storage\n11. Test two-phase processing with priority field extraction\n12. Verify extraction of specific fields (customer addresses, claim numbers, carrier info, etc.)\n13. Test retry logic and exponential backoff for error handling",
         "subtasks": [
+          {
+            "id": 4,
+            "title": "Error Handling and Recovery",
+            "description": "Implement comprehensive error handling with user recovery options for various failure scenarios.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create error handling system for upload failures\n2. Implement retry functionality for failed uploads\n3. Add clear recovery instructions for common errors\n4. Create error logging for debugging purposes\n5. Implement graceful degradation for unsupported browsers\n6. Enhance Mistral OCR API integration with robust error handling",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Core Drag-and-Drop Upload Interface",
+            "description": "Implement the foundational drag-and-drop file upload interface with basic visual states and component structure.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create UploadInterface React component with drag-and-drop functionality\n2. Implement visual states: Default, Hover, Uploading, Success, Error\n3. Design responsive layout for the upload area\n4. Add file selection via traditional button as alternative to drag-and-drop\n5. Implement basic file selection handling\n<info added on 2025-08-14T00:22:32.783Z>\n6. Implement \"Create New Job\" page with the following elements:\n   - Header with skeleton placeholder for job title and address\n   - Three information cards (Insurance Details, Claim Information, Analysis Status) with skeleton loading states\n   - Large central drop zone with text \"Drop your estimate and roof report here to start a new job\"\n   - Right sidebar with skeleton states for the chat/questions area\n   - Pulsing gray animation for all skeleton elements\n   - Transition functionality from landing page to real-time progress tracking upon document processing\n</info added on 2025-08-14T00:22:32.783Z>\n<info added on 2025-08-14T00:25:52.062Z>\nSuccessfully implemented CreateNewJob page with all requested features:\n\n- Complete page layout matching job detail design\n- Skeleton loading states with pulsing animation for all UI elements\n- Large central drop zone with exact requested text\n- Drag-and-drop functionality with visual feedback\n- File validation (PDF only, 10MB limit)\n- Upload progress tracking with spinner and progress bar\n- Error handling with user-friendly messages\n- API integration ready for /api/upload endpoint\n- Automatic redirect to analysis page after upload\n\nThe page serves as the \"before\" state that transforms into real-time progress tracking. All skeleton elements will populate with actual data as OCR and business rule analysis complete, providing users with a transparent workflow experience.\n</info added on 2025-08-14T00:25:52.062Z>",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Two-Phase Document Processing Implementation",
+            "description": "Implement the two-phase document processing system with quick priority field extraction followed by full document analysis.",
+            "status": "done",
+            "dependencies": [
+              7
+            ],
+            "details": "1. Design and implement two-phase processing architecture\n2. Create priority field extraction system for < 30 second response time\n3. Implement full document extraction as second phase\n4. Set up proper database schema for storing extraction results\n5. Implement progress tracking between phases\n6. Create API endpoints for checking extraction status\n7. Add proper error handling between phases",
+            "testStrategy": "1. Test priority field extraction speed and accuracy\n2. Verify full document extraction completeness\n3. Test database storage of extraction results\n4. Validate progress tracking between phases\n5. Test error handling and recovery between phases"
+          },
+          {
+            "id": 10,
+            "title": "Hybrid Extraction Strategy",
+            "description": "Implement hybrid extraction strategy using Mistral OCR with Claude SDK integration readiness.",
+            "status": "done",
+            "dependencies": [
+              7,
+              9
+            ],
+            "details": "1. Implement Mistral OCR as primary extraction engine\n2. Set up architecture for Claude SDK integration\n3. Create abstraction layer for switching between extraction engines\n4. Implement field mapping for different extraction sources\n5. Add validation and normalization for extracted data\n6. Create confidence scoring system for extracted fields",
+            "testStrategy": "1. Test Mistral OCR extraction accuracy\n2. Verify abstraction layer functionality\n3. Test field mapping with sample documents\n4. Validate data normalization across extraction sources"
+          },
+          {
+            "id": 11,
+            "title": "Advanced Error Handling with Retry Logic",
+            "description": "Implement robust error handling with retry logic and exponential backoff for extraction failures.",
+            "status": "done",
+            "dependencies": [
+              5,
+              7
+            ],
+            "details": "1. Implement retry logic for OCR API failures\n2. Create exponential backoff strategy for retries\n3. Add comprehensive error logging and reporting\n4. Implement user-friendly error messages\n5. Create recovery paths for different failure scenarios\n6. Add monitoring for extraction success rates",
+            "testStrategy": "1. Test retry logic with simulated API failures\n2. Verify exponential backoff implementation\n3. Test error reporting and logging\n4. Validate user-facing error messages\n5. Test recovery paths for different failure scenarios"
+          },
+          {
+            "id": 2,
+            "title": "File Validation System",
+            "description": "Implement comprehensive file validation including type checking, size limits, and user feedback.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create file type validation for PDFs with clear error messages\n2. Implement file size validation with 10MB limit\n3. Add validation for file names and potential duplicates\n4. Create user-friendly error messages for validation failures\n5. Implement client-side validation before upload begins\n6. Add type validation for extracted data (string → float parsing for originalEstimate)\n7. Implement null-safety checks for lineItems iteration",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Real-time Upload Progress Tracking",
+            "description": "Implement API polling and progress indicators for real-time upload status feedback.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Set up API polling for real-time upload progress\n2. Create individual progress tracking for multiple files\n3. Implement progress bar UI components\n4. Add upload speed and time remaining indicators\n5. Handle connection interruptions gracefully\n6. Implement comprehensive status tracking and error reporting\n7. Add real-time status updates via API polling",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Error Handling and Recovery",
+            "description": "Implement comprehensive error handling with user recovery options for various failure scenarios.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create error handling system for upload failures\n2. Implement retry functionality for failed uploads\n3. Add clear recovery instructions for common errors\n4. Create error logging for debugging purposes\n5. Implement graceful degradation for unsupported browsers\n6. Enhance Mistral OCR API integration with robust error handling",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "File Storage and Security Features",
+            "description": "Implement secure file storage with organized structure and basic security scanning.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create organized file system structure for uploaded documents\n2. Implement basic malware scanning for security\n3. Add file encryption for sensitive documents\n4. Create secure file naming convention to prevent exploits\n5. Implement file cleanup for abandoned uploads\n6. Fix PostgreSQL connection issues (port conflict with Homebrew instance)\n7. Implement proper upsert logic for document pages to prevent duplicates",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "OCR Integration and Data Extraction",
+            "description": "Implement integration with Mistral OCR API and extract key data from uploaded documents.",
+            "status": "done",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "1. Integrate with Mistral OCR API for document text extraction\n2. Implement extraction of customer details (name, address)\n3. Extract claim information (claim number, date)\n4. Extract carrier information and claim representative details\n5. Add validation and formatting for extracted data\n6. Implement database storage for extracted fields\n7. Create error handling for OCR failures",
+            "testStrategy": "1. Test OCR extraction with various PDF formats\n2. Verify accuracy of extracted customer details\n3. Test claim information extraction\n4. Validate carrier information extraction\n5. Test error handling with malformed documents"
+          },
           {
             "id": 1,
             "title": "Core Drag-and-Drop Upload Interface",
@@ -78,51 +180,6 @@
             "dependencies": [],
             "details": "1. Create UploadInterface React component with drag-and-drop functionality\n2. Implement visual states: Default, Hover, Uploading, Success, Error\n3. Design responsive layout for the upload area\n4. Add file selection via traditional button as alternative to drag-and-drop\n5. Implement basic file selection handling\n<info added on 2025-08-14T00:22:32.783Z>\n6. Implement \"Create New Job\" page with the following elements:\n   - Header with skeleton placeholder for job title and address\n   - Three information cards (Insurance Details, Claim Information, Analysis Status) with skeleton loading states\n   - Large central drop zone with text \"Drop your estimate and roof report here to start a new job\"\n   - Right sidebar with skeleton states for the chat/questions area\n   - Pulsing gray animation for all skeleton elements\n   - Transition functionality from landing page to real-time progress tracking upon document processing\n</info added on 2025-08-14T00:22:32.783Z>\n<info added on 2025-08-14T00:25:52.062Z>\nSuccessfully implemented CreateNewJob page with all requested features:\n\n- Complete page layout matching job detail design\n- Skeleton loading states with pulsing animation for all UI elements\n- Large central drop zone with exact requested text\n- Drag-and-drop functionality with visual feedback\n- File validation (PDF only, 10MB limit)\n- Upload progress tracking with spinner and progress bar\n- Error handling with user-friendly messages\n- API integration ready for /api/upload endpoint\n- Automatic redirect to analysis page after upload\n\nThe page serves as the \"before\" state that transforms into real-time progress tracking. All skeleton elements will populate with actual data as OCR and business rule analysis complete, providing users with a transparent workflow experience.\n</info added on 2025-08-14T00:25:52.062Z>",
             "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "File Validation System",
-            "description": "Implement comprehensive file validation including type checking, size limits, and user feedback.",
-            "dependencies": [],
-            "details": "1. Create file type validation for PDFs with clear error messages\n2. Implement file size validation with 10MB limit\n3. Add validation for file names and potential duplicates\n4. Create user-friendly error messages for validation failures\n5. Implement client-side validation before upload begins",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Real-time Upload Progress Tracking",
-            "description": "Implement WebSocket connection and progress indicators for real-time upload status feedback.",
-            "dependencies": [],
-            "details": "1. Set up WebSocket connection for real-time upload progress\n2. Create individual progress tracking for multiple files\n3. Implement progress bar UI components\n4. Add upload speed and time remaining indicators\n5. Handle connection interruptions gracefully",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Document Preview Generation",
-            "description": "Create thumbnail previews for uploaded documents with file information and type indicators.",
-            "dependencies": [],
-            "details": "1. Implement document thumbnail preview generation\n2. Create file type badges for visual identification\n3. Add file metadata display (size, upload date, type)\n4. Implement preview loading states\n5. Create fallback preview for unsupported file types",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Error Handling and Recovery",
-            "description": "Implement comprehensive error handling with user recovery options for various failure scenarios.",
-            "dependencies": [],
-            "details": "1. Create error handling system for upload failures\n2. Implement retry functionality for failed uploads\n3. Add clear recovery instructions for common errors\n4. Create error logging for debugging purposes\n5. Implement graceful degradation for unsupported browsers",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "File Storage and Security Features",
-            "description": "Implement secure file storage with organized structure and basic security scanning.",
-            "dependencies": [],
-            "details": "1. Create organized file system structure for uploaded documents\n2. Implement basic malware scanning for security\n3. Add file encryption for sensitive documents\n4. Create secure file naming convention to prevent exploits\n5. Implement file cleanup for abandoned uploads",
-            "status": "pending",
             "testStrategy": ""
           }
         ]
