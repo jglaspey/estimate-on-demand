@@ -296,25 +296,25 @@ export function OverviewPage({
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Total Area</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.totalArea ? `${roofMeasurements.totalArea} SF` : 'not extracted'}
+                    {roofMeasurements.totalArea ? `${roofMeasurements.totalArea} SF` : '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Squares</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.totalSquares || 'not extracted'}
+                    {roofMeasurements.totalSquares || '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Pitch</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.pitch || 'not extracted'}
+                    {roofMeasurements.pitch || '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Stories</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.stories || 'not extracted'}
+                    {roofMeasurements.stories || '**'}
                   </div>
                 </div>
                 
@@ -322,25 +322,25 @@ export function OverviewPage({
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Eaves</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.eavesLength ? `${roofMeasurements.eavesLength} LF` : 'not extracted'}
+                    {roofMeasurements.eavesLength ? `${roofMeasurements.eavesLength} LF` : '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Rakes</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.rakesLength ? `${roofMeasurements.rakesLength} LF` : 'not extracted'}
+                    {roofMeasurements.rakesLength ? `${roofMeasurements.rakesLength} LF` : '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Ridges</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.ridgesLength ? `${roofMeasurements.ridgesLength} LF` : 'not extracted'}
+                    {roofMeasurements.ridgesLength ? `${roofMeasurements.ridgesLength} LF` : '**'}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Valleys</div>
                   <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {roofMeasurements.valleysLength ? `${roofMeasurements.valleysLength} LF` : 'not extracted'}
+                    {roofMeasurements.valleysLength ? `${roofMeasurements.valleysLength} LF` : '**'}
                   </div>
                 </div>
               </div>

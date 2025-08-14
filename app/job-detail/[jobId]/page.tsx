@@ -104,9 +104,15 @@ export default function JobDetailPage() {
         setLoading(true);
 
         // Fetch job data
+        console.log('Fetching job with ID:', jobId);
         const jobResponse = await fetch(`/api/jobs/${jobId}`);
+        console.log('Job response status:', jobResponse.status);
         if (!jobResponse.ok) {
-          throw new Error('Failed to fetch job data');
+          const errorText = await jobResponse.text();
+          console.error('API Error:', errorText);
+          throw new Error(
+            `Failed to fetch job data: ${jobResponse.status} - ${errorText}`
+          );
         }
         const response = await jobResponse.json();
         const job = response.job; // Extract job from API response
@@ -131,20 +137,27 @@ export default function JobDetailPage() {
 
         setJobData(transformedJob);
 
-        // Extract roof measurements from job data if available
-        if (job.roofSquares || job.eaveLength || job.rakeLength) {
-          const measurements: RoofMeasurements = {
-            totalArea: job.roofSquares ? job.roofSquares * 100 : undefined,
-            totalSquares: job.roofSquares,
-            pitch: job.roofSlope,
-            stories: job.roofStories,
-            eavesLength: job.eaveLength,
-            rakesLength: job.rakeLength,
-            ridgesLength: job.ridgeHipLength,
-            valleysLength: job.valleyLength,
-          };
-          setRoofMeasurements(measurements);
-        }
+        // Extract roof measurements from job data - match OverviewPage field names
+        const measurements: RoofMeasurements = {
+          totalArea: job.roofSquares ? job.roofSquares * 100 : undefined,
+          totalSquares: job.roofSquares || undefined,
+          pitch: job.roofSlope || undefined,
+          stories: job.roofStories || undefined,
+          eavesLength: job.eaveLength || undefined,
+          rakesLength: job.rakeLength || undefined,
+          ridgesLength: job.ridgeHipLength || undefined,
+          valleysLength: job.valleyLength || undefined,
+          // Include the additional fields for compatibility but set to undefined
+          totalRoofArea: job.roofSquares ? job.roofSquares * 100 : undefined,
+          numberOfSquares: job.roofSquares || undefined,
+          predominantPitch: job.roofSlope || undefined,
+          numberOfStories: job.roofStories || undefined,
+          totalEaves: job.eaveLength || undefined,
+          totalRakes: job.rakeLength || undefined,
+          totalRidges: job.ridgeHipLength || undefined,
+          totalValleys: job.valleyLength || undefined,
+        };
+        setRoofMeasurements(measurements);
 
         // Mock business rule analysis based on real extraction data
         const mockRuleAnalysis: RuleAnalysisResult[] = [
