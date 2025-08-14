@@ -83,7 +83,7 @@ export function JobsDashboard({
   return (
     <div className='min-h-screen bg-zinc-50 dark:bg-zinc-950'>
       {/* Header */}
-      <header className='bg-white border-b border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
+      <header className='sticky top-0 z-40 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-zinc-200 dark:bg-zinc-950/95 dark:border-zinc-800'>
         <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <div className='flex items-center gap-4'>
@@ -197,7 +197,7 @@ export function JobsDashboard({
           <Table>
             <TableHeader>
               <TableRow className='hover:bg-transparent'>
-                <TableHead className='w-[250px] font-medium text-zinc-700 dark:text-zinc-300'>
+                <TableHead className='w-[250px] font-medium text-zinc-700 dark:text-zinc-300 pl-6'>
                   Customer
                 </TableHead>
                 <TableHead className='font-medium text-zinc-700 dark:text-zinc-300'>
@@ -205,9 +205,6 @@ export function JobsDashboard({
                 </TableHead>
                 <TableHead className='font-medium text-zinc-700 dark:text-zinc-300'>
                   Insurance Carrier
-                </TableHead>
-                <TableHead className='text-center font-medium text-zinc-700 dark:text-zinc-300'>
-                  Supplements
                 </TableHead>
                 <TableHead className='text-center font-medium text-zinc-700 dark:text-zinc-300'>
                   Status
@@ -227,30 +224,21 @@ export function JobsDashboard({
                   className='cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
                   onClick={() => onJobSelect(job.id)}
                 >
-                  <TableCell className='py-4'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30'>
-                        <span className='text-sm font-medium text-blue-600 dark:text-blue-400'>
-                          {job.customerName
-                            .split(' ')
-                            .map(n => n[0])
-                            .join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <p className='font-medium text-zinc-900 dark:text-zinc-100'>
-                          {job.customerName}
-                        </p>
-                        <p className='text-sm text-zinc-500 dark:text-zinc-400'>
-                          Job #{job.id.split('-')[1]}
-                        </p>
-                      </div>
-                    </div>
+                  <TableCell className='py-4 pl-6'>
+                    <span
+                      className='font-medium text-zinc-900 dark:text-zinc-100 truncate block max-w-[200px]'
+                      title={job.customerName}
+                    >
+                      {job.customerName}
+                    </span>
                   </TableCell>
                   <TableCell className='py-4'>
                     <div className='flex items-center gap-2'>
                       <MapPin className='h-4 w-4 text-zinc-400 flex-shrink-0' />
-                      <span className='text-sm text-zinc-600 dark:text-zinc-300'>
+                      <span
+                        className='text-sm text-zinc-600 dark:text-zinc-300 truncate block max-w-[250px]'
+                        title={job.propertyAddress}
+                      >
                         {job.propertyAddress}
                       </span>
                     </div>
@@ -260,18 +248,11 @@ export function JobsDashboard({
                       <div className='flex h-6 w-6 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800'>
                         <Building className='h-3 w-3 text-zinc-600 dark:text-zinc-400' />
                       </div>
-                      <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+                      <span
+                        className='text-sm font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[200px]'
+                        title={job.insuranceCarrier}
+                      >
                         {job.insuranceCarrier}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className='text-center py-4'>
-                    <div className='flex flex-col items-center gap-1'>
-                      <span className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>
-                        {job.supplementCount}
-                      </span>
-                      <span className='text-xs text-green-600 dark:text-green-400 font-medium'>
-                        {formatCurrency(job.totalSupplementValue)}
                       </span>
                     </div>
                   </TableCell>

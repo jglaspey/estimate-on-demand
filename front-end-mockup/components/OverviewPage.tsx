@@ -86,15 +86,21 @@ export function OverviewPage({
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Carrier:</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">{jobData.insuranceCarrier}</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate ml-2 max-w-[200px]" title={jobData.insuranceCarrier}>
+                  {jobData.insuranceCarrier}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Claim Rep:</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">{jobData.adjusterName}</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate ml-2 max-w-[180px]" title={jobData.claimRep || 'N/A'}>
+                  {jobData.claimRep || 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Estimator:</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">Mike Rodriguez</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate ml-2 max-w-[180px]" title={jobData.estimator || 'N/A'}>
+                  {jobData.estimator || 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Claim #:</span>
@@ -125,19 +131,23 @@ export function OverviewPage({
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Original Estimate:</span>
                 <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  ${jobData.totalEstimateValue.toLocaleString()}
+                  {jobData.totalEstimateValue && jobData.totalEstimateValue > 0 
+                    ? `$${jobData.totalEstimateValue.toLocaleString()}` 
+                    : '-'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Potential Supplement:</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  +${supplementTotal.toLocaleString()}
+                  {supplementTotal > 0 ? `+$${supplementTotal.toLocaleString()}` : '-'}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700">
                 <span className="text-zinc-500 dark:text-zinc-400">Total Value:</span>
                 <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                  ${(jobData.totalEstimateValue + supplementTotal).toLocaleString()}
+                  {(jobData.totalEstimateValue > 0 || supplementTotal > 0)
+                    ? `$${(jobData.totalEstimateValue + supplementTotal).toLocaleString()}`
+                    : '-'}
                 </span>
               </div>
             </div>
@@ -146,26 +156,45 @@ export function OverviewPage({
           {/* Analysis Status */}
           <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                ruleAnalysis.length > 0 
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                  : 'bg-amber-100 dark:bg-amber-900/30'
+              }`}>
+                <Shield className={`h-5 w-5 ${
+                  ruleAnalysis.length > 0 
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-amber-600 dark:text-amber-400'
+                }`} />
               </div>
               <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Analysis Status</h3>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Issues Found:</span>
-                <span className="font-semibold text-red-600 dark:text-red-400">{stats.needsSupplement}</span>
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  {ruleAnalysis.length > 0 ? stats.needsSupplement : '-'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Compliant Rules:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{stats.compliant}</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {ruleAnalysis.length > 0 ? stats.compliant : '-'}
+                </span>
               </div>
               <div className="flex justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700">
                 <span className="text-zinc-500 dark:text-zinc-400">Status:</span>
-                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
-                  <CheckCircle className="w-3 h-3 mr-1.5" />
-                  Complete
-                </Badge>
+                {ruleAnalysis.length > 0 ? (
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
+                    <CheckCircle className="w-3 h-3 mr-1.5" />
+                    Complete
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800">
+                    <Clock className="w-3 h-3 mr-1.5" />
+                    Pending Analysis
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

@@ -40,16 +40,22 @@ interface DatabaseJob {
 }
 
 // Transform database jobs to JobSummary format
-function transformJobToSummary(job: DatabaseJob): JobSummary {
+function transformJobToSummary(
+  job: DatabaseJob & {
+    customerName?: string;
+    customerAddress?: string;
+    carrier?: string;
+  }
+): JobSummary {
   const supplementCount = job.ruleAnalyses.filter(rule => !rule.passed).length;
   const totalSupplementValue =
     supplementCount * Math.floor(Math.random() * 800 + 200);
 
   return {
     id: job.id,
-    customerName: extractCustomerName(job.fileName),
-    propertyAddress: extractAddress(job.fileName),
-    insuranceCarrier: extractCarrier(job.fileName),
+    customerName: job.customerName || extractCustomerName(job.fileName),
+    propertyAddress: job.customerAddress || extractAddress(job.fileName),
+    insuranceCarrier: job.carrier || extractCarrier(job.fileName),
     supplementCount,
     totalSupplementValue,
     status: transformStatus(job.status),
@@ -165,24 +171,10 @@ export default function RealDashboardPage() {
   }
 
   return (
-    <div className='min-h-screen bg-zinc-50 dark:bg-zinc-950'>
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-        <div className='mb-8'>
-          <h1 className='text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2'>
-            Insurance Supplement Dashboard
-          </h1>
-          <p className='text-zinc-500 dark:text-zinc-400'>
-            Manage and track your insurance supplement analysis jobs
-          </p>
-        </div>
-
-
-        <JobsDashboard
-          onJobSelect={handleJobSelect}
-          onNewJob={handleNewJob}
-          jobs={jobs}
-        />
-      </div>
-    </div>
+    <JobsDashboard
+      onJobSelect={handleJobSelect}
+      onNewJob={handleNewJob}
+      jobs={jobs}
+    />
   );
 }

@@ -34,6 +34,7 @@ interface JobData {
   claimNumber: string;
   dateOfLoss: string;
   claimRep?: string;
+  estimator?: string;
   policyNumber: string;
   totalEstimateValue: number;
   status: 'uploading' | 'extracting' | 'analyzing' | 'reviewing' | 'complete';
@@ -128,6 +129,7 @@ export default function JobDetailPage() {
             ? new Date(job.dateOfLoss).toISOString().split('T')[0]
             : '2024-01-01',
           claimRep: job.claimRep || 'N/A',
+          estimator: job.estimator || 'N/A',
           policyNumber: job.policyNumber || 'N/A',
           totalEstimateValue: job.originalEstimate || 0,
           status: mapJobStatus(job.status),
@@ -138,72 +140,80 @@ export default function JobDetailPage() {
         setJobData(transformedJob);
 
         // Extract roof measurements from job data - match OverviewPage field names
-        const measurements: RoofMeasurements = {
-          totalArea: job.roofSquares ? job.roofSquares * 100 : undefined,
-          totalSquares: job.roofSquares || undefined,
-          pitch: job.roofSlope || undefined,
-          stories: job.roofStories || undefined,
-          eavesLength: job.eaveLength || undefined,
-          rakesLength: job.rakeLength || undefined,
-          ridgesLength: job.ridgeHipLength || undefined,
-          valleysLength: job.valleyLength || undefined,
-          // Include the additional fields for compatibility but set to undefined
-          totalRoofArea: job.roofSquares ? job.roofSquares * 100 : undefined,
-          numberOfSquares: job.roofSquares || undefined,
-          predominantPitch: job.roofSlope || undefined,
-          numberOfStories: job.roofStories || undefined,
-          totalEaves: job.eaveLength || undefined,
-          totalRakes: job.rakeLength || undefined,
-          totalRidges: job.ridgeHipLength || undefined,
-          totalValleys: job.valleyLength || undefined,
+        const measurements: any = {
+          // Primary measurements for OverviewPage display
+          totalArea: job.roofSquares ? job.roofSquares * 100 : 0,
+          totalSquares: job.roofSquares || 0,
+          pitch: job.roofSlope || 'Unknown',
+          stories: job.roofStories || 0,
+          eavesLength: job.eaveLength || 0,
+          rakesLength: job.rakeLength || 0,
+          ridgesLength: job.ridgeHipLength || 0,
+          valleysLength: job.valleyLength || 0,
+          // Additional detailed measurements (fallback values)
+          roofArea: job.roofSquares ? job.roofSquares * 100 : 0,
+          ridgeLength: job.ridgeHipLength || 0,
+          hipsLength: 0,
+          totalRidgeHip: job.ridgeHipLength || 0,
+          soffitDepth: '12"', // Default value
+          wallThickness: '6"', // Default value
+          // Additional fields for JobDetailsCard compatibility
+          totalRoofArea: job.roofSquares ? job.roofSquares * 100 : 0,
+          numberOfSquares: job.roofSquares || 0,
+          predominantPitch: job.roofSlope || 'Unknown',
+          numberOfStories: job.roofStories || 0,
+          totalEaves: job.eaveLength || 0,
+          totalRakes: job.rakeLength || 0,
+          totalRidges: job.ridgeHipLength || 0,
+          totalValleys: job.valleyLength || 0,
         };
         setRoofMeasurements(measurements);
 
-        // Mock business rule analysis based on real extraction data
+        // Mock business rule analysis based on real extraction data - temporarily disabled to show clean default state
         const mockRuleAnalysis: RuleAnalysisResult[] = [
-          {
-            ruleName: 'ridge_cap',
-            status: 'SUPPLEMENT_NEEDED',
-            confidence: 0.95,
-            reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
-            costImpact: 489.6,
-            estimateQuantity: '6 LF',
-            requiredQuantity: '119 LF',
-            variance: '-113 LF',
-            varianceType: 'shortage',
-            materialStatus: 'compliant',
-            currentSpecification: {
-              code: 'RFG RIDGC',
-              description: 'Hip/Ridge cap - Standard profile',
-              quantity: '6.00 LF',
-              rate: '$42.90/LF',
-              total: '$257.40',
-            },
-          },
-          {
-            ruleName: 'starter_strip',
-            status: 'SUPPLEMENT_NEEDED',
-            confidence: 0.88,
-            reasoning:
-              'Universal starter strip required but not properly specified. Current estimate notes "Include eave starter course: Yes (included in waste)" but this does not account for the specific universal starter strip product required for laminate shingles.',
-            costImpact: 513.0,
-          },
-          {
-            ruleName: 'drip_edge',
-            status: 'SUPPLEMENT_NEEDED',
-            confidence: 0.82,
-            reasoning:
-              'Insufficient edge flashing coverage. Estimate includes drip edge for rake edges only (120 LF) but missing gutter apron required for eave edges (180 LF). Different components needed for different roof edges.',
-            costImpact: 765.0,
-          },
-          {
-            ruleName: 'ice_water_barrier',
-            status: 'SUPPLEMENT_NEEDED',
-            confidence: 0.91,
-            reasoning:
-              'Insufficient ice & water barrier coverage per IRC R905.1.2. Estimate includes 800 SF but calculation based on roof measurements requires 1,167 SF (180 LF eaves × 60.4" width ÷ 12). Shortage of 367 SF.',
-            costImpact: 678.95,
-          },
+          // {
+          //   ruleName: 'ridge_cap',
+          //   status: 'SUPPLEMENT_NEEDED',
+          //   confidence: 0.95,
+          //   reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
+          //   costImpact: 489.6,
+          //   estimateQuantity: '6 LF',
+          //   requiredQuantity: '119 LF',
+          //   variance: '-113 LF',
+          //   varianceType: 'shortage',
+          //   materialStatus: 'compliant',
+          //   currentSpecification: {
+          //     code: 'RFG RIDGC',
+          //     description: 'Hip/Ridge cap - Standard profile',
+          //     quantity: '6.00 LF',
+          //     rate: '$42.90/LF',
+          //     total: '$257.40',
+          //   },
+          // },
+          // {
+          //   ruleName: 'starter_strip',
+          //   status: 'SUPPLEMENT_NEEDED',
+          //   confidence: 0.88,
+          //   reasoning:
+          //     'Universal starter strip required but not properly specified. Current estimate notes "Include eave starter course: Yes (included in waste)" but this does not account for the specific universal starter strip product required for laminate shingles.',
+          //   costImpact: 513.0,
+          // },
+          // {
+          //   ruleName: 'drip_edge',
+          //   status: 'SUPPLEMENT_NEEDED',
+          //   confidence: 0.82,
+          //   reasoning:
+          //     'Insufficient edge flashing coverage. Estimate includes drip edge for rake edges only (120 LF) but missing gutter apron required for eave edges (180 LF). Different components needed for different roof edges.',
+          //   costImpact: 765.0,
+          // },
+          // {
+          //   ruleName: 'ice_water_barrier',
+          //   status: 'SUPPLEMENT_NEEDED',
+          //   confidence: 0.91,
+          //   reasoning:
+          //     'Insufficient ice & water barrier coverage per IRC R905.1.2. Estimate includes 800 SF but calculation based on roof measurements requires 1,167 SF (180 LF eaves × 60.4" width ÷ 12). Shortage of 367 SF.',
+          //   costImpact: 678.95,
+          // },
         ];
 
         setRuleAnalysis(mockRuleAnalysis);
