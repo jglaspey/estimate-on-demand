@@ -20,11 +20,37 @@ model Job {
   uploadedAt  DateTime @default(now())
   processedAt DateTime?
   completedAt DateTime?
+  updatedAt   DateTime @updatedAt
   error       String?
 
   // File storage info
   filePath    String?
   fileHash    String?  @unique
+
+  // Auto-populated customer information
+  customerName String?
+  customerAddress String?
+  customerPhone String?
+  customerEmail String?
+  
+  // Auto-populated claim information
+  claimNumber String?
+  policyNumber String?
+  dateOfLoss DateTime?
+  carrier String?
+  claimRep String?
+  estimator String?
+  originalEstimate Float?
+  
+  // Auto-populated roofing data
+  roofSquares Float?
+  roofStories Int?
+  rakeLength Float?
+  eaveLength Float?
+  ridgeHipLength Float?
+  valleyLength Float?
+  roofSlope String?
+  roofMaterial String?
 
   // User tracking (for future auth integration)
   userId      String?
@@ -61,20 +87,21 @@ model Document {
   @@map("documents")
 }
 
-// Full-text storage for each document page  
+// Structured JSON storage for each document page  
 model DocumentPage {
   id           String   @id @default(cuid())
   documentId   String
   jobId        String
   pageNumber   Int      // 1-based page numbering
   
-  // Full-text content extracted from this page
-  fullText     String   // Complete text content
+  // Structured JSON content extracted from this page
+  extractedContent Json  // Complete structured data with coordinates and sections
+  rawText      String?  // Fallback plain text for search
   wordCount    Int      @default(0)
   
   // Processing metadata
   extractedAt  DateTime @default(now())
-  extractionMethod String @default("pdf-parse") // pdf-parse, ocr, manual, etc.
+  extractionMethod String @default("mistral-ocr") // mistral-ocr, pdf-parse, ocr, manual, etc.
   confidence   Float?   // confidence score for extraction quality
   
   // Page dimensions and metadata for UI display
@@ -88,38 +115,34 @@ model DocumentPage {
 
   @@unique([documentId, pageNumber])
   @@index([jobId, pageNumber])
+  @@index([extractedContent])  // JSON index for searches
   @@map("document_pages")
 }
 
-// Mistral extraction results - handles both text and image PDFs
+// Mistral extraction results - comprehensive document processing
 model MistralExtraction {
   id          String   @id @default(cuid())
   jobId       String
   
   // Mistral processing info
   mistralModel String   @default("mistral-large-latest") // Track Mistral model version
-  inputType    String   // "text-pdf", "image-pdf", "mixed"
+  documentType String?  // "roof_report", "estimate", "unknown"
   
   // Processing metrics
-  processingTime Int    // milliseconds
-  tokenUsage     Json   // { input: number, output: number }
+  processingTime Int?    // milliseconds
+  tokenUsage     Json?   // { input: number, output: number }
   cost          Float  @default(0.0)
   success       Boolean @default(true)
   error         String?
-
-  // Raw Mistral extraction results - minimal processing
-  rawExtraction  Json   // Complete JSON response from Mistral
   
-  // Structured business data extracted by Mistral
-  hipRidgeCap    Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
-  starterStrip   Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
-  dripEdge       Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
-  gutterApron    Json?  // { found: boolean, quantity?: number, description?: string, sourcePageNumber?: number }
-  iceWaterBarrier Json? // { found: boolean, coverage?: number, description?: string, sourcePageNumber?: number }
-
-  // Mistral confidence and metadata
-  confidence     Float  @default(0.0) // Mistral's confidence in extraction
-  fieldsFound    Int    @default(0)   // Count of business rule fields found
+  // Complete extracted data structure
+  extractedData Json    // Full ExtractedData structure from MistralService
+  
+  // Quick access fields for database queries
+  customerName   String?
+  claimNumber    String?
+  pageCount      Int?
+  confidence     Float  @default(0.0) // Overall extraction confidence
   
   extractedAt DateTime @default(now())
 
@@ -203,14 +226,17 @@ model RuleAnalysis {
 
 // Job processing status
 enum JobStatus {
-  UPLOADED      // File received
-  EXTRACTING    // LLM processing in progress
-  ANALYZING     // Business rules analysis
-  REVIEWING     // User review phase
-  GENERATING    // Report generation
-  COMPLETED     // Process finished
-  FAILED        // Processing failed
-  CANCELLED     // User cancelled
+  UPLOADED         // File received and saved
+  QUEUED          // Added to processing queue
+  PROCESSING      // Mistral extraction in progress
+  TEXT_EXTRACTED  // Text extraction completed
+  ANALYSIS_READY  // Ready for business rule analysis
+  ANALYZING       // Business rules analysis in progress
+  REVIEWING       // User review phase
+  GENERATING      // Report generation
+  COMPLETED       // Process finished
+  FAILED          // Processing failed
+  CANCELLED       // User cancelled
 }
 
 // Document processing status  

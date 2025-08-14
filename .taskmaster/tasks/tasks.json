@@ -69,15 +69,15 @@
           1,
           "11"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
             "title": "Core Drag-and-Drop Upload Interface",
             "description": "Implement the foundational drag-and-drop file upload interface with basic visual states and component structure.",
             "dependencies": [],
-            "details": "1. Create UploadInterface React component with drag-and-drop functionality\n2. Implement visual states: Default, Hover, Uploading, Success, Error\n3. Design responsive layout for the upload area\n4. Add file selection via traditional button as alternative to drag-and-drop\n5. Implement basic file selection handling",
-            "status": "pending",
+            "details": "1. Create UploadInterface React component with drag-and-drop functionality\n2. Implement visual states: Default, Hover, Uploading, Success, Error\n3. Design responsive layout for the upload area\n4. Add file selection via traditional button as alternative to drag-and-drop\n5. Implement basic file selection handling\n<info added on 2025-08-14T00:22:32.783Z>\n6. Implement \"Create New Job\" page with the following elements:\n   - Header with skeleton placeholder for job title and address\n   - Three information cards (Insurance Details, Claim Information, Analysis Status) with skeleton loading states\n   - Large central drop zone with text \"Drop your estimate and roof report here to start a new job\"\n   - Right sidebar with skeleton states for the chat/questions area\n   - Pulsing gray animation for all skeleton elements\n   - Transition functionality from landing page to real-time progress tracking upon document processing\n</info added on 2025-08-14T00:22:32.783Z>\n<info added on 2025-08-14T00:25:52.062Z>\nSuccessfully implemented CreateNewJob page with all requested features:\n\n- Complete page layout matching job detail design\n- Skeleton loading states with pulsing animation for all UI elements\n- Large central drop zone with exact requested text\n- Drag-and-drop functionality with visual feedback\n- File validation (PDF only, 10MB limit)\n- Upload progress tracking with spinner and progress bar\n- Error handling with user-friendly messages\n- API integration ready for /api/upload endpoint\n- Automatic redirect to analysis page after upload\n\nThe page serves as the \"before\" state that transforms into real-time progress tracking. All skeleton elements will populate with actual data as OCR and business rule analysis complete, providing users with a transparent workflow experience.\n</info added on 2025-08-14T00:25:52.062Z>",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -643,85 +643,119 @@
       {
         "id": 8,
         "title": "Business Rule UI Components",
-        "description": "Create the BusinessRuleCard components with status indicators, evidence panels, and decision controls as specified in US-011 through US-016.",
-        "details": "1. Implement BusinessRuleCard component with expandable sections\n2. Create status indicators for different rule states\n3. Implement evidence section with source document references\n4. Add decision buttons (Accept/Edit/Reject) with confirmation dialogs\n5. Create cost calculator showing line item pricing changes\n6. Implement notes field for custom justifications\n7. Add visual evidence highlighting and diagrams\n8. Create plain English reasoning explanations\n9. Implement individual rule cards for each analysis type\n10. Add animation and transition effects",
-        "testStrategy": "1. Test all visual states of rule cards\n2. Verify expandable sections work correctly\n3. Test decision buttons and confirmation dialogs\n4. Validate cost calculator accuracy\n5. Test notes field functionality\n6. Verify evidence highlighting\n7. Test accessibility compliance",
-        "priority": "medium",
+        "description": "Integrate and adapt existing BusinessRuleCard components with status indicators, evidence panels, and decision controls as specified in US-011 through US-016.",
+        "status": "pending",
         "dependencies": [
           6,
           7,
-          "11"
+          "11",
+          "13"
         ],
-        "status": "pending",
+        "priority": "medium",
+        "details": "1. Integrate existing BusinessRuleCard component with expandable sections\n2. Configure status indicators for different rule states\n3. Connect evidence section with source document references\n4. Wire up decision buttons (Accept/Edit/Reject) with confirmation dialogs\n5. Integrate cost calculator showing line item pricing changes\n6. Connect notes field for custom justifications\n7. Configure visual evidence highlighting and diagrams\n8. Implement plain English reasoning explanations\n9. Integrate specialized rule cards (HipRidgeCapCard, StarterStripCard, DripEdgeGutterApronCard, IceWaterBarrierCard)\n10. Test and optimize animation and transition effects",
+        "testStrategy": "1. Test all visual states of rule cards\n2. Verify expandable sections work correctly\n3. Test decision buttons and confirmation dialogs\n4. Validate cost calculator accuracy\n5. Test notes field functionality\n6. Verify evidence highlighting\n7. Test accessibility compliance\n8. Verify integration with backend data sources\n9. Test specialized rule cards with real data",
         "subtasks": [
           {
             "id": 1,
-            "title": "Base BusinessRuleCard Component",
-            "description": "Implement the core BusinessRuleCard component with expandable sections and layout structure",
-            "dependencies": [],
-            "details": "- Create component skeleton with TypeScript interfaces\n- Implement expandable/collapsible functionality\n- Design responsive layout for different screen sizes\n- Add container for status indicators, evidence panels, and controls\n- Create component documentation and usage examples\n- Implement accessibility features (ARIA attributes, keyboard navigation)",
+            "title": "BusinessRuleCard Component Integration",
+            "description": "Integrate the existing BusinessRuleCard.tsx component with the application's state management and data flow",
             "status": "pending",
+            "dependencies": [],
+            "details": "- Review existing BusinessRuleCard.tsx implementation\n- Connect component to application state management\n- Configure props and interfaces to match backend data structure\n- Test responsive behavior with application layout\n- Document integration points and usage patterns\n- Ensure accessibility features are properly configured",
             "testStrategy": ""
           },
           {
             "id": 2,
-            "title": "Status Indicators Implementation",
-            "description": "Create visual status indicators for different rule states (pending, accepted, rejected, etc.)",
-            "dependencies": [
-              "8.1"
-            ],
-            "details": "- Design status indicator components with appropriate colors\n- Implement different visual states (pending, accepted, rejected, needs review)\n- Add tooltips explaining each status\n- Create animations for status transitions\n- Ensure color contrast meets accessibility standards\n- Add status change event handlers",
+            "title": "Status Indicators Configuration",
+            "description": "Configure and connect visual status indicators for different rule states (pending, accepted, rejected, etc.)",
             "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "- Review existing status indicator implementations\n- Connect status indicators to backend state\n- Configure tooltips with appropriate messaging\n- Test status transition flows\n- Ensure color contrast meets accessibility standards\n- Implement status change event handlers",
             "testStrategy": ""
           },
           {
             "id": 3,
-            "title": "Evidence Panel Development",
-            "description": "Implement the evidence section with source document references, highlighting, and plain English explanations",
-            "dependencies": [
-              "8.1"
-            ],
-            "details": "- Create collapsible evidence panel component\n- Implement document reference display with links\n- Add visual evidence highlighting functionality\n- Create diagram display capabilities\n- Implement plain English reasoning explanations\n- Add evidence source attribution and confidence indicators",
+            "title": "Evidence Panel Integration",
+            "description": "Connect the evidence section with source document references, highlighting, and plain English explanations",
             "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "details": "- Review existing evidence panel implementation\n- Connect document reference display with backend data\n- Configure visual evidence highlighting functionality\n- Set up diagram display with real data\n- Implement plain English reasoning explanations\n- Connect evidence source attribution and confidence indicators",
             "testStrategy": ""
           },
           {
             "id": 4,
-            "title": "Decision Controls Implementation",
-            "description": "Add decision buttons (Accept/Edit/Reject) with confirmation dialogs and notes field",
-            "dependencies": [
-              "8.1",
-              "8.2"
-            ],
-            "details": "- Create decision button group component\n- Implement confirmation dialog for each action\n- Add notes field for custom justifications\n- Create state management for decision tracking\n- Implement validation for required notes on certain actions\n- Add keyboard shortcuts for common actions",
+            "title": "Decision Controls Integration",
+            "description": "Wire up decision buttons (Accept/Edit/Reject) with confirmation dialogs and notes field",
             "status": "pending",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "- Connect existing decision button components to application state\n- Configure confirmation dialogs for each action\n- Wire up notes field for custom justifications\n- Implement state management for decision tracking\n- Configure validation for required notes on certain actions\n- Test keyboard shortcuts for common actions",
             "testStrategy": ""
           },
           {
             "id": 5,
-            "title": "Cost Calculator Component",
-            "description": "Create cost calculator showing line item pricing changes and financial impact",
-            "dependencies": [
-              "8.1",
-              "8.3"
-            ],
-            "details": "- Implement cost calculator component with line items\n- Create visual indicators for price increases/decreases\n- Add total cost calculation functionality\n- Implement comparison between original and new costs\n- Create expandable detailed view for cost breakdown\n- Add currency formatting and localization support",
+            "title": "Cost Calculator Integration",
+            "description": "Connect cost calculator showing line item pricing changes and financial impact",
             "status": "pending",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "- Review existing cost calculator implementation\n- Connect calculator to backend pricing data\n- Configure visual indicators for price changes\n- Test total cost calculation functionality\n- Ensure comparison between original and new costs works correctly\n- Test currency formatting with different locales",
             "testStrategy": ""
           },
           {
             "id": 6,
-            "title": "Animation and Transition Effects",
-            "description": "Implement animations and transitions for card interactions and state changes",
-            "dependencies": [
-              "8.1",
-              "8.2",
-              "8.3",
-              "8.4",
-              "8.5"
-            ],
-            "details": "- Add smooth expand/collapse animations\n- Implement transition effects for status changes\n- Create loading/processing animations\n- Add micro-interactions for better user feedback\n- Ensure animations can be disabled for reduced motion preferences\n- Optimize animations for performance",
+            "title": "Specialized Rule Card Integration",
+            "description": "Integrate specialized rule components (HipRidgeCapCard, StarterStripCard, DripEdgeGutterApronCard, IceWaterBarrierCard)",
             "status": "pending",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "- Review all specialized rule card implementations\n- Connect each specialized card to appropriate backend data sources\n- Test rule-specific functionality and displays\n- Ensure consistent behavior across all rule types\n- Document any rule-specific configuration requirements\n- Validate rule-specific calculations and displays",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Animation and Transition Testing",
+            "description": "Test and optimize animations and transitions for card interactions and state changes",
+            "status": "pending",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "details": "- Test existing expand/collapse animations\n- Verify transition effects for status changes\n- Optimize loading/processing animations\n- Review micro-interactions for user feedback\n- Ensure animations can be disabled for reduced motion preferences\n- Test animation performance on various devices",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Integration Testing with Backend",
+            "description": "Perform comprehensive testing of all business rule components with real backend data",
+            "status": "pending",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "details": "- Create test scenarios covering all rule types\n- Test with various data conditions (complete, partial, conflicting)\n- Verify error handling and edge cases\n- Test performance with large datasets\n- Validate all user interaction flows\n- Document any integration issues or limitations",
             "testStrategy": ""
           }
         ]
@@ -1013,15 +1047,98 @@
         "id": 13,
         "title": "Prototype Integration Strategy",
         "description": "Analyze existing front-end mockup, plan migration to production codebase, identify Tailwind version compatibility, and create integration roadmap for incorporating the complete React prototype into the project structure.",
-        "details": "1. Analyze existing front-end mockup:\n   - Document current component structure and architecture\n   - Identify reusable components vs. prototype-specific implementations\n   - Evaluate state management approach and data flow patterns\n   - Assess current styling implementation and Tailwind usage\n   - Document any third-party dependencies and their compatibility\n\n2. Tailwind version compatibility analysis:\n   - Determine Tailwind CSS version used in prototype vs. production\n   - Identify breaking changes between versions if different\n   - Document custom Tailwind configurations, plugins, and extensions\n   - Create migration plan for Tailwind classes if needed\n   - Test sample components with production Tailwind configuration\n\n3. Production codebase integration planning:\n   - Map prototype components to production architecture\n   - Identify gaps in type definitions for TypeScript integration\n   - Document required API adaptations for backend connectivity\n   - Plan refactoring of any anti-patterns or performance issues\n   - Create component migration priority list based on dependencies\n\n4. Integration roadmap development:\n   - Create phased integration timeline with milestones\n   - Develop component migration checklist template\n   - Document integration testing approach for each component\n   - Identify potential risks and mitigation strategies\n   - Create rollback procedures for each integration phase\n\n5. Documentation and knowledge transfer:\n   - Document architectural decisions and rationale\n   - Create component migration guides for development team\n   - Prepare training materials on any new patterns or approaches\n   - Document known limitations and future improvement opportunities",
-        "testStrategy": "1. Prototype analysis validation:\n   - Review component inventory with development team for completeness\n   - Validate component dependencies are correctly mapped\n   - Verify all third-party dependencies are identified and assessed\n   - Confirm state management patterns are accurately documented\n\n2. Tailwind compatibility testing:\n   - Create test components using both prototype and production Tailwind configurations\n   - Verify visual consistency across configurations\n   - Test responsive behavior at all breakpoints\n   - Validate custom utility classes function correctly in production environment\n\n3. Integration plan validation:\n   - Review integration roadmap with stakeholders for completeness\n   - Validate timeline feasibility with development team\n   - Test sample component migrations following the proposed process\n   - Verify API integration approach with backend developers\n\n4. Documentation review:\n   - Conduct peer review of all migration documentation\n   - Validate component migration checklists with test migrations\n   - Review risk assessment and mitigation strategies with project leads\n   - Test knowledge transfer materials with developers not familiar with the prototype\n\n5. Integration simulation:\n   - Create a sandbox environment mimicking production\n   - Test migration of key components following the roadmap\n   - Verify component functionality post-migration\n   - Validate rollback procedures work as expected",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           1,
           11
         ],
         "priority": "medium",
-        "subtasks": []
+        "details": "1. Analyze existing front-end mockup:\n   - Document current component structure and architecture\n   - Identify reusable components vs. prototype-specific implementations\n   - Evaluate state management approach and data flow patterns\n   - Assess current styling implementation and Tailwind usage\n   - Document any third-party dependencies and their compatibility\n\n2. Tailwind version compatibility analysis:\n   - Determine Tailwind CSS version used in prototype vs. production\n   - Identify breaking changes between versions if different\n   - Document custom Tailwind configurations, plugins, and extensions\n   - Create migration plan for Tailwind classes if needed\n   - Test sample components with production Tailwind configuration\n\n3. Production codebase integration planning:\n   - Map prototype components to production architecture\n   - Identify gaps in type definitions for TypeScript integration\n   - Document required API adaptations for backend connectivity\n   - Plan refactoring of any anti-patterns or performance issues\n   - Create component migration priority list based on dependencies\n\n4. Three-phase integration roadmap:\n   - Phase 1: Frontend Integration (Immediate Priority)\n     * Copy prototype UI components to main /components directory\n     * Update API responses to match prototype interfaces\n     * Replace basic jobs page with sophisticated OverviewPage dashboard\n     * Integrate business rule cards and interactive components\n     * Ensure Tailwind CSS compatibility between prototype and main project\n   - Phase 2: Database Schema Alignment\n     * Extend Prisma schema with missing fields from prototype data model\n     * Update API routes to return complete data structures matching prototype\n     * Create data migration strategy for existing extraction results\n     * Test API/frontend integration with real data\n   - Phase 3: Extraction Pipeline Enhancement\n     * Debug Mistral API \"Unexpected token 'S'\" errors\n     * Implement Claude Vision as backup extraction method\n     * Improve error handling and user feedback\n     * Ensure extraction results populate new data structure\n\n5. Documentation and knowledge transfer:\n   - Document architectural decisions and rationale\n   - Create component migration guides for development team\n   - Prepare training materials on any new patterns or approaches\n   - Document known limitations and future improvement opportunities",
+        "testStrategy": "1. Prototype analysis validation:\n   - Review component inventory with development team for completeness\n   - Validate component dependencies are correctly mapped\n   - Verify all third-party dependencies are identified and assessed\n   - Confirm state management patterns are accurately documented\n\n2. Tailwind compatibility testing:\n   - Create test components using both prototype and production Tailwind configurations\n   - Verify visual consistency across configurations\n   - Test responsive behavior at all breakpoints\n   - Validate custom utility classes function correctly in production environment\n\n3. Phase 1 (Frontend Integration) testing:\n   - Verify copied UI components render correctly in main application\n   - Test API response adaptations with mock data\n   - Validate OverviewPage dashboard functionality in production environment\n   - Ensure business rule cards display and interact properly\n   - Confirm Tailwind CSS styling is consistent across components\n\n4. Phase 2 (Database Schema Alignment) testing:\n   - Validate extended Prisma schema with test data\n   - Test updated API routes with prototype interfaces\n   - Verify data migration process with sample datasets\n   - Confirm frontend components correctly consume API data\n\n5. Phase 3 (Extraction Pipeline Enhancement) testing:\n   - Test Mistral API error resolution\n   - Validate Claude Vision extraction as backup method\n   - Verify error handling and user feedback mechanisms\n   - Confirm extraction results correctly populate the new data structure\n\n6. Integration simulation:\n   - Create a sandbox environment mimicking production\n   - Test migration of key components following the roadmap\n   - Verify component functionality post-migration\n   - Validate rollback procedures work as expected",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Document Prototype Component Structure and Architecture",
+            "description": "Analyze and document the existing front-end mockup's component structure, architecture, and state management approach to create a comprehensive inventory of components.",
+            "dependencies": [],
+            "details": "Create a detailed component inventory spreadsheet with the following columns: Component Name, Purpose, Reusability Score (1-5), Dependencies, State Management Approach, and Notes. Include a component tree diagram showing hierarchy and relationships. Document the data flow patterns between components and identify any global state management solutions used (Context API, Redux, etc.). Note any performance optimizations or custom hooks implemented.",
+            "status": "pending",
+            "testStrategy": "Review component inventory with development team to ensure completeness. Validate component dependencies are correctly mapped. Verify all state management patterns are accurately documented."
+          },
+          {
+            "id": 2,
+            "title": "Analyze Tailwind CSS Version Compatibility",
+            "description": "Compare Tailwind CSS versions between prototype and production, identifying breaking changes and creating a migration plan for any incompatibilities.",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Extract Tailwind configuration files from both prototype and production codebases. Document version differences and list all breaking changes between versions. Identify custom Tailwind configurations, plugins, and extensions used in the prototype. Create a migration guide for updating Tailwind classes if needed. Test sample components from the prototype with the production Tailwind configuration to identify styling issues.",
+            "status": "pending",
+            "testStrategy": "Apply production Tailwind configuration to key prototype components and verify visual consistency. Document any class name changes required for compatibility."
+          },
+          {
+            "id": 3,
+            "title": "Map Prototype Components to Production Architecture",
+            "description": "Create a detailed mapping between prototype components and the production codebase architecture, identifying gaps and integration points.",
+            "dependencies": [
+              "13.1",
+              "13.2"
+            ],
+            "details": "For each component in the prototype inventory, identify the corresponding location in the production architecture. Document required TypeScript type definitions for proper integration. Create a component migration priority list based on dependencies and business value. Identify any architectural patterns in the prototype that differ from production standards and document adaptation strategies. Note any components that need significant refactoring to match production code quality standards.",
+            "status": "pending",
+            "testStrategy": "Review component mapping with senior developers to validate architectural decisions. Test sample component migrations to verify integration approach."
+          },
+          {
+            "id": 4,
+            "title": "Develop API Adaptation Strategy",
+            "description": "Document required API adaptations for connecting prototype components to production backend services.",
+            "dependencies": [
+              "13.1",
+              "13.3"
+            ],
+            "details": "Compare API interfaces used in the prototype with available endpoints in production. Document data transformation requirements to match prototype component expectations. Identify missing API endpoints needed for prototype functionality. Create adapter functions for reconciling differences between prototype data structures and production API responses. Document authentication and authorization requirements for API calls.",
+            "status": "pending",
+            "testStrategy": "Create mock implementations of adapter functions and test with prototype components. Verify data transformations maintain component functionality."
+          },
+          {
+            "id": 5,
+            "title": "Create Phase 1 Integration Plan: Frontend Components",
+            "description": "Develop a detailed implementation plan for the first phase of integration focusing on UI components and frontend functionality.",
+            "dependencies": [
+              "13.2",
+              "13.3",
+              "13.4"
+            ],
+            "details": "Create a step-by-step migration plan for copying prototype UI components to the main /components directory. Document required changes to component imports and dependencies. Outline process for replacing the basic jobs page with the sophisticated OverviewPage dashboard. Create implementation tasks for integrating business rule cards and interactive components. Document Tailwind CSS compatibility fixes needed during integration. Include estimated effort for each task and suggested developer assignments.",
+            "status": "pending",
+            "testStrategy": "Create a staging environment to test integrated components before production deployment. Develop integration tests for key user flows across migrated components."
+          },
+          {
+            "id": 6,
+            "title": "Design Phase 2 Integration Plan: Database Schema Alignment",
+            "description": "Create a comprehensive plan for extending the production database schema to support the prototype data model.",
+            "dependencies": [
+              "13.3",
+              "13.4",
+              "13.5"
+            ],
+            "details": "Document Prisma schema extensions needed to support prototype data requirements. Create migration scripts for adding new fields to existing tables. Design data transformation functions for mapping existing data to new schema. Outline API route updates needed to return complete data structures matching prototype expectations. Create a testing strategy for validating schema changes with real data. Include rollback procedures in case of migration issues.",
+            "status": "pending",
+            "testStrategy": "Test schema migrations on a copy of production data. Verify API routes return data structures compatible with prototype components. Create integration tests for frontend/backend data flow."
+          },
+          {
+            "id": 7,
+            "title": "Develop Phase 3 Integration Plan: Extraction Pipeline Enhancement",
+            "description": "Create a detailed plan for enhancing the extraction pipeline to support the prototype's advanced features and improve error handling.",
+            "dependencies": [
+              "13.5",
+              "13.6"
+            ],
+            "details": "Document current extraction pipeline issues, including Mistral API \"Unexpected token 'S'\" errors. Create implementation plan for adding Claude Vision as a backup extraction method. Design improved error handling and user feedback mechanisms. Outline changes needed to ensure extraction results populate the new data structure. Create a monitoring strategy for extraction pipeline performance and reliability. Include A/B testing approach to compare extraction methods.",
+            "status": "pending",
+            "testStrategy": "Test extraction pipeline with diverse document samples. Verify error handling captures and reports issues appropriately. Validate extraction results populate new data structures correctly."
+          }
+        ]
       },
       {
         "id": 14,
@@ -1036,11 +1153,125 @@
         "details": "1. Diagnose current pdf2pic library issues:\n   - Identify specific failure modes and error patterns\n   - Document environment dependencies and version conflicts\n   - Test with various PDF types to isolate problematic scenarios\n\n2. Implement alternative PDF to image conversion methods:\n   - Integrate pdf-lib for PDF parsing and manipulation\n   - Set up HTML5 Canvas for rendering PDF pages as images\n   - Implement server-side fallback using Puppeteer or similar headless browser\n   - Create utility functions for controlling resolution, format, and quality\n   - Add error handling with graceful degradation to alternative methods\n\n3. Create standardized test dataset:\n   - Compile representative sample of project-relevant PDFs\n   - Include various complexities: text-heavy, diagram-rich, form-based\n   - Create ground truth extraction data for accuracy comparison\n\n4. Implement vision model testing framework:\n   - Set up API connections to Claude Sonnet 4, Haiku 3.5, Gemini Flash, and GPT-5-mini\n   - Create standardized prompts for extraction tasks\n   - Implement parallel testing to ensure consistent comparison\n   - Build metrics collection for accuracy, processing time, and token usage\n\n5. Develop comparison methodology:\n   - Define metrics for extraction accuracy (precision, recall, F1 score)\n   - Create visualization of results across models and methods\n   - Implement cost analysis based on API pricing and processing requirements\n   - Design hybrid approach combining strengths of different methods\n\n6. Optimize conversion pipeline:\n   - Implement caching for converted images to improve performance\n   - Add progressive loading for multi-page documents\n   - Create compression options for bandwidth optimization\n   - Implement batch processing for large documents",
         "testStrategy": "1. PDF Conversion Testing:\n   - Test conversion with various PDF types (text-heavy, image-heavy, forms)\n   - Verify image quality and resolution meets requirements for vision models\n   - Measure conversion performance and resource usage\n   - Test error handling with malformed or password-protected PDFs\n   - Validate multi-page handling and pagination\n\n2. Vision Model Accuracy Testing:\n   - Create benchmark suite with ground truth data for extraction tasks\n   - Measure precision and recall for each model across different document types\n   - Compare extraction accuracy between direct PDF text extraction and vision-based approaches\n   - Test with varying image qualities to determine minimum viable resolution\n   - Evaluate model performance on text vs. diagram/table extraction\n\n3. Integration Testing:\n   - Verify converted images display correctly in the PDF viewer component\n   - Test end-to-end workflow from PDF upload through conversion to extraction\n   - Validate that highlighting and annotation features work with converted images\n   - Test performance under load with large multi-page documents\n\n4. Comparative Analysis:\n   - Generate comprehensive report comparing all models and approaches\n   - Document cost-benefit analysis of each approach\n   - Create decision matrix for selecting optimal extraction method based on document type\n   - Validate findings with sample documents not in the training set",
         "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Frontend Component Migration: Phase 1 Integration",
+        "description": "Integrate production-ready UI components from the front-end-mockup/ directory into the main application, focusing on immediate visual improvements while backend integration continues.",
+        "details": "1. Copy and integrate shadcn/ui components:\n   - Identify all shadcn/ui components used in the mockup\n   - Create or update the /components/ui directory in the main application\n   - Copy each component while maintaining folder structure and dependencies\n   - Ensure all component props and interfaces are properly typed\n   - Verify component styling and functionality matches the mockup\n\n2. Integrate OverviewPage.tsx as the new job analysis dashboard:\n   - Copy OverviewPage.tsx to the appropriate route in the main application\n   - Update imports to match the new project structure\n   - Ensure all dependencies are properly resolved\n   - Temporarily connect to mockData for initial rendering\n   - Implement responsive behavior according to design specifications\n\n3. Copy business rule components:\n   - Migrate HipRidgeCapCard, StarterStripCard, and other business rule components\n   - Maintain component hierarchy and internal structure\n   - Ensure all props and interfaces are properly typed\n   - Preserve interactive functionality (expand/collapse, tooltips, etc.)\n   - Verify visual styling matches the mockup\n\n4. Update Tailwind CSS configuration:\n   - Compare Tailwind configurations between mockup and main application\n   - Merge custom colors, spacing, and other theme extensions\n   - Resolve any version compatibility issues\n   - Update plugin configurations as needed\n   - Ensure consistent styling across all migrated components\n\n5. Integrate mockData.ts types:\n   - Copy type definitions from mockData.ts to appropriate locations\n   - Create interfaces for all data structures used by the components\n   - Ensure type consistency across the application\n   - Document data structure requirements for future backend integration\n   - Implement type guards where necessary for runtime type safety\n\n6. Test component rendering and functionality:\n   - Verify all components render correctly in the main application\n   - Test interactive elements (buttons, dropdowns, etc.)\n   - Ensure responsive behavior works across breakpoints\n   - Validate accessibility features are preserved\n   - Document any issues or inconsistencies for future resolution\n\n7. Create placeholder API handlers:\n   - Implement temporary API handlers that return mock data\n   - Ensure data structure matches the expected backend response\n   - Add appropriate loading states and error handling\n   - Document API requirements for future backend integration",
+        "testStrategy": "1. Component Migration Verification:\n   - Create a comprehensive inventory of all migrated components\n   - Compare each component visually with the original mockup\n   - Verify all props and interfaces are correctly implemented\n   - Check for any console errors or warnings\n   - Validate component nesting and hierarchy matches the mockup\n\n2. UI Rendering Tests:\n   - Test each migrated component in isolation using Storybook or similar tool\n   - Verify all visual states (default, hover, active, disabled, etc.)\n   - Test with various prop combinations to ensure flexibility\n   - Validate responsive behavior at all breakpoints (mobile, tablet, desktop)\n   - Verify animations and transitions work as expected\n\n3. Integration Testing:\n   - Test the OverviewPage with mock data\n   - Verify all business rule cards render correctly\n   - Test interactive elements (expand/collapse, tooltips, etc.)\n   - Ensure navigation between components works as expected\n   - Validate data flow between components\n\n4. Accessibility Testing:\n   - Run automated accessibility tests (axe, lighthouse)\n   - Test keyboard navigation throughout the interface\n   - Verify screen reader compatibility\n   - Check color contrast ratios meet WCAG standards\n   - Ensure all interactive elements have appropriate ARIA attributes\n\n5. Performance Testing:\n   - Measure initial load time of migrated components\n   - Test rendering performance with large datasets\n   - Verify bundle size impact of new components\n   - Check for any unnecessary re-renders\n   - Identify optimization opportunities\n\n6. Cross-browser Testing:\n   - Test in Chrome, Firefox, Safari, and Edge\n   - Verify consistent rendering across browsers\n   - Test on both desktop and mobile devices\n   - Document any browser-specific issues",
+        "status": "done",
+        "dependencies": [
+          13
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Debug and Fix Document Extraction Pipeline Failures",
+        "description": "Investigate and resolve critical errors in the document extraction pipeline, including Mistral API \"Unexpected token 'S'\" errors and \"Invalid 'prisma.document.create'\" database issues to ensure reliable document processing.",
+        "details": "1. Diagnose Mistral API \"Unexpected token 'S'\" errors:\n   - Review API call implementation and response handling\n   - Capture and analyze raw API responses to identify malformed JSON\n   - Check for potential encoding issues or unexpected response formats\n   - Implement proper response validation before JSON parsing\n\n2. Fix JSON parsing issues:\n   - Add robust error handling around JSON.parse() operations\n   - Implement try/catch blocks with detailed error logging\n   - Create sanitization functions to handle unexpected characters in responses\n   - Add response validation to ensure proper structure before processing\n\n3. Debug Prisma database errors:\n   - Review \"Invalid 'prisma.document.create'\" error traces\n   - Validate schema compliance of document objects before database insertion\n   - Check for missing required fields or invalid data types\n   - Ensure proper error handling for database operations\n\n4. Enhance error logging and monitoring:\n   - Implement structured logging for extraction pipeline failures\n   - Add context-rich error messages with document IDs and processing stage\n   - Create error categorization system to group similar failures\n   - Set up alerting for critical extraction failures\n\n5. Implement fallback mechanisms:\n   - Create retry logic with exponential backoff for API failures\n   - Implement alternative extraction paths when primary method fails\n   - Add circuit breaker pattern to prevent cascading failures\n   - Create queue system for failed documents to retry processing later\n\n6. Test extraction pipeline:\n   - Create test suite with sample documents representing different formats\n   - Implement integration tests for the complete extraction flow\n   - Add unit tests for individual components of the pipeline\n   - Create stress tests to identify performance bottlenecks\n\n7. Ensure database schema compliance:\n   - Validate extraction results against Prisma schema requirements\n   - Implement data transformation layer to normalize API responses\n   - Add pre-save validation to catch schema violations\n   - Create data migration utilities for handling schema changes",
+        "testStrategy": "1. Error Reproduction Testing:\n   - Create a test environment that reproduces both the Mistral API and Prisma database errors\n   - Document exact steps and conditions that trigger each error\n   - Verify error patterns match those observed in production\n\n2. API Response Validation:\n   - Test API response handling with mocked responses containing the problematic \"S\" token\n   - Verify proper handling of malformed JSON responses\n   - Test with various error conditions from the Mistral API\n   - Validate retry logic works correctly for temporary API failures\n\n3. Database Operation Testing:\n   - Create test cases for document creation with valid and invalid data\n   - Verify proper validation before database operations\n   - Test error handling for database constraint violations\n   - Validate transaction rollback works correctly on failure\n\n4. End-to-End Pipeline Testing:\n   - Test complete extraction pipeline with sample documents\n   - Verify documents flow through all processing stages correctly\n   - Validate successful extraction results in proper database entries\n   - Test error handling at each stage of the pipeline\n\n5. Logging and Monitoring Validation:\n   - Verify all errors are properly logged with sufficient context\n   - Test error categorization system with various failure types\n   - Validate alerts are triggered for critical failures\n   - Ensure logs contain enough information for debugging\n\n6. Performance and Reliability Testing:\n   - Test extraction pipeline with high volume of documents\n   - Measure success rate and processing time\n   - Verify system stability under load\n   - Test recovery from various failure scenarios\n\n7. Regression Testing:\n   - Verify fixes don't introduce new issues in the extraction pipeline\n   - Test with previously successful documents to ensure continued functionality\n   - Validate all business rules still work with fixed extraction pipeline",
+        "status": "pending",
+        "dependencies": [
+          3,
+          5,
+          14
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Debug API \"Failed to fetch jobs\" Error",
+        "description": "Investigate and resolve the \"Failed to fetch jobs\" error preventing the dashboard-real page from loading job data, focusing on database connection issues and API route problems.",
+        "details": "1. Diagnostic Investigation:\n   - Capture and analyze network requests to identify exact failure points\n   - Check browser console for detailed error messages and stack traces\n   - Review server logs for API route errors and database connection failures\n   - Verify API endpoint configuration in frontend code matches backend routes\n\n2. Database Connection Troubleshooting:\n   - Validate database connection string and credentials in environment variables\n   - Check for database connection pool exhaustion or timeout issues\n   - Verify Prisma client initialization and connection handling\n   - Test database connectivity directly using Prisma Studio or similar tools\n   - Implement connection retry logic with proper error handling\n\n3. API Route Debugging:\n   - Review API route implementation for job data retrieval\n   - Check request parameter validation and error handling\n   - Verify proper error responses are being returned (status codes and messages)\n   - Test API endpoints directly using Postman or curl to isolate frontend vs backend issues\n   - Implement detailed logging for API route execution path\n\n4. Data Model Verification:\n   - Confirm job data schema matches between frontend expectations and database\n   - Check for any recent schema changes that might affect job data retrieval\n   - Verify data transformation logic between database and API response\n\n5. Fix Implementation:\n   - Implement proper error handling in API routes with informative error messages\n   - Add retry mechanism for transient database connection issues\n   - Update frontend error handling to provide user-friendly messages\n   - Implement loading states to improve user experience during data fetching\n   - Add comprehensive logging to facilitate future debugging\n\n6. Performance Optimization:\n   - Analyze query performance and optimize if necessary\n   - Consider implementing caching for frequently accessed job data\n   - Review pagination implementation for large job datasets",
+        "testStrategy": "1. Error Reproduction Testing:\n   - Document exact steps to reproduce the \"Failed to fetch jobs\" error\n   - Create a test environment that consistently reproduces the issue\n   - Verify the error occurs under the same conditions as reported\n\n2. API Endpoint Testing:\n   - Create automated tests for job data API endpoints\n   - Test with various query parameters and edge cases\n   - Verify correct error handling for invalid requests\n   - Confirm appropriate HTTP status codes are returned\n\n3. Database Connection Testing:\n   - Test database connection under various load conditions\n   - Verify connection pooling works correctly\n   - Simulate connection failures to test error handling\n   - Validate retry mechanisms function as expected\n\n4. Integration Testing:\n   - Test the complete flow from frontend request to database and back\n   - Verify correct data is displayed on the dashboard-real page\n   - Test with various job data scenarios (empty, few jobs, many jobs)\n   - Validate pagination and filtering functionality\n\n5. User Experience Verification:\n   - Confirm appropriate loading states are displayed during data fetching\n   - Verify user-friendly error messages appear when issues occur\n   - Test recovery paths when connection is restored\n\n6. Regression Testing:\n   - Ensure fixes don't introduce new issues in related functionality\n   - Verify all dashboard components load and function correctly\n   - Test on multiple browsers and devices to ensure compatibility",
+        "status": "done",
+        "dependencies": [
+          3,
+          15,
+          16
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "WebSocket Implementation for Real-Time Job Progress Tracking",
+        "description": "Implement WebSocket functionality to provide real-time updates on document processing jobs, including server setup, client connection management, progress event broadcasting, and UI integration.",
+        "details": "1. WebSocket Server Implementation:\n   - Set up a WebSocket server using Socket.IO or native WebSockets\n   - Configure the server to run alongside the existing API routes\n   - Implement authentication and authorization for WebSocket connections\n   - Create namespaces for different types of events (job progress, notifications)\n   - Set up error handling and connection recovery mechanisms\n\n2. Client Connection Management:\n   - Implement connection pooling to handle multiple concurrent clients\n   - Create a connection registry to track active clients and their subscriptions\n   - Implement heartbeat mechanism to detect disconnected clients\n   - Add reconnection logic with exponential backoff\n   - Create middleware for validating client connections\n\n3. Job Progress Event System:\n   - Modify the document processing queue to emit progress events\n   - Create standardized event payloads with job ID, status, progress percentage\n   - Implement event throttling to prevent overwhelming clients\n   - Add detailed status messages for each processing stage\n   - Create event hooks at key points in the processing pipeline\n\n4. Real-Time UI Updates:\n   - Implement a WebSocket client in the frontend\n   - Create a ProgressTracker component with visual indicators\n   - Add animated progress bars for active jobs\n   - Implement toast notifications for job status changes\n   - Create a central WebSocket context provider for app-wide access\n   - Add error handling and offline mode for WebSocket disconnections\n\n5. Testing and Monitoring:\n   - Implement WebSocket connection logging\n   - Create monitoring endpoints for WebSocket server health\n   - Add performance metrics collection for connection counts and message throughput\n   - Implement load testing for concurrent connections",
+        "testStrategy": "1. WebSocket Server Testing:\n   - Verify server can handle multiple concurrent connections\n   - Test authentication and authorization mechanisms\n   - Validate server performance under load with simulated clients\n   - Test server recovery after crashes or restarts\n   - Verify proper cleanup of disconnected clients\n\n2. Client Connection Testing:\n   - Test client reconnection logic with forced disconnections\n   - Verify heartbeat mechanism correctly identifies dead connections\n   - Test connection registry accuracy with multiple clients\n   - Validate connection pooling under high load\n   - Test authentication token expiration and renewal\n\n3. Progress Event Testing:\n   - Verify events are emitted at all key processing stages\n   - Test event payload structure and completeness\n   - Validate event delivery to subscribed clients only\n   - Test throttling mechanism under high event frequency\n   - Verify events are received in correct order\n\n4. UI Integration Testing:\n   - Test progress bar updates with simulated job progress events\n   - Verify toast notifications appear for status changes\n   - Test UI behavior during WebSocket disconnections\n   - Validate progress tracking across multiple simultaneous jobs\n   - Test UI responsiveness during high-frequency updates\n\n5. End-to-End Testing:\n   - Create automated tests that upload documents and verify progress tracking\n   - Test with various document sizes and processing times\n   - Verify final job completion events trigger appropriate UI updates\n   - Test system behavior with network interruptions\n   - Validate performance with multiple users tracking multiple jobs",
+        "status": "done",
+        "dependencies": [
+          6,
+          16,
+          17
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up WebSocket server with Next.js",
+            "description": "Implement a WebSocket server using Socket.IO that integrates with the existing Next.js application, including authentication and event namespaces.",
+            "dependencies": [],
+            "details": "1. Install Socket.IO package and dependencies\n2. Create a custom server.js file to run both Next.js and Socket.IO\n3. Configure CORS settings for WebSocket connections\n4. Implement JWT token validation middleware for socket authentication\n5. Set up namespaces for 'job-progress' and 'notifications' events\n6. Create connection event handlers for socket lifecycle events\n7. Implement error handling for socket server failures\n8. Configure the server to work in both development and production environments",
+            "status": "done",
+            "testStrategy": "1. Test server initialization with the Next.js application\n2. Verify authentication middleware correctly validates tokens\n3. Test namespace isolation by ensuring events only reach appropriate subscribers\n4. Simulate server errors to verify error handling mechanisms\n5. Verify CORS settings allow connections from authorized origins only"
+          },
+          {
+            "id": 2,
+            "title": "Implement client connection management",
+            "description": "Create a robust client connection management system that handles connection pooling, client tracking, and reconnection logic.",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "1. Create a ConnectionManager class to track active client connections\n2. Implement a client registry that maps user IDs to socket connections\n3. Add connection pooling to efficiently manage multiple concurrent clients\n4. Implement a heartbeat mechanism that sends ping/pong messages every 30 seconds\n5. Create reconnection logic with exponential backoff (starting at 1s, max 30s)\n6. Add middleware to validate client permissions for specific job subscriptions\n7. Implement clean disconnection handling to remove clients from registry\n8. Create methods to broadcast messages to specific clients or groups",
+            "status": "done",
+            "testStrategy": "1. Test connection registry correctly tracks connected clients\n2. Verify heartbeat mechanism detects disconnected clients\n3. Test reconnection logic works with various network interruption scenarios\n4. Verify client permissions are correctly enforced for job subscriptions\n5. Test performance with simulated high connection counts"
+          },
+          {
+            "id": 3,
+            "title": "Develop job progress event system",
+            "description": "Modify the document processing queue to emit progress events at key stages and create a standardized event payload structure.",
+            "dependencies": [
+              "18.1"
+            ],
+            "details": "1. Identify key progress points in the document processing pipeline\n2. Add event emitters at each stage (upload, extraction, analysis, completion)\n3. Create a standardized event payload format with jobId, status, progress percentage, and timestamp\n4. Implement event throttling to limit updates to max 1 per second per job\n5. Add detailed status messages for each processing stage\n6. Create a central EventEmitter that connects to the WebSocket server\n7. Modify the job queue processor to emit events when status changes\n8. Implement error event handling for failed jobs",
+            "status": "done",
+            "testStrategy": "1. Verify events are emitted at all key processing stages\n2. Test event throttling prevents excessive message sending\n3. Validate event payload structure contains all required information\n4. Test error events are properly captured and transmitted\n5. Verify events are received by the WebSocket server correctly"
+          },
+          {
+            "id": 4,
+            "title": "Create real-time UI components for job tracking",
+            "description": "Implement frontend components that connect to the WebSocket server and display real-time progress updates for document processing jobs.",
+            "dependencies": [
+              "18.2",
+              "18.3"
+            ],
+            "details": "1. Create a WebSocketProvider context component to manage socket connection\n2. Implement a useWebSocket hook for components to access socket functionality\n3. Develop a JobProgressTracker component with progress bar and status display\n4. Add toast notifications for job status changes using react-toastify\n5. Create animated progress indicators using CSS transitions\n6. Implement the UI updates on the analysis page to show real-time progress\n7. Add visual indicators for connection status (connected/disconnected)\n8. Create a job history panel showing recently completed jobs\n<info added on 2025-08-14T00:10:12.708Z>\nCOMPLETED: Successfully implemented real-time progress tracking system with the following components:\n\n1. **PollingProvider** - Created polling-based real-time updates system that works with Next.js 15\n2. **JobProgressTracker** - Built interactive progress component with:\n   - Real-time progress bars with animation\n   - Live status indicators (connecting/connected/disconnected)  \n   - Error handling and display\n   - Extraction summary display when processing completes\n   - Visual connection status indicators\n\n3. **Processing Queue Integration** - Updated processing queue to emit progress events:\n   - Job queued (20% progress)\n   - Processing started (40% progress)  \n   - Extraction complete (100% progress)\n   - Error states with detailed messaging\n\n4. **Layout Integration** - Successfully integrated PollingProvider into app layout\n5. **Analysis Page Integration** - Updated analysis page to use real-time progress tracking\n\n6. **Mistral OCR API Fix** - Corrected API format from Task Master documentation:\n   - Changed from FormData to chat completions format\n   - Updated to use 'document' field instead of 'file' parameter\n   - Fixed response parsing for chat completion format\n</info added on 2025-08-14T00:10:12.708Z>",
+            "status": "done",
+            "testStrategy": "1. Test WebSocketProvider correctly manages connection lifecycle\n2. Verify progress bars accurately reflect job completion percentage\n3. Test toast notifications appear for appropriate status changes\n4. Verify UI gracefully handles connection interruptions\n5. Test components render correctly with various job statuses"
+          },
+          {
+            "id": 5,
+            "title": "Implement connection state management and error handling",
+            "description": "Create robust error handling and connection state management for both client and server WebSocket implementations.",
+            "dependencies": [
+              "18.2",
+              "18.4"
+            ],
+            "details": "1. Implement a connection state machine with states: connecting, connected, disconnected, reconnecting\n2. Create visual indicators in the UI for connection state\n3. Add offline mode functionality to queue updates when disconnected\n4. Implement error boundary components to catch and display WebSocket errors\n5. Create a reconnection strategy with user-triggered manual reconnect option\n6. Add detailed client-side logging for connection events and errors\n7. Implement server-side logging for connection issues\n8. Create a health check endpoint to monitor WebSocket server status",
+            "status": "done",
+            "testStrategy": "1. Test state transitions through all connection states\n2. Verify offline mode correctly queues and resends messages\n3. Test error boundaries catch and display WebSocket errors appropriately\n4. Verify manual reconnection works when auto-reconnect fails\n5. Test logging captures sufficient detail for troubleshooting"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-13T17:34:00.440Z",
+      "updated": "2025-08-14T00:38:29.088Z",
       "description": "Tasks for master context"
     }
   }

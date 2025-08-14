@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
         mistralExtractions: {
           select: {
             id: true,
-            fieldsFound: true,
+            documentType: true,
             confidence: true,
           },
           take: 1,

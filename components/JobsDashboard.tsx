@@ -1,7 +1,5 @@
-'use client';
-
-import { Badge } from './badge';
-import { Button } from './button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Table,
   TableBody,
@@ -9,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './table';
+} from '@/components/ui/table';
 import { 
   Plus,
   ExternalLink,
@@ -18,13 +16,14 @@ import {
   TrendingUp,
   Calendar
 } from 'lucide-react';
-import { JobSummary, mockJobSummaries } from '../types';
+import { JobSummary } from '@/lib/mockData';
 
 interface JobsDashboardProps {
   onJobSelect: (jobId: string) => void;
+  jobs?: JobSummary[];
 }
 
-export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
+export function JobsDashboard({ onJobSelect, jobs = [] }: JobsDashboardProps) {
   const getStatusBadge = (status: JobSummary['status']) => {
     const statusConfig = {
       uploading: { 
@@ -113,7 +112,7 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                  {mockJobSummaries.length}
+                  {jobs.length}
                 </p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Total Jobs</p>
               </div>
@@ -127,7 +126,7 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                  {formatCurrency(mockJobSummaries.reduce((sum, job) => sum + job.totalSupplementValue, 0))}
+                  {formatCurrency(jobs.reduce((sum, job) => sum + job.totalSupplementValue, 0))}
                 </p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Total Supplements</p>
               </div>
@@ -141,7 +140,7 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                  {mockJobSummaries.filter(job => job.status === 'reviewing').length}
+                  {jobs.filter(job => job.status === 'reviewing').length}
                 </p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Pending Review</p>
               </div>
@@ -155,7 +154,7 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                  {mockJobSummaries.filter(job => job.status === 'complete').length}
+                  {jobs.filter(job => job.status === 'complete').length}
                 </p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Completed</p>
               </div>
@@ -165,54 +164,54 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
 
         {/* Jobs Table */}
         <div className="bg-white rounded-lg border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800">
-          <div className="px-4 py-4 border-b border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 ml-1">Recent Jobs</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 ml-1">
+          <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Jobs</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               Click on any job to view detailed analysis and generate supplements
             </p>
           </div>
 
-          <Table bleed={true}>
-            <TableHead>
+          <Table>
+            <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHeader className="w-[250px] font-medium text-zinc-700 dark:text-zinc-300">
-                  <span className="ml-2 inline-block">Customer</span>
-                </TableHeader>
-                <TableHeader className="font-medium text-zinc-700 dark:text-zinc-300">
+                <TableHead className="w-[250px] font-medium text-zinc-700 dark:text-zinc-300">
+                  Customer
+                </TableHead>
+                <TableHead className="font-medium text-zinc-700 dark:text-zinc-300">
                   Property Address
-                </TableHeader>
-                <TableHeader className="font-medium text-zinc-700 dark:text-zinc-300">
+                </TableHead>
+                <TableHead className="font-medium text-zinc-700 dark:text-zinc-300">
                   Insurance Carrier
-                </TableHeader>
-                <TableHeader className="text-center font-medium text-zinc-700 dark:text-zinc-300">
+                </TableHead>
+                <TableHead className="text-center font-medium text-zinc-700 dark:text-zinc-300">
                   Supplements
-                </TableHeader>
-                <TableHeader className="text-center font-medium text-zinc-700 dark:text-zinc-300">
+                </TableHead>
+                <TableHead className="text-center font-medium text-zinc-700 dark:text-zinc-300">
                   Status
-                </TableHeader>
-                <TableHeader className="text-center font-medium text-zinc-700 dark:text-zinc-300">
+                </TableHead>
+                <TableHead className="text-center font-medium text-zinc-700 dark:text-zinc-300">
                   Created
-                </TableHeader>
-                <TableHeader className="w-[100px] font-medium text-zinc-700 dark:text-zinc-300">
+                </TableHead>
+                <TableHead className="w-[100px] font-medium text-zinc-700 dark:text-zinc-300">
                   Action
-                </TableHeader>
+                </TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
-              {mockJobSummaries.map((job) => (
+              {jobs.map((job) => (
                 <TableRow 
                   key={job.id} 
                   className="cursor-pointer transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                   onClick={() => onJobSelect(job.id)}
                 >
                   <TableCell className="py-4">
-                    <div className="flex items-center ml-2">
+                    <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
                         <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                           {job.customerName.split(' ').map(n => n[0]).join('')}
                         </span>
                       </div>
-                      <div className="ml-6">
+                      <div>
                         <p className="font-medium text-zinc-900 dark:text-zinc-100">
                           {job.customerName}
                         </p>
@@ -279,7 +278,7 @@ export function JobsDashboard({ onJobSelect }: JobsDashboardProps) {
         </div>
 
         {/* Empty State (if no jobs) */}
-        {mockJobSummaries.length === 0 && (
+        {jobs.length === 0 && (
           <div className="bg-white rounded-lg border border-zinc-200 p-12 text-center dark:bg-zinc-900 dark:border-zinc-800">
             <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-blue-100 mx-auto mb-4 dark:bg-blue-900/30">
               <Building className="h-8 w-8 text-blue-600 dark:text-blue-400" />

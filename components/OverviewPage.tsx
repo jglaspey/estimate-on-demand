@@ -1,5 +1,5 @@
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle,
   AlertTriangle,
@@ -14,8 +14,8 @@ import {
   User,
   Shield
 } from 'lucide-react';
-import { ChatBox } from './ChatBox';
-import { JobData, RoofMeasurements, RuleAnalysisResult } from '../lib/mockData';
+import { ChatBox } from '@/components/ChatBox';
+import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/lib/mockData';
 
 interface OverviewPageProps {
   jobData: JobData;
