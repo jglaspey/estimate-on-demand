@@ -13,8 +13,8 @@ const mistral = new Mistral({
 });
 
 // Centralized model identifiers for consistency and easy updates
-const MISTRAL_OCR_MODEL = 'mistral-ocr-latest';
-const MISTRAL_TEXT_MODEL = 'mistral-large-latest';
+const MISTRAL_OCR_MODEL = 'mistral-ocr-2505'; // Use the specific OCR model available in the account
+const MISTRAL_TEXT_MODEL = 'mistral-large-latest'; // TODO: Verify which text model is available
 
 export interface DocumentClassification {
   type: 'roof_report' | 'estimate' | 'unknown';
@@ -581,8 +581,14 @@ Important: Return null for any section where you cannot find reliable data. Be c
       if (data.claimInfo.carrier) updateData.carrier = data.claimInfo.carrier;
       if (data.claimInfo.claimRep)
         updateData.claimRep = data.claimInfo.claimRep;
-      if (data.claimInfo.estimator)
-        updateData.estimator = data.claimInfo.estimator;
+      if (data.claimInfo.estimator) {
+        // Handle both string and FieldWithCoordinates format
+        updateData.estimator =
+          typeof data.claimInfo.estimator === 'string'
+            ? data.claimInfo.estimator
+            : data.claimInfo.estimator.value ||
+              JSON.stringify(data.claimInfo.estimator);
+      }
       if (data.claimInfo.originalEstimate)
         updateData.originalEstimate = data.claimInfo.originalEstimate;
     }
@@ -595,11 +601,29 @@ Important: Return null for any section where you cannot find reliable data. Be c
         updateData.roofStories = data.roofingData.stories;
       if (data.roofingData.rake) updateData.rakeLength = data.roofingData.rake;
       if (data.roofingData.eave) updateData.eaveLength = data.roofingData.eave;
-      if (data.roofingData.ridgeHip)
-        updateData.ridgeHipLength = data.roofingData.ridgeHip;
+      if (data.roofingData.ridgeHip) {
+        // Handle complex ridgeHip object or simple number
+        updateData.ridgeHipLength =
+          typeof data.roofingData.ridgeHip === 'object' &&
+          data.roofingData.ridgeHip?.ridge
+            ? data.roofingData.ridgeHip.ridge +
+              (data.roofingData.ridgeHip.hip || 0)
+            : typeof data.roofingData.ridgeHip === 'number'
+              ? data.roofingData.ridgeHip
+              : parseFloat(String(data.roofingData.ridgeHip)) || 0;
+      }
       if (data.roofingData.valley)
         updateData.valleyLength = data.roofingData.valley;
-      if (data.roofingData.slope) updateData.roofSlope = data.roofingData.slope;
+      if (data.roofingData.slope) {
+        // Handle complex slope object or simple string
+        updateData.roofSlope =
+          typeof data.roofingData.slope === 'object' &&
+          data.roofingData.slope?.predominantPitch
+            ? data.roofingData.slope.predominantPitch
+            : typeof data.roofingData.slope === 'string'
+              ? data.roofingData.slope
+              : String(data.roofingData.slope);
+      }
       if (data.roofingData.material)
         updateData.roofMaterial = data.roofingData.material;
     }
@@ -689,7 +713,7 @@ Important: Return null for any section where you cannot find reliable data. Be c
     text: string
   ): Promise<PriorityFields> {
     try {
-      const prompt = `
+      const _prompt = `
 Extract ONLY the following priority fields from this document text. Return as JSON with confidence scores and coordinates if possible.
 
 Required fields:
@@ -716,6 +740,9 @@ Document text:
 ${text.substring(0, 2000)}
 `;
 
+      // TEMPORARILY DISABLED: Mistral chat completions for priority field extraction
+      // TODO: Replace with Claude or another service for text analysis
+      /*
       const response = await mistral.chat.complete({
         model: MISTRAL_TEXT_MODEL,
         messages: [{ role: 'user', content: prompt }],
@@ -741,6 +768,11 @@ ${text.substring(0, 2000)}
         : s;
       const safe = jsonCandidate.replace(/,\s*([}\]])/g, '$1');
       return JSON.parse(safe as string) as PriorityFields;
+      */
+
+      // Return empty priority fields for now - OCR will still work
+      console.log('Priority field extraction from text temporarily disabled');
+      return {} as PriorityFields;
     } catch (error) {
       console.error('Priority field extraction failed:', error);
       return {}; // Return empty object if extraction fails
