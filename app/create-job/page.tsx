@@ -141,7 +141,7 @@ export default function CreateNewJob() {
   useEffect(() => {
     if (progressState.status === 'completed' && currentJobId) {
       setTimeout(() => {
-        router.push(`/analysis/${currentJobId}`);
+        router.push(`/job-detail/${currentJobId}`);
       }, 2000); // Wait 2 seconds to show completion state
     }
   }, [progressState.status, currentJobId, router]);

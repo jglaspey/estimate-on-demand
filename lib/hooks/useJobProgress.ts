@@ -14,7 +14,7 @@ interface JobProgressState {
 }
 
 interface JobProgressEvent {
-  type: 'upload:progress' | 'extraction:priority' | 'extraction:page' | 'extraction:complete' | 'error';
+  type: 'upload:progress' | 'extraction:priority' | 'extraction:page' | 'extraction:complete' | 'phase1:complete' | 'error';
   data: any;
 }
 
@@ -47,6 +47,29 @@ export function useJobProgress(jobId?: string) {
           progress: 30,
           message: 'Extracting key information...',
           priorityFields: event.data.priority_fields
+        }));
+        break;
+
+      case 'phase1:complete':
+        // Handle Phase 1 Claude extraction completion
+        const fields = event.data.fields || {};
+        const metadata = event.data;
+        
+        setProgressState(prev => ({
+          ...prev,
+          status: 'processing',
+          progress: 45,
+          message: `Phase 1 complete: ${metadata.fieldsFound}/8 fields (${metadata.confidence} confidence)`,
+          priorityFields: {
+            customer_name: fields.customerName ? { value: fields.customerName, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            property_address: fields.propertyAddress ? { value: fields.propertyAddress, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            carrier: fields.carrier ? { value: fields.carrier, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            claim_rep: fields.claimRep ? { value: fields.claimRep, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            estimator: fields.estimator ? { value: fields.estimator, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            date_of_loss: fields.dateOfLoss ? { value: fields.dateOfLoss, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            claim_number: fields.claimNumber ? { value: fields.claimNumber, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined,
+            policy_number: fields.policyNumber ? { value: fields.policyNumber, confidence: metadata.confidence === 'high' ? 0.9 : metadata.confidence === 'medium' ? 0.7 : 0.5 } : undefined
+          }
         }));
         break;
 

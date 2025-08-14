@@ -30,16 +30,19 @@ model Job {
   carrier            String?
   claimRep           String?
   estimator          String?
-  originalEstimate   Float?
-  roofSquares        Float?
-  roofStories        Int?
-  rakeLength         Float?
-  eaveLength         Float?
-  ridgeHipLength     Float?
-  valleyLength       Float?
-  roofSlope          String?
-  roofMaterial       String?
-  userId             String?
+  originalEstimate        Float?
+  roofSquares             Float?
+  roofStories             Int?
+  rakeLength              Float?
+  eaveLength              Float?
+  ridgeHipLength          Float?
+  valleyLength            Float?
+  roofSlope               String?
+  roofMaterial            String?
+  userId                  String?
+  extractionConfidence    String?  // 'high', 'medium', 'low'
+  extractionRate          Int?     // percentage 0-100
+  phase1ProcessingTime    Int?     // milliseconds
   documentPages      DocumentPage[]
   documents          Document[]
   mistralExtractions MistralExtraction[]

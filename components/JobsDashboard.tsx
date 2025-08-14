@@ -92,7 +92,7 @@ export function JobsDashboard({
               </div>
               <div>
                 <h1 className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
-                  Insurance Jobs
+                  Estimate on Demand
                 </h1>
                 <p className='text-sm text-zinc-500 dark:text-zinc-400'>
                   Manage your insurance supplement analysis jobs

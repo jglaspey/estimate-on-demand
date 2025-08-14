@@ -135,7 +135,7 @@ export default function RealDashboardPage() {
 
   const handleNewJob = () => {
     // Navigate to upload page for new job creation
-    router.push('/upload');
+    router.push('/create-job');
   };
 
   if (loading) {
@@ -176,49 +176,6 @@ export default function RealDashboardPage() {
           </p>
         </div>
 
-        <div className='mb-6'>
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
-            <div className='rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900'>
-              <div className='text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-                {jobs.length}
-              </div>
-              <div className='text-sm text-zinc-500 dark:text-zinc-400'>
-                Total Jobs
-              </div>
-            </div>
-            <div className='rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900'>
-              <div className='text-2xl font-bold text-emerald-600'>
-                {jobs.filter(j => j.status === 'complete').length}
-              </div>
-              <div className='text-sm text-zinc-500 dark:text-zinc-400'>
-                Completed
-              </div>
-            </div>
-            <div className='rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900'>
-              <div className='text-2xl font-bold text-blue-600'>
-                {
-                  jobs.filter(j =>
-                    ['extracting', 'analyzing'].includes(j.status)
-                  ).length
-                }
-              </div>
-              <div className='text-sm text-zinc-500 dark:text-zinc-400'>
-                Processing
-              </div>
-            </div>
-            <div className='rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900'>
-              <div className='text-2xl font-bold text-zinc-900 dark:text-zinc-100'>
-                $
-                {jobs
-                  .reduce((sum, job) => sum + job.totalSupplementValue, 0)
-                  .toLocaleString()}
-              </div>
-              <div className='text-sm text-zinc-500 dark:text-zinc-400'>
-                Total Supplements
-              </div>
-            </div>
-          </div>
-        </div>
 
         <JobsDashboard
           onJobSelect={handleJobSelect}

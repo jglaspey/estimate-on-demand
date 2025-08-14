@@ -6,6 +6,7 @@ import {
 
 // import { mistralService } from './mistral-service'; // Not currently used in dual-phase workflow
 import { smartExtractionService } from './smart-extraction-service';
+import { executeUploadExtraction } from './upload-integration';
 
 export interface ProcessingJob {
   jobId: string;
@@ -123,14 +124,41 @@ export class DocumentProcessingQueue {
         'Starting fast core info extraction...'
       );
 
-      // ⚡ PHASE 1: Lightning-fast core info extraction (30-60 seconds)
+      // ⚡ PHASE 1: Lightning-fast core info extraction using Claude direct PDF (5-10 seconds)
       console.log(`⚡ PHASE 1: Fast core extraction for job ${job.jobId}`);
-      const coreInfo = await smartExtractionService.extractCoreInfoFast(
-        job.filePaths,
-        job.jobId
-      );
+      
+      // Use first file for primary extraction (usually estimate)
+      const primaryFilePath = job.filePaths[0];
+      const fileName = primaryFilePath.split('/').pop() || 'document';
+      
+      const phase1Result = await executeUploadExtraction({
+        jobId: job.jobId,
+        filePath: primaryFilePath,
+        fileName,
+        websocket: undefined, // We'll use our own progress events
+        fallbackToOCR: false,
+        skipExtraction: false
+      });
 
-      console.log(`✅ PHASE 1 complete for job ${job.jobId}:`, coreInfo);
+      console.log(`✅ PHASE 1 complete for job ${job.jobId}:`, phase1Result);
+      
+      // Update database with Phase 1 fields
+      await this.updateJobWithPhase1Fields(job.jobId, phase1Result);
+      
+      // Emit progress with extracted fields
+      this.emitJobProgress(
+        job.jobId,
+        'PHASE1_COMPLETE',
+        'phase1_complete',
+        45,
+        `Phase 1 extraction complete: ${phase1Result.metadata.fieldsFound}/8 fields found (${phase1Result.metadata.confidence} confidence)`,
+        {
+          fieldsFound: phase1Result.metadata.fieldsFound,
+          extractionRate: phase1Result.metadata.extractionRate,
+          confidence: phase1Result.metadata.confidence,
+          fields: phase1Result.fields
+        }
+      );
 
       // 🔄 PHASE 2: Full document extraction (parallel, in background)
       // This runs in parallel and doesn't block the user
@@ -234,6 +262,39 @@ export class DocumentProcessingQueue {
    */
   getJobStatus(jobId: string): ProcessingJob | null {
     return this.processingQueue.get(jobId) || null;
+  }
+
+  /**
+   * Update job record with Phase 1 extracted fields
+   */
+  private async updateJobWithPhase1Fields(jobId: string, phase1Result: any): Promise<void> {
+    try {
+      const { fields, metadata } = phase1Result;
+      
+      await prisma.job.update({
+        where: { id: jobId },
+        data: {
+          status: 'TEXT_EXTRACTED',
+          customerName: fields.customerName,
+          customerAddress: fields.propertyAddress,
+          carrier: fields.carrier,
+          claimNumber: fields.claimNumber,
+          policyNumber: fields.policyNumber,
+          claimRep: fields.claimRep,
+          estimator: fields.estimator,
+          dateOfLoss: fields.dateOfLoss ? new Date(fields.dateOfLoss) : null,
+          extractionConfidence: metadata.confidence,
+          extractionRate: metadata.extractionRate,
+          phase1ProcessingTime: metadata.processingTimeMs,
+          updatedAt: new Date(),
+        },
+      });
+      
+      console.log(`Updated job ${jobId} with Phase 1 fields (${metadata.fieldsFound}/8 fields)`);
+    } catch (error) {
+      console.error(`Failed to update job ${jobId} with Phase 1 fields:`, error);
+      throw error;
+    }
   }
 
   /**
