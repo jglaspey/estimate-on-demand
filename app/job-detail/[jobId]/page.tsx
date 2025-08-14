@@ -6,7 +6,6 @@ import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { OverviewPage } from '@/front-end-mockup/components/OverviewPage';
 import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard';
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
@@ -14,6 +13,8 @@ import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
 import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
 import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
 import { JobDetailsCard } from '@/components/JobDetailsCard';
+
+import { OverviewPage } from '@/front-end-mockup/components/OverviewPage';
 import { StickyFooter } from '@/front-end-mockup/components/StickyFooter';
 
 // Types based on our current extraction data structure
@@ -90,6 +91,7 @@ export default function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDemoMode, setShowDemoMode] = useState(false);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -505,6 +507,14 @@ export default function JobDetailPage() {
               <span className='text-sm text-zinc-500 dark:text-zinc-400 ml-2'>
                 Rule {currentRuleIndex + 1} of {ruleAnalysis.length}
               </span>
+              <Button
+                variant={showDemoMode ? 'default' : 'outline'}
+                size='sm'
+                className='h-7 text-xs ml-4'
+                onClick={() => setShowDemoMode(!showDemoMode)}
+              >
+                {showDemoMode ? '🟢 Demo Mode' : '📊 Live Data'}
+              </Button>
             </div>
 
             <div className='flex items-center gap-3'>
@@ -560,6 +570,54 @@ export default function JobDetailPage() {
                 <RidgeCapAnalysis
                   ruleNumber={currentRuleIndex + 1}
                   totalRules={ruleAnalysis.length}
+                  showHighlighting={!showDemoMode} // Only show highlighting in Live Data mode
+                  ridgeCapData={
+                    showDemoMode
+                      ? {
+                          // Demo mode with mock extracted data (green highlights)
+                          estimateQuantity: '6 LF',
+                          estimateUnitPrice: '$42.90/LF',
+                          estimateTotal: '$257.40',
+                          requiredQuantity: '119 LF',
+                          ridgeLength: 26,
+                          hipLength: 93,
+                          variance: '-113 LF',
+                          varianceAmount: -113,
+                          costImpact: 4847.7,
+                          confidence: 0.95,
+                          roofType: 'Laminated',
+                          ridgeCapType: 'Purpose-built Standard',
+                          complianceStatus: 'compliant' as const,
+                          lineItemCode: 'RFG RIDGC',
+                          lineItemDescription:
+                            'Hip/Ridge cap - Standard profile',
+                          complianceText:
+                            'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards',
+                          documentationNote:
+                            'Ridge cap shortage identified. EagleView report documents 119 LF total ridge/hip coverage required (Ridges: 26 LF + Hips: 93 LF). Current estimate includes only 6 LF, creating a shortage of 113 LF. Material type (Standard profile) is correctly specified and should be increased to match documented roof geometry. Additional coverage required: 113 LF @ $42.90/LF = $4847.70.',
+                        }
+                      : {
+                          // Live data mode - actual database values (currently undefined = red highlights)
+                          // Future: extract from ruleAnalysis[currentRuleIndex] or API response
+                          estimateQuantity: undefined,
+                          estimateUnitPrice: undefined,
+                          estimateTotal: undefined,
+                          requiredQuantity: undefined,
+                          ridgeLength: undefined,
+                          hipLength: undefined,
+                          variance: undefined,
+                          varianceAmount: undefined,
+                          costImpact: undefined,
+                          confidence: undefined,
+                          roofType: undefined,
+                          ridgeCapType: undefined,
+                          complianceStatus: undefined,
+                          lineItemCode: undefined,
+                          lineItemDescription: undefined,
+                          complianceText: undefined,
+                          documentationNote: undefined,
+                        }
+                  }
                 />
               ) : (
                 <div className='space-y-6'>

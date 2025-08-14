@@ -14,18 +14,81 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { ValueHighlight } from './ui/value-highlight';
+
+interface RidgeCapData {
+  estimateQuantity?: string;
+  estimateUnitPrice?: string;
+  estimateTotal?: string;
+  requiredQuantity?: string;
+  ridgeLength?: number;
+  hipLength?: number;
+  variance?: string;
+  varianceAmount?: number;
+  costImpact?: number;
+  confidence?: number;
+  roofType?: string;
+  ridgeCapType?: string;
+  complianceStatus?: 'compliant' | 'non-compliant';
+  lineItemCode?: string;
+  lineItemDescription?: string;
+  complianceText?: string;
+  documentationNote?: string;
+}
 
 interface RidgeCapAnalysisProps {
   ruleNumber: number;
   totalRules: number;
+  ridgeCapData?: RidgeCapData;
+  showHighlighting?: boolean; // New prop to control highlighting
 }
 
 export function RidgeCapAnalysis({
   ruleNumber,
   totalRules,
+  ridgeCapData,
+  showHighlighting = true, // Default to showing highlighting
 }: RidgeCapAnalysisProps) {
   const [showCalculationTrace, setShowCalculationTrace] = useState(false);
   const [customNotes, setCustomNotes] = useState('');
+
+  // Helper function to determine if a value is from live data or placeholder
+  const hasLiveData = (value: any) =>
+    value !== undefined && value !== null && value !== '';
+
+  // Helper component that conditionally wraps with highlighting
+  const ConditionalHighlight = ({
+    children,
+    isPlaceholder,
+  }: {
+    children: React.ReactNode;
+    isPlaceholder: boolean;
+  }) => {
+    if (!showHighlighting) {
+      return <>{children}</>;
+    }
+    return (
+      <ValueHighlight isPlaceholder={isPlaceholder}>{children}</ValueHighlight>
+    );
+  };
+
+  // Calculate values with clean XX-style placeholder fallbacks
+  const estimateQty = ridgeCapData?.estimateQuantity || 'XX LF';
+  const requiredQty = ridgeCapData?.requiredQuantity || 'XXX LF';
+  const variance = ridgeCapData?.variance || '-XXX LF';
+  const costImpact = ridgeCapData?.costImpact || 0;
+  const confidence = ridgeCapData?.confidence || 0;
+  const ridgeLength = ridgeCapData?.ridgeLength || 0;
+  const hipLength = ridgeCapData?.hipLength || 0;
+  const unitPrice = ridgeCapData?.estimateUnitPrice || '$XX.XX/LF';
+  const roofType = ridgeCapData?.roofType || 'XX Type';
+  const ridgeCapType = ridgeCapData?.ridgeCapType || 'XX Standard';
+  const isCompliant = ridgeCapData?.complianceStatus === 'compliant';
+  const lineItemCode = ridgeCapData?.lineItemCode || 'XX XXXXX';
+  const lineItemDescription =
+    ridgeCapData?.lineItemDescription || 'XX/Ridge cap - XX profile';
+  const complianceText = ridgeCapData?.complianceText || 'String';
+  const documentationNote = ridgeCapData?.documentationNote || 'String';
 
   return (
     <div className='space-y-6'>
@@ -49,10 +112,23 @@ export function RidgeCapAnalysis({
         <div className='flex items-center gap-2'>
           <AlertTriangle className='h-4 w-4 text-red-600 dark:text-red-400' />
           <span className='font-medium text-red-900 dark:text-red-100'>
-            Shortage: +113 LF needed
+            Shortage:{' '}
+            <ConditionalHighlight
+              isPlaceholder={!hasLiveData(ridgeCapData?.varianceAmount)}
+            >
+              {ridgeCapData?.varianceAmount
+                ? `+${Math.abs(ridgeCapData.varianceAmount)} LF needed`
+                : '+XXX LF needed'}
+            </ConditionalHighlight>
           </span>
           <span className='text-sm text-red-700 dark:text-red-300'>
-            95% confidence
+            <ConditionalHighlight
+              isPlaceholder={!hasLiveData(ridgeCapData?.confidence)}
+            >
+              {confidence > 0
+                ? `${Math.round(confidence * 100)}% confidence`
+                : 'XX% confidence'}
+            </ConditionalHighlight>
           </span>
           <button className='text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'>
             <HelpCircle className='h-4 w-4' />
@@ -95,7 +171,11 @@ export function RidgeCapAnalysis({
                 Estimate LF:
               </div>
               <div className='flex items-center gap-2'>
-                <span className='font-semibold'>6 LF</span>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.estimateQuantity)}
+                >
+                  {estimateQty}
+                </ConditionalHighlight>
                 <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1'>
                   <ExternalLink className='h-3 w-3' />
                   Estimate p.4
@@ -107,7 +187,11 @@ export function RidgeCapAnalysis({
                 Required LF:
               </div>
               <div className='flex items-center gap-2'>
-                <span className='font-semibold'>119 LF</span>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.requiredQuantity)}
+                >
+                  {requiredQty}
+                </ConditionalHighlight>
                 <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1'>
                   <ExternalLink className='h-3 w-3' />
                   Report p.2
@@ -121,7 +205,11 @@ export function RidgeCapAnalysis({
               Variance:
             </div>
             <div className='text-red-600 dark:text-red-400 font-semibold'>
-              -113 LF
+              <ConditionalHighlight
+                isPlaceholder={!hasLiveData(ridgeCapData?.variance)}
+              >
+                {variance}
+              </ConditionalHighlight>
             </div>
           </div>
 
@@ -157,13 +245,25 @@ export function RidgeCapAnalysis({
               <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
                 Roof type detected:
               </div>
-              <div className='font-medium'>Laminated</div>
+              <div className='font-medium'>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.roofType)}
+                >
+                  {roofType}
+                </ConditionalHighlight>
+              </div>
             </div>
             <div>
               <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
                 Ridge cap type in estimate:
               </div>
-              <div className='font-medium'>Purpose-built Standard</div>
+              <div className='font-medium'>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.ridgeCapType)}
+                >
+                  {ridgeCapType}
+                </ConditionalHighlight>
+              </div>
             </div>
           </div>
 
@@ -172,7 +272,15 @@ export function RidgeCapAnalysis({
               Compliance result:
             </div>
             <div className='text-green-600 dark:text-green-400 font-medium'>
-              Compliant
+              <ConditionalHighlight
+                isPlaceholder={!hasLiveData(ridgeCapData?.complianceStatus)}
+              >
+                {ridgeCapData?.complianceStatus
+                  ? isCompliant
+                    ? 'Compliant'
+                    : 'Non-Compliant'
+                  : 'XX Status'}
+              </ConditionalHighlight>
             </div>
           </div>
 
@@ -180,8 +288,11 @@ export function RidgeCapAnalysis({
             <div className='flex items-center gap-2 text-green-800 dark:text-green-200'>
               <CheckCircle className='h-4 w-4' />
               <span className='text-xs font-medium'>
-                Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance
-                standards
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
+                >
+                  {complianceText}
+                </ConditionalHighlight>
               </span>
             </div>
           </div>
@@ -203,7 +314,13 @@ export function RidgeCapAnalysis({
             </div>
             <div className='flex items-center gap-2'>
               <span className='font-semibold text-blue-600 dark:text-blue-400'>
-                113 LF
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.varianceAmount)}
+                >
+                  {ridgeCapData?.varianceAmount
+                    ? `${Math.abs(ridgeCapData.varianceAmount)} LF`
+                    : 'XXX LF'}
+                </ConditionalHighlight>
               </span>
               <button className='p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded'>
                 <ExternalLink className='h-3 w-3 text-zinc-400' />
@@ -216,14 +333,26 @@ export function RidgeCapAnalysis({
               <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
                 Unit price:
               </div>
-              <div className='font-medium'>$42.90/LF</div>
+              <div className='font-medium'>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.estimateUnitPrice)}
+                >
+                  {unitPrice}
+                </ConditionalHighlight>
+              </div>
             </div>
             <div>
               <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
                 Total addition:
               </div>
               <div className='font-bold text-blue-600 dark:text-blue-400 text-lg'>
-                $4847.70
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.costImpact)}
+                >
+                  {costImpact > 0
+                    ? `$${costImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : '$X,XXX.XX'}
+                </ConditionalHighlight>
               </div>
             </div>
           </div>
@@ -255,7 +384,11 @@ export function RidgeCapAnalysis({
                 Roof report: Ridges =
               </span>
               <div className='flex items-center gap-2'>
-                <span className='font-medium'>26 LF</span>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.ridgeLength)}
+                >
+                  {ridgeLength > 0 ? `${ridgeLength} LF` : 'XX LF'}
+                </ConditionalHighlight>
                 <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
                   <ExternalLink className='h-3 w-3' />
                   Jump
@@ -268,7 +401,11 @@ export function RidgeCapAnalysis({
                 Roof report: Hips =
               </span>
               <div className='flex items-center gap-2'>
-                <span className='font-medium'>93 LF</span>
+                <ConditionalHighlight
+                  isPlaceholder={!hasLiveData(ridgeCapData?.hipLength)}
+                >
+                  {hipLength > 0 ? `${hipLength} LF` : 'XX LF'}
+                </ConditionalHighlight>
                 <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
                   <ExternalLink className='h-3 w-3' />
                   Jump
@@ -280,7 +417,16 @@ export function RidgeCapAnalysis({
 
             <div className='flex justify-between font-medium'>
               <span>Sum =</span>
-              <span>119 LF</span>
+              <ConditionalHighlight
+                isPlaceholder={
+                  !hasLiveData(ridgeCapData?.ridgeLength) ||
+                  !hasLiveData(ridgeCapData?.hipLength)
+                }
+              >
+                {ridgeLength > 0 && hipLength > 0
+                  ? `${ridgeLength + hipLength} LF`
+                  : 'XXX LF'}
+              </ConditionalHighlight>
             </div>
 
             <div className='mt-3 p-2 bg-zinc-50 dark:bg-zinc-800 rounded'>
@@ -290,10 +436,45 @@ export function RidgeCapAnalysis({
               <div className='flex items-center justify-between text-sm'>
                 <div>
                   <div className='font-medium'>
-                    RFG RIDGC – Hip/Ridge cap – Standard profile
+                    <ConditionalHighlight
+                      isPlaceholder={!hasLiveData(ridgeCapData?.lineItemCode)}
+                    >
+                      {lineItemCode}
+                    </ConditionalHighlight>
+                    {' – '}
+                    <ConditionalHighlight
+                      isPlaceholder={
+                        !hasLiveData(ridgeCapData?.lineItemDescription)
+                      }
+                    >
+                      {lineItemDescription}
+                    </ConditionalHighlight>
                   </div>
                   <div className='text-xs text-zinc-500'>
-                    6.00 LF @ $42.90/LF = $257.40
+                    <ConditionalHighlight
+                      isPlaceholder={
+                        !hasLiveData(ridgeCapData?.estimateQuantity)
+                      }
+                      className='text-xs'
+                    >
+                      {estimateQty}
+                    </ConditionalHighlight>
+                    {' @ '}
+                    <ConditionalHighlight
+                      isPlaceholder={
+                        !hasLiveData(ridgeCapData?.estimateUnitPrice)
+                      }
+                      className='text-xs'
+                    >
+                      {unitPrice}
+                    </ConditionalHighlight>
+                    {' = '}
+                    <ConditionalHighlight
+                      isPlaceholder={!hasLiveData(ridgeCapData?.estimateTotal)}
+                      className='text-xs'
+                    >
+                      {ridgeCapData?.estimateTotal || '$XXX.XX'}
+                    </ConditionalHighlight>
                   </div>
                 </div>
                 <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
@@ -310,13 +491,25 @@ export function RidgeCapAnalysis({
               <div className='flex items-center gap-2 text-xs'>
                 <CheckCircle className='h-3 w-3 text-green-500' />
                 <span className='text-green-700 dark:text-green-300'>
-                  Unit consistency: LF expected for ridge cap
+                  <ConditionalHighlight
+                    isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
+                  >
+                    Unit consistency: LF expected for ridge cap
+                  </ConditionalHighlight>
                 </span>
               </div>
               <div className='flex items-center gap-2 text-xs'>
                 <CheckCircle className='h-3 w-3 text-green-500' />
                 <span className='text-green-700 dark:text-green-300'>
-                  Reasonableness: ridge/hip LF (119) &lt; perimeter
+                  <ConditionalHighlight
+                    isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
+                  >
+                    Reasonableness: ridge/hip LF (
+                    {ridgeLength > 0 && hipLength > 0
+                      ? ridgeLength + hipLength
+                      : 'XXX'}
+                    ) &lt; perimeter
+                  </ConditionalHighlight>
                 </span>
               </div>
             </div>
@@ -342,12 +535,11 @@ export function RidgeCapAnalysis({
         </CardHeader>
         <CardContent>
           <div className='p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 mb-3'>
-            Ridge cap shortage identified. EagleView report documents 119 LF
-            total ridge/hip coverage required (Ridges: 26 LF + Hips: 93 LF).
-            Current estimate includes only 6 LF, creating a shortage of 113 LF.
-            Material type (Standard profile) is correctly specified and should
-            be increased to match documented roof geometry. Additional coverage
-            required: 113 LF @ $42.90/LF = $4847.70.
+            <ConditionalHighlight
+              isPlaceholder={!hasLiveData(ridgeCapData?.documentationNote)}
+            >
+              {documentationNote}
+            </ConditionalHighlight>
           </div>
 
           <div>
@@ -372,7 +564,16 @@ export function RidgeCapAnalysis({
           className='bg-blue-600 hover:bg-blue-700 text-white px-6'
         >
           <Plus className='h-4 w-4 mr-2' />
-          Add to Supplement (+$4847.70)
+          Add to Supplement (
+          <ConditionalHighlight
+            isPlaceholder={!hasLiveData(ridgeCapData?.costImpact)}
+            className='ml-1 text-white'
+          >
+            {costImpact > 0
+              ? `+$${costImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : '+$X,XXX'}
+          </ConditionalHighlight>
+          )
         </Button>
         <Button variant='outline' size='sm' className='px-6'>
           <X className='h-4 w-4 mr-2' />
