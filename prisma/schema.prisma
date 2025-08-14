@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -11,235 +8,171 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Main job tracking - central entity for processing workflow
 model Job {
-  id          String   @id @default(cuid())
-  status      JobStatus @default(UPLOADED)
-  fileName    String
-  fileSize    Int
-  uploadedAt  DateTime @default(now())
-  processedAt DateTime?
-  completedAt DateTime?
-  updatedAt   DateTime @updatedAt
-  error       String?
-
-  // File storage info
-  filePath    String?
-  fileHash    String?  @unique
-
-  // Auto-populated customer information
-  customerName String?
-  customerAddress String?
-  customerPhone String?
-  customerEmail String?
-  
-  // Auto-populated claim information
-  claimNumber String?
-  policyNumber String?
-  dateOfLoss DateTime?
-  carrier String?
-  claimRep String?
-  estimator String?
-  originalEstimate Float?
-  
-  // Auto-populated roofing data
-  roofSquares Float?
-  roofStories Int?
-  rakeLength Float?
-  eaveLength Float?
-  ridgeHipLength Float?
-  valleyLength Float?
-  roofSlope String?
-  roofMaterial String?
-
-  // User tracking (for future auth integration)
-  userId      String?
-
-  // Relations
-  documents   Document[]
-  documentPages DocumentPage[]
+  id                 String              @id @default(cuid())
+  status             JobStatus           @default(UPLOADED)
+  fileName           String
+  fileSize           Int
+  uploadedAt         DateTime            @default(now())
+  processedAt        DateTime?
+  completedAt        DateTime?
+  updatedAt          DateTime            @updatedAt
+  error              String?
+  filePath           String?
+  fileHash           String?             @unique
+  customerName       String?
+  customerAddress    String?
+  customerPhone      String?
+  customerEmail      String?
+  claimNumber        String?
+  policyNumber       String?
+  dateOfLoss         DateTime?
+  carrier            String?
+  claimRep           String?
+  estimator          String?
+  originalEstimate   Float?
+  roofSquares        Float?
+  roofStories        Int?
+  rakeLength         Float?
+  eaveLength         Float?
+  ridgeHipLength     Float?
+  valleyLength       Float?
+  roofSlope          String?
+  roofMaterial       String?
+  userId             String?
+  documentPages      DocumentPage[]
+  documents          Document[]
   mistralExtractions MistralExtraction[]
-  sonnetAnalyses SonnetAnalysis[]
-  ruleAnalyses RuleAnalysis[]
+  ruleAnalyses       RuleAnalysis[]
+  sonnetAnalyses     SonnetAnalysis[]
 
   @@map("jobs")
 }
 
-// Document processing tracking
 model Document {
-  id         String   @id @default(cuid())
-  jobId      String
-  fileName   String
-  pageCount  Int?
-  status     DocumentStatus @default(UPLOADED)
+  id          String         @id @default(cuid())
+  jobId       String
+  fileName    String
+  pageCount   Int?
+  status      DocumentStatus @default(UPLOADED)
   processedAt DateTime?
-  error      String?
-
-  // File metadata
-  filePath   String?
-  fileSize   Int?
-  mimeType   String?
-
-  // Relations
-  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  pages      DocumentPage[]
+  error       String?
+  filePath    String?
+  fileSize    Int?
+  mimeType    String?
+  pages       DocumentPage[]
+  job         Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@map("documents")
 }
 
-// Structured JSON storage for each document page  
 model DocumentPage {
-  id           String   @id @default(cuid())
-  documentId   String
-  jobId        String
-  pageNumber   Int      // 1-based page numbering
-  
-  // Structured JSON content extracted from this page
-  extractedContent Json  // Complete structured data with coordinates and sections
-  rawText      String?  // Fallback plain text for search
-  wordCount    Int      @default(0)
-  
-  // Processing metadata
-  extractedAt  DateTime @default(now())
-  extractionMethod String @default("mistral-ocr") // mistral-ocr, pdf-parse, ocr, manual, etc.
-  confidence   Float?   // confidence score for extraction quality
-  
-  // Page dimensions and metadata for UI display
-  width        Int?     // page width in points
-  height       Int?     // page height in points
-  imageCount   Int      @default(0) // number of images on this page
-  
-  // Relations
-  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  documentId       String
+  jobId            String
+  pageNumber       Int
+  extractedContent Json
+  rawText          String?
+  wordCount        Int      @default(0)
+  extractedAt      DateTime @default(now())
+  extractionMethod String   @default("mistral-ocr")
+  confidence       Float?
+  width            Int?
+  height           Int?
+  imageCount       Int      @default(0)
+  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  job              Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, pageNumber])
   @@index([jobId, pageNumber])
-  @@index([extractedContent])  // JSON index for searches
+  @@index([extractedContent])
   @@map("document_pages")
 }
 
-// Mistral extraction results - comprehensive document processing
 model MistralExtraction {
-  id          String   @id @default(cuid())
-  jobId       String
-  
-  // Mistral processing info
-  mistralModel String   @default("mistral-large-latest") // Track Mistral model version
-  documentType String?  // "roof_report", "estimate", "unknown"
-  
-  // Processing metrics
-  processingTime Int?    // milliseconds
-  tokenUsage     Json?   // { input: number, output: number }
-  cost          Float  @default(0.0)
-  success       Boolean @default(true)
-  error         String?
-  
-  // Complete extracted data structure
-  extractedData Json    // Full ExtractedData structure from MistralService
-  
-  // Quick access fields for database queries
+  id             String           @id @default(cuid())
+  jobId          String
+  mistralModel   String           @default("mistral-large-latest")
+  documentType   String?
+  processingTime Int?
+  tokenUsage     Json?
+  cost           Float            @default(0.0)
+  success        Boolean          @default(true)
+  error          String?
+  extractedData  Json
   customerName   String?
   claimNumber    String?
   pageCount      Int?
-  confidence     Float  @default(0.0) // Overall extraction confidence
-  
-  extractedAt DateTime @default(now())
-
-  // Relations
-  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  analyses   SonnetAnalysis[] // Sonnet analyses of this extraction
+  confidence     Float            @default(0.0)
+  extractedAt    DateTime         @default(now())
+  job            Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  analyses       SonnetAnalysis[]
 
   @@index([jobId, extractedAt])
   @@map("mistral_extractions")
 }
 
-// Sonnet 4 analysis of Mistral extractions
 model SonnetAnalysis {
-  id                 String   @id @default(cuid())
-  jobId              String
-  mistralExtractionId String
-  
-  // Sonnet processing info
-  sonnetModel        String   @default("claude-sonnet-4") // Track Sonnet model version
-  analysisType       AnalysisType @default(BUSINESS_RULES) // BUSINESS_RULES, COMPLIANCE, SUPPLEMENT
-  
-  // Processing metrics
-  processingTime     Int    // milliseconds
-  tokenUsage         Json   // { input: number, output: number }
-  cost              Float  @default(0.0)
-  success           Boolean @default(true)
-  error             String?
-
-  // Analysis results
-  overallAssessment  Json   // Sonnet's overall analysis of the extraction quality
-  businessRuleEvaluations Json // Detailed evaluation of each business rule
-  complianceFindings Json   // Compliance assessment results
-  supplementRecommendations Json? // Supplement recommendations if applicable
-  
-  // Quality scores from Sonnet
-  accuracyScore     Float  @default(0.0) // Sonnet's assessment of Mistral accuracy
-  completenessScore Float  @default(0.0) // How complete the extraction is
-  confidenceScore   Float  @default(0.0) // Sonnet's confidence in the analysis
-  
-  analyzedAt        DateTime @default(now())
-
-  // Relations
-  job              Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  mistralExtraction MistralExtraction @relation(fields: [mistralExtractionId], references: [id], onDelete: Cascade)
+  id                        String            @id @default(cuid())
+  jobId                     String
+  mistralExtractionId       String
+  sonnetModel               String            @default("claude-sonnet-4")
+  analysisType              AnalysisType      @default(BUSINESS_RULES)
+  processingTime            Int
+  tokenUsage                Json
+  cost                      Float             @default(0.0)
+  success                   Boolean           @default(true)
+  error                     String?
+  overallAssessment         Json
+  businessRuleEvaluations   Json
+  complianceFindings        Json
+  supplementRecommendations Json?
+  accuracyScore             Float             @default(0.0)
+  completenessScore         Float             @default(0.0)
+  confidenceScore           Float             @default(0.0)
+  analyzedAt                DateTime          @default(now())
+  job                       Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  mistralExtraction         MistralExtraction @relation(fields: [mistralExtractionId], references: [id], onDelete: Cascade)
 
   @@index([jobId, analyzedAt])
   @@index([mistralExtractionId])
   @@map("sonnet_analyses")
 }
 
-// Business rule analysis results
 model RuleAnalysis {
-  id        String   @id @default(cuid())
-  jobId     String
-  ruleType  RuleType
-  
-  // Analysis results
-  status    RuleStatus @default(PENDING)
-  passed    Boolean?
-  confidence Float?    // 0-1 confidence score
-  
-  // Supporting data
-  findings  Json      // Specific findings and evidence
+  id             String       @id @default(cuid())
+  jobId          String
+  ruleType       RuleType
+  status         RuleStatus   @default(PENDING)
+  passed         Boolean?
+  confidence     Float?
+  findings       Json
   recommendation String?
-  reasoning  String?
-  
-  // User decisions
-  userDecision UserDecision @default(PENDING)
-  userNotes    String?
-  editedValues Json?     // User-modified values
-  
-  // Processing info
-  analyzedAt DateTime?
-  decidedAt  DateTime?
-  
-  // Relations
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  reasoning      String?
+  userDecision   UserDecision @default(PENDING)
+  userNotes      String?
+  editedValues   Json?
+  analyzedAt     DateTime?
+  decidedAt      DateTime?
+  job            Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@map("rule_analyses")
 }
 
-// Job processing status
 enum JobStatus {
-  UPLOADED         // File received and saved
-  QUEUED          // Added to processing queue
-  PROCESSING      // Mistral extraction in progress
-  TEXT_EXTRACTED  // Text extraction completed
-  ANALYSIS_READY  // Ready for business rule analysis
-  ANALYZING       // Business rules analysis in progress
-  REVIEWING       // User review phase
-  GENERATING      // Report generation
-  COMPLETED       // Process finished
-  FAILED          // Processing failed
-  CANCELLED       // User cancelled
+  UPLOADED
+  QUEUED
+  PROCESSING
+  TEXT_EXTRACTED
+  ANALYSIS_READY
+  ANALYZING
+  REVIEWING
+  GENERATING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
-// Document processing status  
 enum DocumentStatus {
   UPLOADED
   PROCESSING
@@ -247,38 +180,34 @@ enum DocumentStatus {
   FAILED
 }
 
-// Sonnet analysis types
 enum AnalysisType {
-  BUSINESS_RULES    // Analyze business rule compliance
-  COMPLIANCE       // General compliance assessment
-  SUPPLEMENT       // Supplement recommendation analysis
-  QUALITY_CHECK    // Quality assessment of Mistral extraction
+  BUSINESS_RULES
+  COMPLIANCE
+  SUPPLEMENT
+  QUALITY_CHECK
 }
 
-// Business rule types
 enum RuleType {
-  HIP_RIDGE_CAP      // Rule 1: Purpose-built vs cut 3-tab
-  STARTER_STRIP      // Rule 2: Universal vs cut shingles
-  DRIP_EDGE         // Rule 3: Rake protection
-  GUTTER_APRON      // Rule 4: Eave protection  
-  ICE_WATER_BARRIER // Rule 5: Code compliance calculation
+  HIP_RIDGE_CAP
+  STARTER_STRIP
+  DRIP_EDGE
+  GUTTER_APRON
+  ICE_WATER_BARRIER
 }
 
-// Rule analysis status
 enum RuleStatus {
-  PENDING    // Not yet analyzed
-  ANALYZING  // Analysis in progress
-  PASSED     // Rule requirements met
-  FAILED     // Rule requirements not met
-  WARNING    // Potential issues found
-  MANUAL     // Requires manual review
+  PENDING
+  ANALYZING
+  PASSED
+  FAILED
+  WARNING
+  MANUAL
 }
 
-// User decision on recommendations
 enum UserDecision {
-  PENDING   // No decision yet
-  ACCEPTED  // User accepted recommendation
-  MODIFIED  // User modified recommendation
-  REJECTED  // User rejected recommendation
-  MANUAL    // User provided manual input
+  PENDING
+  ACCEPTED
+  MODIFIED
+  REJECTED
+  MANUAL
 }

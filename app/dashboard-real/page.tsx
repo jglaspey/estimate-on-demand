@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { JobsDashboard } from '@/components/JobsDashboard';
 import { JobSummary } from '@/lib/mockData';
 
@@ -64,7 +65,7 @@ function extractCustomerName(fileName: string): string {
   return 'Insurance Customer';
 }
 
-function extractAddress(fileName: string): string {
+function extractAddress(_fileName: string): string {
   const addresses = [
     '123 Main Street, Dallas, TX 75201',
     '456 Oak Avenue, Houston, TX 77002', 
@@ -75,7 +76,7 @@ function extractAddress(fileName: string): string {
   return addresses[Math.floor(Math.random() * addresses.length)];
 }
 
-function extractCarrier(fileName: string): string {
+function extractCarrier(_fileName: string): string {
   const carriers = ['Allstate', 'State Farm', 'Progressive', 'USAA', 'Farmers', 'Encompass'];
   return carriers[Math.floor(Math.random() * carriers.length)] + ' Insurance';
 }
@@ -118,7 +119,8 @@ export default function RealDashboardPage() {
   }, []);
 
   const handleJobSelect = (jobId: string) => {
-    router.push(`/job/${jobId}`);
+    // Navigate to new job detail page with split-pane layout
+    router.push(`/job-detail/${jobId}`);
   };
 
   if (loading) {
