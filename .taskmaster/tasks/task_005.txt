@@ -1,0 +1,116 @@
+# Task ID: 5
+# Title: LLM Integration for Document Data Extraction
+# Status: pending
+# Dependencies: 3, 4
+# Priority: high
+# Description: Research and implement LLM integration for extracting data from insurance documents with structured output and confidence scores as specified in US-006 through US-010.
+# Details:
+1. Research LLM options (Claude, GPT-4, etc.) for document processing
+2. Implement PDF to image conversion for LLM vision processing
+3. Create structured JSON schemas for consistent data extraction
+4. Implement retry logic with exponential backoff for API failures
+5. Set up usage tracking and cost management
+6. Create confidence score calculation for extracted fields
+7. Implement WebSocket connection for real-time updates
+8. Add error handling for extraction failures
+9. Create fallback strategies for unreliable API responses
+10. Optimize extraction performance to meet 90-second target
+
+# Test Strategy:
+1. Test extraction accuracy across various document formats
+2. Verify structured output matches required schemas
+3. Validate confidence score accuracy
+4. Test retry logic with simulated API failures
+5. Verify real-time updates via WebSockets
+6. Measure extraction performance against 90-second target
+7. Test with edge cases and poorly formatted documents
+
+# Subtasks:
+## 1. LLM Research and Selection [pending]
+### Dependencies: None
+### Description: Research and evaluate different LLM options (Claude, GPT-4, etc.) for document processing capabilities, comparing features, costs, and performance metrics.
+### Details:
+1. Create evaluation criteria for LLM selection (accuracy, cost, API reliability, etc.)
+2. Test sample documents with different LLM providers
+3. Compare vision capabilities for document processing
+4. Analyze rate limits and pricing structures
+5. Document findings and make final recommendation
+
+## 2. Document Preprocessing Pipeline [pending]
+### Dependencies: 5.1
+### Description: Implement the document preprocessing pipeline including PDF to image conversion for LLM vision processing and optimization for different document types.
+### Details:
+1. Implement PDF to image conversion with appropriate resolution
+2. Create preprocessing steps for image enhancement
+3. Implement document type detection
+4. Add metadata extraction from document properties
+5. Set up caching for processed documents to improve performance
+
+## 3. Structured JSON Schema Design [pending]
+### Dependencies: 5.1
+### Description: Create structured JSON schemas for consistent data extraction from insurance documents, ensuring all required fields are properly defined with types and validation rules.
+### Details:
+1. Define schema for policy information extraction
+2. Create schema for coverage details
+3. Design schema for property information
+4. Implement validation rules for each field
+5. Document schema specifications for team reference
+
+## 4. LLM API Integration with Retry Logic [pending]
+### Dependencies: 5.1, 5.2, 5.3
+### Description: Implement the core LLM API integration with retry logic, exponential backoff, and proper error handling for API failures.
+### Details:
+1. Create LLM service wrapper class
+2. Implement retry logic with exponential backoff
+3. Add request timeout handling
+4. Set up API key rotation for reliability
+5. Implement request batching for efficiency
+6. Add detailed logging for API interactions
+<info added on 2025-08-14T23:08:12.413Z>
+7. Handle Claude Files API and Mistral Files signed URLs with resilient retry/backoff (429/5xx)
+8. Implement idempotent uploads (hash-based dedupe)
+9. Add fallback mechanisms for file uploads (base64 inline or direct data: URL)
+10. Mask sensitive URLs in logs to prevent credential leakage
+</info added on 2025-08-14T23:08:12.413Z>
+
+## 5. Confidence Score Implementation [pending]
+### Dependencies: 5.3, 5.4
+### Description: Develop and implement the confidence score calculation system for extracted fields, including calibration and threshold setting.
+### Details:
+1. Design confidence score algorithm based on LLM output
+2. Implement field-level confidence calculation
+3. Create document-level aggregate confidence metrics
+4. Set up confidence thresholds for automatic vs. manual review
+5. Add visual indicators for confidence levels in the UI
+
+## 6. Real-time Update System [pending]
+### Dependencies: 5.4
+### Description: Implement WebSocket connection and event system for real-time updates during document extraction process.
+### Details:
+1. Set up WebSocket server for real-time communication
+2. Create event system for extraction progress updates
+3. Implement client-side WebSocket connection
+4. Add reconnection logic for dropped connections
+5. Create UI components for displaying extraction progress
+
+## 7. Error Handling and Fallback Strategies [pending]
+### Dependencies: 5.4, 5.5
+### Description: Implement comprehensive error handling for extraction failures and create fallback strategies for unreliable API responses.
+### Details:
+1. Implement error classification system
+2. Create fallback extraction strategies for common failures
+3. Add manual override capabilities for failed extractions
+4. Implement partial extraction handling
+5. Create error reporting and analytics
+
+## 8. Performance Optimization and Cost Management [pending]
+### Dependencies: 5.4, 5.6, 5.7
+### Description: Optimize extraction performance to meet the 90-second target and implement usage tracking and cost management systems.
+### Details:
+1. Set up usage tracking for API calls
+2. Implement cost allocation by job/client
+3. Create budget alerts and limits
+4. Optimize extraction pipeline for performance
+5. Implement caching strategies to reduce API calls
+6. Add performance monitoring and reporting
+

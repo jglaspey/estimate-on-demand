@@ -1,0 +1,88 @@
+# Task ID: 12
+# Title: Hip/Ridge Business Rule Deep Dive Analysis
+# Status: pending
+# Dependencies: 7, 11
+# Priority: medium
+# Description: Analyze prototype learnings, design data extraction patterns, processing workflows, and database optimization strategy specifically for the Hip/Ridge cap business rule implementation.
+# Details:
+1. Review prototype implementation data and user feedback:
+   - Analyze user interaction patterns with the Hip/Ridge rule
+   - Document pain points and improvement opportunities
+   - Identify edge cases not handled by current implementation
+
+2. Design optimized data extraction patterns:
+   - Create specialized extraction algorithms for Hip/Ridge measurements from roof diagrams
+   - Define pattern recognition techniques for identifying Hip/Ridge features in documents
+   - Establish confidence scoring methodology for extracted Hip/Ridge data
+   - Document required input fields and optional enhancements
+
+3. Design processing workflows:
+   - Map complete Hip/Ridge rule processing flow from document upload to decision
+   - Identify optimization opportunities in the analysis pipeline
+   - Create decision tree for Hip/Ridge rule validation logic
+   - Define error handling and fallback procedures for incomplete data
+   - Document integration points with other business rules
+
+4. Database optimization strategy:
+   - Design efficient schema for storing Hip/Ridge specific measurements and calculations
+   - Create indexing strategy for Hip/Ridge rule queries
+   - Define caching approach for frequently accessed Hip/Ridge data
+   - Document data retention and archiving policies
+
+5. Create comprehensive documentation:
+   - Develop technical specification for Hip/Ridge rule implementation
+   - Create developer guide with code examples and implementation patterns
+   - Document all business logic and calculation formulas
+   - Prepare knowledge transfer materials for future rule implementations
+
+6. Establish metrics and monitoring:
+   - Define KPIs for Hip/Ridge rule performance and accuracy
+   - Create monitoring dashboard for Hip/Ridge rule processing
+   - Establish baseline performance metrics for future comparison
+<info added on 2025-08-14T23:08:19.807Z>
+7. Rule 1 (Hip/Ridge) extraction inputs and mapping:
+   - Define required extraction inputs:
+     * roofMeasurements: {ridgeLength, hipLength, eaveLength, rakeLength, squares, slope}
+     * estimate line item: {code, description, quantity (LF), unitPrice, totalPrice}
+   - Map source document pages to each extracted value for evidence traceability
+   - Design extraction output schema as structured JSON format
+   - Ensure extraction output is fully compatible with `mapDatabaseToRidgeCapData` function
+   - Establish strict separation between Extraction and Analysis components
+   - Document data transformation patterns between extraction output and RuleAnalysisResult
+   - Define validation requirements for extracted data before analysis processing
+</info added on 2025-08-14T23:08:19.807Z>
+
+# Test Strategy:
+1. Prototype analysis validation:
+   - Review findings with stakeholders to confirm accuracy
+   - Validate that all user feedback has been properly categorized
+   - Verify edge cases are comprehensive and well-documented
+
+2. Data extraction pattern testing:
+   - Test extraction algorithms against sample documents with known Hip/Ridge features
+   - Validate confidence scoring against human-verified data
+   - Measure extraction accuracy across different document types and formats
+   - Verify performance meets requirements for production use
+
+3. Processing workflow validation:
+   - Conduct walkthrough of complete workflow with development team
+   - Verify all decision paths in the Hip/Ridge rule logic
+   - Test error handling with deliberately malformed inputs
+   - Validate integration points with mock implementations of dependent systems
+
+4. Database optimization verification:
+   - Benchmark query performance with proposed schema and indexing
+   - Load test with production-scale data volumes
+   - Verify caching strategy improves performance as expected
+   - Validate data integrity through various update scenarios
+
+5. Documentation review:
+   - Conduct peer review of all technical documentation
+   - Verify completeness of business logic documentation
+   - Test implementation of sample code in documentation
+   - Have a developer unfamiliar with the system attempt to implement features using only the documentation
+
+6. Metrics baseline establishment:
+   - Verify all KPIs can be accurately measured
+   - Establish performance benchmarks for future comparison
+   - Validate monitoring dashboard provides actionable insights

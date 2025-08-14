@@ -1,0 +1,118 @@
+# Task ID: 8
+# Title: Business Rule UI Components
+# Status: pending
+# Dependencies: 6, 7, 11, 13
+# Priority: medium
+# Description: Integrate and adapt existing BusinessRuleCard components with status indicators, evidence panels, and decision controls as specified in US-011 through US-016.
+# Details:
+1. Integrate existing BusinessRuleCard component with expandable sections
+2. Configure status indicators for different rule states
+3. Connect evidence section with source document references
+4. Wire up decision buttons (Accept/Edit/Reject) with confirmation dialogs
+5. Integrate cost calculator showing line item pricing changes
+6. Connect notes field for custom justifications
+7. Configure visual evidence highlighting and diagrams
+8. Implement plain English reasoning explanations
+9. Integrate specialized rule cards (HipRidgeCapCard, StarterStripCard, DripEdgeGutterApronCard, IceWaterBarrierCard)
+10. Test and optimize animation and transition effects
+
+# Test Strategy:
+1. Test all visual states of rule cards
+2. Verify expandable sections work correctly
+3. Test decision buttons and confirmation dialogs
+4. Validate cost calculator accuracy
+5. Test notes field functionality
+6. Verify evidence highlighting
+7. Test accessibility compliance
+8. Verify integration with backend data sources
+9. Test specialized rule cards with real data
+
+# Subtasks:
+## 1. BusinessRuleCard Component Integration [pending]
+### Dependencies: None
+### Description: Integrate the existing BusinessRuleCard.tsx component with the application's state management and data flow
+### Details:
+- Review existing BusinessRuleCard.tsx implementation
+- Connect component to application state management
+- Configure props and interfaces to match backend data structure
+- Test responsive behavior with application layout
+- Document integration points and usage patterns
+- Ensure accessibility features are properly configured
+
+## 2. Status Indicators Configuration [pending]
+### Dependencies: 8.1
+### Description: Configure and connect visual status indicators for different rule states (pending, accepted, rejected, etc.)
+### Details:
+- Review existing status indicator implementations
+- Connect status indicators to backend state
+- Configure tooltips with appropriate messaging
+- Test status transition flows
+- Ensure color contrast meets accessibility standards
+- Implement status change event handlers
+
+## 3. Evidence Panel Integration [pending]
+### Dependencies: 8.1
+### Description: Connect the evidence section with source document references, highlighting, and plain English explanations
+### Details:
+- Review existing evidence panel implementation
+- Connect document reference display with backend data
+- Configure visual evidence highlighting functionality
+- Set up diagram display with real data
+- Implement plain English reasoning explanations
+- Connect evidence source attribution and confidence indicators
+
+## 4. Decision Controls Integration [pending]
+### Dependencies: 8.1, 8.2
+### Description: Wire up decision buttons (Accept/Edit/Reject) with confirmation dialogs and notes field
+### Details:
+- Connect existing decision button components to application state
+- Configure confirmation dialogs for each action
+- Wire up notes field for custom justifications
+- Implement state management for decision tracking
+- Configure validation for required notes on certain actions
+- Test keyboard shortcuts for common actions
+
+## 5. Cost Calculator Integration [pending]
+### Dependencies: 8.1, 8.3
+### Description: Connect cost calculator showing line item pricing changes and financial impact
+### Details:
+- Review existing cost calculator implementation
+- Connect calculator to backend pricing data
+- Configure visual indicators for price changes
+- Test total cost calculation functionality
+- Ensure comparison between original and new costs works correctly
+- Test currency formatting with different locales
+
+## 6. Specialized Rule Card Integration [pending]
+### Dependencies: 8.1, 8.2, 8.3, 8.4, 8.5
+### Description: Integrate specialized rule components (HipRidgeCapCard, StarterStripCard, DripEdgeGutterApronCard, IceWaterBarrierCard)
+### Details:
+- Review all specialized rule card implementations
+- Connect each specialized card to appropriate backend data sources
+- Test rule-specific functionality and displays
+- Ensure consistent behavior across all rule types
+- Document any rule-specific configuration requirements
+- Validate rule-specific calculations and displays
+
+## 7. Animation and Transition Testing [pending]
+### Dependencies: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6
+### Description: Test and optimize animations and transitions for card interactions and state changes
+### Details:
+- Test existing expand/collapse animations
+- Verify transition effects for status changes
+- Optimize loading/processing animations
+- Review micro-interactions for user feedback
+- Ensure animations can be disabled for reduced motion preferences
+- Test animation performance on various devices
+
+## 8. Integration Testing with Backend [pending]
+### Dependencies: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7
+### Description: Perform comprehensive testing of all business rule components with real backend data
+### Details:
+- Create test scenarios covering all rule types
+- Test with various data conditions (complete, partial, conflicting)
+- Verify error handling and edge cases
+- Test performance with large datasets
+- Validate all user interaction flows
+- Document any integration issues or limitations
+

@@ -1,0 +1,101 @@
+# Task ID: 19
+# Title: Job Detail Page with Split-Pane Interface Implementation
+# Status: pending
+# Dependencies: 13, 7, 18
+# Priority: medium
+# Description: Create a job detail page with a split-pane interface that displays business rules analysis on the left and a document viewer on the right, integrating production-ready components from the front-end-mockup directory.
+# Details:
+1. Component Integration:
+   - Import and integrate production-ready components from the front-end-mockup/ directory
+   - Ensure components follow the established project structure and coding standards
+   - Refactor components as needed to work with the current state management approach
+
+2. Split-Pane Layout Implementation:
+   - Create a responsive SplitPaneLayout component with resizable panels
+   - Implement drag handle for adjusting panel widths with minimum width constraints
+   - Add keyboard accessibility for panel resizing (arrow keys with modifier)
+   - Save user's preferred panel configuration to localStorage for persistence
+
+3. JobDetailsCard Implementation:
+   - Integrate the JobDetailsCard component for displaying insurance and customer information
+   - Connect to the data store to populate fields with real extraction data
+   - Implement collapsible sections for better space management
+   - Add edit functionality with proper validation for correcting extracted information
+
+4. BusinessRuleCard Components:
+   - Integrate all four BusinessRuleCard components (Ridge Cap, Starter Strip, Drip Edge, Ice & Water Barrier)
+   - Implement status indicators showing rule analysis progress/results
+   - Add interactive elements for user decision tracking
+   - Create expandable evidence sections showing supporting documentation
+
+5. ContextualDocumentViewer Integration:
+   - Implement PDF viewer with pagination, zoom, and rotation controls
+   - Add highlighting functionality to connect extracted data with source locations
+   - Create bidirectional navigation between form fields and document locations
+   - Implement caching strategy for improved performance with large documents
+
+6. Mistral OCR Data Integration:
+   - Create data adapters to transform Mistral OCR extraction data to component-compatible format
+   - Implement loading states for asynchronous data fetching
+   - Add error handling for missing or malformed extraction data
+   - Create fallback UI states for incomplete data scenarios
+
+7. Performance Optimization:
+   - Implement virtualization for large document rendering
+   - Use React.memo and useMemo for expensive component calculations
+   - Optimize re-renders with proper state management
+   - Add progressive loading for large documents
+
+8. Accessibility Considerations:
+   - Ensure proper keyboard navigation throughout the interface
+   - Add ARIA attributes for screen reader compatibility
+   - Implement focus management for modal dialogs and expandable sections
+   - Test with screen readers and keyboard-only navigation
+
+# Test Strategy:
+1. Component Integration Testing:
+   - Verify all components from front-end-mockup directory are properly integrated
+   - Test component styling matches UI mockups across different screen sizes
+   - Validate component behavior matches expected functionality
+   - Ensure no console errors or warnings are present
+
+2. Split-Pane Layout Testing:
+   - Test resizing functionality with mouse drag operations
+   - Verify minimum width constraints prevent panels from becoming too small
+   - Test keyboard accessibility for panel resizing
+   - Confirm panel configuration persists across page refreshes
+   - Test responsive behavior on different screen sizes
+
+3. Data Integration Testing:
+   - Verify JobDetailsCard correctly displays insurance and customer information
+   - Test all four BusinessRuleCard components with various data scenarios
+   - Validate ContextualDocumentViewer properly displays PDF documents
+   - Test with both complete and partial data sets to verify fallback behaviors
+
+4. Interaction Testing:
+   - Verify bidirectional navigation between form fields and document locations
+   - Test highlighting functionality in the document viewer
+   - Validate user decision tracking in business rule components
+   - Test expandable sections and modal dialogs
+
+5. Performance Testing:
+   - Measure and verify initial load time is under 2 seconds for typical documents
+   - Test with large documents (50+ pages) to verify performance
+   - Validate smooth scrolling and zooming in document viewer
+   - Measure memory usage during extended use sessions
+
+6. Cross-Browser Testing:
+   - Test functionality in Chrome, Firefox, Safari, and Edge
+   - Verify consistent appearance across browsers
+   - Validate PDF rendering works correctly in all supported browsers
+
+7. Accessibility Testing:
+   - Test with screen readers (NVDA, VoiceOver) to verify proper announcements
+   - Verify keyboard navigation works throughout the interface
+   - Test focus management in modal dialogs and expandable sections
+   - Validate color contrast meets WCAG AA standards
+
+8. Integration Testing:
+   - Verify the page integrates correctly with the WebSocket system for real-time updates
+   - Test navigation between job dashboard and job detail page
+   - Validate proper state management when switching between multiple jobs

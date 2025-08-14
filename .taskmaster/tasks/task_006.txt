@@ -1,0 +1,94 @@
+# Task ID: 6
+# Title: Job Dashboard with Real-Time Updates
+# Status: pending
+# Dependencies: 4, 5, 11
+# Priority: medium
+# Description: Create the main JobDashboard component with real-time updates, job details form, and inline editing functionality as specified in the real-time data extraction phase.
+# Details:
+1. Implement JobDashboard component with fixed header and scrollable content
+2. Create job details form with editable fields
+3. Set up WebSocket connection for live updates
+4. Implement progressive field population with animations
+5. Add inline editing with save/cancel states
+6. Create confidence score indicators for extracted fields
+7. Implement source location linking between form fields and PDF
+8. Add loading, active, complete, and error states
+9. Create persistent sidebar with navigation
+10. Implement form validation for edited fields
+
+# Test Strategy:
+1. Test real-time updates with WebSocket connection
+2. Verify inline editing functionality
+3. Test form validation with valid and invalid inputs
+4. Validate source location linking accuracy
+5. Test performance with large datasets
+6. Verify all component states render correctly
+7. Test WebSocket reconnection on network failures
+
+# Subtasks:
+## 1. Implement Base Dashboard UI Structure [pending]
+### Dependencies: None
+### Description: Create the foundational JobDashboard component with fixed header, scrollable content area, and persistent sidebar navigation.
+### Details:
+1. Create JobDashboard container component
+2. Implement fixed header with job title and status indicators
+3. Build scrollable content area with proper overflow handling
+4. Create persistent sidebar with navigation links
+5. Implement responsive layout for different screen sizes
+6. Add loading skeleton states for initial render
+
+## 2. Develop Job Details Form Components [pending]
+### Dependencies: 6.1
+### Description: Create the form components for displaying and editing job details with inline editing functionality and confidence score indicators.
+### Details:
+1. Create form field components with edit/view modes
+2. Implement inline editing with save/cancel states
+3. Add confidence score indicators for extracted fields
+4. Create visual styling for different confidence levels
+5. Implement source location linking between form fields and PDF
+6. Add tooltips for field explanations and editing instructions
+
+## 3. Implement WebSocket Integration for Real-Time Updates [pending]
+### Dependencies: 6.1, 6.2
+### Description: Set up WebSocket connection for receiving real-time updates from the backend and implement progressive field population with animations.
+### Details:
+1. Establish WebSocket connection with the backend
+2. Create message handlers for different update types
+3. Implement progressive field population as data arrives
+4. Add animations for newly populated fields
+5. Handle connection errors and reconnection logic
+6. Implement fallback polling mechanism for WebSocket failures
+
+## 4. Implement Dashboard State Management [pending]
+### Dependencies: 6.1, 6.2, 6.3
+### Description: Create comprehensive state management for the dashboard including loading, active, complete, and error states with appropriate visual indicators.
+### Details:
+1. Define state management structure for the dashboard
+2. Implement loading states with progress indicators
+3. Create active state for ongoing extraction
+4. Add complete state with success indicators
+5. Implement error states with recovery options
+6. Create state transitions with appropriate animations
+
+## 5. Implement Form Validation and Error Handling [pending]
+### Dependencies: 6.2
+### Description: Add client-side validation for edited fields with appropriate error messages and validation rules based on field types.
+### Details:
+1. Define validation rules for different field types
+2. Implement client-side validation for edited fields
+3. Create inline error messages with clear instructions
+4. Add visual indicators for invalid fields
+5. Implement form-level validation before submission
+6. Create validation summary for multiple errors
+
+## 6. Optimize Dashboard for Responsiveness and Performance [pending]
+### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5
+### Description: Ensure the dashboard is responsive across different devices and optimize performance for handling large datasets and real-time updates.
+### Details:
+1. Implement responsive design breakpoints for different screen sizes
+2. Optimize rendering performance with virtualization for large datasets
+3. Add lazy loading for dashboard components
+4. Implement debouncing for frequent state updates
+5. Add performance monitoring for critical user interactions
+6. Create compressed view modes for mobile devices
+

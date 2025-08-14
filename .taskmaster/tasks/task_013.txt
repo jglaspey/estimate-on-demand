@@ -1,0 +1,133 @@
+# Task ID: 13
+# Title: Prototype Integration Strategy
+# Status: in-progress
+# Dependencies: 1, 11
+# Priority: medium
+# Description: Analyze existing front-end mockup, plan migration to production codebase, identify Tailwind version compatibility, and create integration roadmap for incorporating the complete React prototype into the project structure.
+# Details:
+1. Analyze existing front-end mockup:
+   - Document current component structure and architecture
+   - Identify reusable components vs. prototype-specific implementations
+   - Evaluate state management approach and data flow patterns
+   - Assess current styling implementation and Tailwind usage
+   - Document any third-party dependencies and their compatibility
+
+2. Tailwind version compatibility analysis:
+   - Determine Tailwind CSS version used in prototype vs. production
+   - Identify breaking changes between versions if different
+   - Document custom Tailwind configurations, plugins, and extensions
+   - Create migration plan for Tailwind classes if needed
+   - Test sample components with production Tailwind configuration
+
+3. Production codebase integration planning:
+   - Map prototype components to production architecture
+   - Identify gaps in type definitions for TypeScript integration
+   - Document required API adaptations for backend connectivity
+   - Plan refactoring of any anti-patterns or performance issues
+   - Create component migration priority list based on dependencies
+
+4. Three-phase integration roadmap:
+   - Phase 1: Frontend Integration (Immediate Priority)
+     * Copy prototype UI components to main /components directory
+     * Update API responses to match prototype interfaces
+     * Replace basic jobs page with sophisticated OverviewPage dashboard
+     * Integrate business rule cards and interactive components
+     * Ensure Tailwind CSS compatibility between prototype and main project
+   - Phase 2: Database Schema Alignment
+     * Extend Prisma schema with missing fields from prototype data model
+     * Update API routes to return complete data structures matching prototype
+     * Create data migration strategy for existing extraction results
+     * Test API/frontend integration with real data
+   - Phase 3: Extraction Pipeline Enhancement
+     * Debug Mistral API "Unexpected token 'S'" errors
+     * Implement Claude Vision as backup extraction method
+     * Improve error handling and user feedback
+     * Ensure extraction results populate new data structure
+
+5. Documentation and knowledge transfer:
+   - Document architectural decisions and rationale
+   - Create component migration guides for development team
+   - Prepare training materials on any new patterns or approaches
+   - Document known limitations and future improvement opportunities
+
+# Test Strategy:
+1. Prototype analysis validation:
+   - Review component inventory with development team for completeness
+   - Validate component dependencies are correctly mapped
+   - Verify all third-party dependencies are identified and assessed
+   - Confirm state management patterns are accurately documented
+
+2. Tailwind compatibility testing:
+   - Create test components using both prototype and production Tailwind configurations
+   - Verify visual consistency across configurations
+   - Test responsive behavior at all breakpoints
+   - Validate custom utility classes function correctly in production environment
+
+3. Phase 1 (Frontend Integration) testing:
+   - Verify copied UI components render correctly in main application
+   - Test API response adaptations with mock data
+   - Validate OverviewPage dashboard functionality in production environment
+   - Ensure business rule cards display and interact properly
+   - Confirm Tailwind CSS styling is consistent across components
+
+4. Phase 2 (Database Schema Alignment) testing:
+   - Validate extended Prisma schema with test data
+   - Test updated API routes with prototype interfaces
+   - Verify data migration process with sample datasets
+   - Confirm frontend components correctly consume API data
+
+5. Phase 3 (Extraction Pipeline Enhancement) testing:
+   - Test Mistral API error resolution
+   - Validate Claude Vision extraction as backup method
+   - Verify error handling and user feedback mechanisms
+   - Confirm extraction results correctly populate the new data structure
+
+6. Integration simulation:
+   - Create a sandbox environment mimicking production
+   - Test migration of key components following the roadmap
+   - Verify component functionality post-migration
+   - Validate rollback procedures work as expected
+
+# Subtasks:
+## 1. Document Prototype Component Structure and Architecture [pending]
+### Dependencies: None
+### Description: Analyze and document the existing front-end mockup's component structure, architecture, and state management approach to create a comprehensive inventory of components.
+### Details:
+Create a detailed component inventory spreadsheet with the following columns: Component Name, Purpose, Reusability Score (1-5), Dependencies, State Management Approach, and Notes. Include a component tree diagram showing hierarchy and relationships. Document the data flow patterns between components and identify any global state management solutions used (Context API, Redux, etc.). Note any performance optimizations or custom hooks implemented.
+
+## 2. Analyze Tailwind CSS Version Compatibility [pending]
+### Dependencies: 13.1
+### Description: Compare Tailwind CSS versions between prototype and production, identifying breaking changes and creating a migration plan for any incompatibilities.
+### Details:
+Extract Tailwind configuration files from both prototype and production codebases. Document version differences and list all breaking changes between versions. Identify custom Tailwind configurations, plugins, and extensions used in the prototype. Create a migration guide for updating Tailwind classes if needed. Test sample components from the prototype with the production Tailwind configuration to identify styling issues.
+
+## 3. Map Prototype Components to Production Architecture [pending]
+### Dependencies: 13.1, 13.2
+### Description: Create a detailed mapping between prototype components and the production codebase architecture, identifying gaps and integration points.
+### Details:
+For each component in the prototype inventory, identify the corresponding location in the production architecture. Document required TypeScript type definitions for proper integration. Create a component migration priority list based on dependencies and business value. Identify any architectural patterns in the prototype that differ from production standards and document adaptation strategies. Note any components that need significant refactoring to match production code quality standards.
+
+## 4. Develop API Adaptation Strategy [pending]
+### Dependencies: 13.1, 13.3
+### Description: Document required API adaptations for connecting prototype components to production backend services.
+### Details:
+Compare API interfaces used in the prototype with available endpoints in production. Document data transformation requirements to match prototype component expectations. Identify missing API endpoints needed for prototype functionality. Create adapter functions for reconciling differences between prototype data structures and production API responses. Document authentication and authorization requirements for API calls.
+
+## 5. Create Phase 1 Integration Plan: Frontend Components [pending]
+### Dependencies: 13.2, 13.3, 13.4
+### Description: Develop a detailed implementation plan for the first phase of integration focusing on UI components and frontend functionality.
+### Details:
+Create a step-by-step migration plan for copying prototype UI components to the main /components directory. Document required changes to component imports and dependencies. Outline process for replacing the basic jobs page with the sophisticated OverviewPage dashboard. Create implementation tasks for integrating business rule cards and interactive components. Document Tailwind CSS compatibility fixes needed during integration. Include estimated effort for each task and suggested developer assignments.
+
+## 6. Design Phase 2 Integration Plan: Database Schema Alignment [pending]
+### Dependencies: 13.3, 13.4, 13.5
+### Description: Create a comprehensive plan for extending the production database schema to support the prototype data model.
+### Details:
+Document Prisma schema extensions needed to support prototype data requirements. Create migration scripts for adding new fields to existing tables. Design data transformation functions for mapping existing data to new schema. Outline API route updates needed to return complete data structures matching prototype expectations. Create a testing strategy for validating schema changes with real data. Include rollback procedures in case of migration issues.
+
+## 7. Develop Phase 3 Integration Plan: Extraction Pipeline Enhancement [pending]
+### Dependencies: 13.5, 13.6
+### Description: Create a detailed plan for enhancing the extraction pipeline to support the prototype's advanced features and improve error handling.
+### Details:
+Document current extraction pipeline issues, including Mistral API "Unexpected token 'S'" errors. Create implementation plan for adding Claude Vision as a backup extraction method. Design improved error handling and user feedback mechanisms. Outline changes needed to ensure extraction results populate the new data structure. Create a monitoring strategy for extraction pipeline performance and reliability. Include A/B testing approach to compare extraction methods.
+

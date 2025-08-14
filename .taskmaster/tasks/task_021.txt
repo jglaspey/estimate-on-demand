@@ -1,0 +1,110 @@
+# Task ID: 21
+# Title: Claude Extraction Pipeline Implementation
+# Status: pending
+# Dependencies: 3, 5, 16
+# Priority: high
+# Description: Implement production-grade file handling and Claude extractors for the dual-phase document processing pipeline, focusing on robust PDF submission and cost-efficient extraction processes.
+# Details:
+1. Claude Files API Integration:
+   - Implement hashing/idempotency checks to prevent duplicate processing
+   - Create document lifecycle management with proper cleanup procedures
+   - Add size-based strategy selection (base64 for <10MB, Files API for larger documents)
+   - Store provenance and method information in processing_metadata
+
+2. Mistral Files Integration:
+   - Implement signed URL helper for secure file access
+   - Create secure temporary storage path for document processing
+   - Add size-based strategy (data: URL for <5MB, URL/signed URL for larger files)
+   - Ensure proper cleanup of temporary files after processing
+
+3. Claude Extractors Implementation:
+   - Create `lib/extraction/claude-extractors.ts` module with specialized extractors:
+     - Line item extractor with structured output schema
+     - Measurements extractor with standardized units
+   - Wire extractors into Phase 2 orchestrator
+   - Implement strict JSON schema validation for extractor outputs
+   - Store extraction results in MistralExtraction.extractedData field
+
+4. Resilience and Error Handling:
+   - Implement retry/backoff mechanisms for API rate limits (429) and server errors (5xx)
+   - Create safe fallback strategies when primary extraction methods fail
+   - Add detailed error logging with context for debugging
+
+5. Telemetry and Cost Tracking:
+   - Implement per-document cost tracking for both Phase 1 and Phase 2
+   - Add per-phase processing metrics (time, tokens, API calls)
+   - Create threshold alerts for abnormal processing costs
+   - Set up monitoring dashboards for extraction performance
+
+6. Extraction-Analysis Separation:
+   - Enforce strict separation between extraction and analysis phases
+   - Ensure no compliance decisions are made during extraction
+   - Create clean interfaces between pipeline stages
+
+# Test Strategy:
+1. File Handling Tests:
+   - Verify correct strategy selection based on file size (base64 vs Files API)
+   - Test idempotency with duplicate document submissions
+   - Validate proper file cleanup after processing
+   - Test handling of various PDF formats and sizes
+
+2. Claude Extractor Tests:
+   - Create test suite with sample PDFs containing known line items and measurements
+   - Verify extractors produce correctly structured JSON output
+   - Test extraction accuracy against manually labeled ground truth
+   - Validate error handling with malformed or unexpected documents
+
+3. Integration Tests:
+   - Test end-to-end flow from document upload through both phases
+   - Verify correct storage of extraction results in database
+   - Validate processing_metadata contains accurate provenance information
+   - Test pipeline with various document types and sizes
+
+4. Resilience Tests:
+   - Simulate API failures (429/5xx) to verify retry/backoff behavior
+   - Test fallback mechanisms when primary extraction fails
+   - Verify system handles partial extraction results appropriately
+
+5. Performance and Cost Tests:
+   - Measure processing time and API costs for various document types
+   - Verify cost tracking accuracy against actual API usage
+   - Test alert thresholds with simulated high-cost documents
+   - Validate telemetry data collection and reporting
+
+# Subtasks:
+## 1. Claude Files API integration utility [pending]
+### Dependencies: 21.2, 21.3, 21.5
+### Description: Create a utility wrapping Anthropic Files API: upload (multipart), get status, reuse by content hash, delete on TTL. Provide function to choose base64 vs file_id by size/pages. Mask file_id in logs.
+### Details:
+- Module: lib/extraction/claude-files.ts
+- Functions: uploadPdf(buffer, meta) -> file_id; getOrUploadByHash(hash, buffer)
+- Store SHA-256 for idempotency; add retries/backoff; expose metrics
+- Env gates for enabling Files API and thresholds
+- Unit tests with mocked HTTP
+
+## 2. Implement Claude extractors (line-items & measurements) [pending]
+### Dependencies: 21.2, 21.3, 21.5
+### Description: Create `lib/extraction/claude-extractors.ts` with two pure parsers: estimate line-items, roof report measurements. Operate only on OCR text; return strict JSON. Include unit tests for common patterns.
+### Details:
+- Functions: extractEstimateLineItems(text), extractRoofReportMeasurements(text)
+- Deterministic prompts, temperature 0, JSON-only responses
+- Validate with zod schemas; map to MistralExtraction.extractedData
+- Capture sourcePages and classifiers (roofType, ridgeCapType)
+
+## 3. Wire extractors into Phase 2 orchestrator [pending]
+### Dependencies: 21.2, 21.3, 21.5
+### Description: Invoke line-item and measurement extractors after saving OCR pages; merge results and upsert into latest MistralExtraction.extractedData. Persist provenance and page sources.
+### Details:
+- Update smart-extraction-service.ts: call extractors per doc type with concurrency 4–6
+- Merge per the mapDatabaseToRidgeCapData expectations
+- Store processing_metadata: {method, model, version, pages, timings}
+- Unit tests against fixture OCR text
+
+## 4. Telemetry & cost tracking per phase [pending]
+### Dependencies: 21.2, 21.3, 21.5
+### Description: Track tokens, cost, processing time, and success/failure per phase and per document; persist to DB and surface in logs.
+### Details:
+- Add counters to Phase 1 Claude calls and Phase 2 OCR + extractors
+- Persist to job metrics table/fields; include thresholds and alerts
+- Dashboard summary util for quick diagnostics
+

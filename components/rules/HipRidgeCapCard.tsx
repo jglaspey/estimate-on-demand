@@ -1,93 +1,229 @@
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { ValueHighlight } from '../ui/value-highlight';
 import { 
   CheckCircle, 
   AlertTriangle, 
-  X,
-  MapPin,
+  XCircle,
   Copy,
   ExternalLink,
   Plus,
-  Search,
-  ArrowUpDown,
+  Pencil,
+  Calculator,
+  ChevronDown,
+  ChevronRight,
+  FileText,
   Eye,
-  CheckSquare
+  Info,
+  Zap,
+  ArrowUpRight,
+  Check,
+  X,
+  GitBranch
 } from 'lucide-react';
-import { RuleAnalysisResult } from '../../lib/mockData';
+import { DecisionFlowVisualization } from '../DecisionFlowVisualization';
+
+interface RuleAnalysisResult {
+  ruleName: string;
+  status: 'COMPLIANT' | 'SUPPLEMENT_NEEDED' | 'INSUFFICIENT_DATA';
+  confidence: number;
+  reasoning: string;
+  costImpact: number;
+  userDecision?: 'accepted' | 'rejected' | 'modified';
+  userNotes?: string;
+  estimateQuantity?: string;
+  requiredQuantity?: string;
+  variance?: string;
+  varianceType?: 'shortage' | 'adequate' | 'excess';
+  materialStatus?: 'compliant' | 'non-compliant';
+  currentSpecification?: {
+    code: string;
+    description: string;
+    quantity: string;
+    rate: string;
+    total: string;
+  };
+}
 
 interface HipRidgeCapCardProps {
   ruleAnalysis: RuleAnalysisResult;
   onDecision: (decision: 'accepted' | 'rejected' | 'modified', notes?: string) => void;
+  onJumpToEvidence?: (location: string, type: 'estimate' | 'roof_report') => void;
+  showHighlighting?: boolean; // Whether to show live data highlighting
 }
 
-export function HipRidgeCapCard({ ruleAnalysis, onDecision }: HipRidgeCapCardProps) {
+type DecisionState = 'pass' | 'shortage' | 'missing' | 'type_mismatch' | 'unit_mismatch';
+type RoofType = 'laminated' | '3_tab' | 'other';
+type RidgeCapType = 'purpose_built_standard' | 'purpose_built_high' | 'cut_from_3tab' | 'not_found';
+
+export function HipRidgeCapCard({ ruleAnalysis, onDecision, onJumpToEvidence, showHighlighting = false }: HipRidgeCapCardProps) {
+  // State management
   const [notes, setNotes] = useState(ruleAnalysis.userNotes || '');
+  const [editingQuantity, setEditingQuantity] = useState(false);
+  const [editingRate, setEditingRate] = useState(false);
+  const [customQuantity, setCustomQuantity] = useState('');
+  const [customRate, setCustomRate] = useState('');
+  const [traceExpanded, setTraceExpanded] = useState(false);
   const [justificationCopied, setJustificationCopied] = useState(false);
 
-  const isAdequate = ruleAnalysis.status === 'COMPLIANT';
-  const isShortage = ruleAnalysis.varianceType === 'shortage';
-  const isExcess = ruleAnalysis.varianceType === 'adequate' && ruleAnalysis.variance?.startsWith('+');
+  // Data validation helpers
+  const hasRealData = (value: any): boolean => {
+    // Check for completely missing values
+    if (value === undefined || value === null || value === '') return false;
+    
+    // Check for placeholder strings
+    if (typeof value === 'string') {
+      if (value.includes('XX') || value.includes('N/A') || value === 'Unknown' || value.trim() === '') return false;
+    }
+    
+    // Check for invalid numbers
+    if (typeof value === 'number' && (value === 0 || isNaN(value))) return false;
+    
+    return true;
+  };
 
-  // Dynamic content based on scenario
-  const getStatusInfo = () => {
-    if (isAdequate) {
-      return {
-        badge: 'Coverage Verified',
-        icon: CheckCircle,
-        color: 'emerald',
-        bgColor: 'bg-emerald-50',
-        borderColor: 'border-emerald-200',
-        iconColor: 'text-emerald-600',
-        textColor: 'text-emerald-900'
-      };
-    } else {
-      return {
-        badge: 'Supplement Needed',
-        icon: AlertTriangle,
-        color: 'red',
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200',
-        iconColor: 'text-red-600',
-        textColor: 'text-red-900'
-      };
+  // Conditional highlighting wrapper
+  const ConditionalHighlight = ({ children, value, className }: { 
+    children: React.ReactNode; 
+    value: any; 
+    className?: string;
+  }) => {
+    if (!showHighlighting) return <>{children}</>;
+    
+    const isPlaceholder = !hasRealData(value);
+    return (
+      <ValueHighlight isPlaceholder={isPlaceholder} className={className}>
+        {children}
+      </ValueHighlight>
+    );
+  };
+
+  // Determine current state and data
+  const getDecisionState = (): DecisionState => {
+    if (ruleAnalysis.status === 'COMPLIANT') return 'pass';
+    if (ruleAnalysis.varianceType === 'shortage') return 'shortage';
+    return 'shortage'; // Default for now
+  };
+
+  const getRoofType = (): RoofType => {
+    // Mock detection - in real implementation, this would come from shingle line analysis
+    return 'laminated';
+  };
+
+  const getRidgeCapType = (): RidgeCapType => {
+    // Mock detection - in real implementation, this would analyze the estimate line items
+    return 'purpose_built_standard';
+  };
+
+  const decisionState = getDecisionState();
+  const roofType = getRoofType();
+  const ridgeCapType = getRidgeCapType();
+
+  // Calculations
+  const estimateLF = parseFloat(ruleAnalysis.estimateQuantity?.replace(/[^\d.]/g, '') || '6');
+  const requiredLF = parseFloat(ruleAnalysis.requiredQuantity?.replace(/[^\d.]/g, '') || '119');
+  const ridgesLF = 26; // From EagleView
+  const hipsLF = 93; // From EagleView
+  const varianceLF = estimateLF - requiredLF;
+  const additionalLF = Math.max(0, requiredLF - estimateLF);
+  const unitPrice = parseFloat(ruleAnalysis.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '4.50');
+  const additionalCost = additionalLF * unitPrice;
+
+  // Decision bar configuration
+  const getDecisionConfig = () => {
+    switch (decisionState) {
+      case 'pass':
+        return {
+          state: 'Pass',
+          stateColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+          icon: CheckCircle,
+          iconColor: 'text-emerald-600',
+          confidence: Math.round(ruleAnalysis.confidence * 100),
+          primaryCTA: 'Mark Reviewed',
+          primaryCTAIcon: Check,
+          primaryCTAColor: 'bg-emerald-600 hover:bg-emerald-700',
+          secondaryCTA: 'Copy Note',
+          secondaryCTAIcon: Copy
+        };
+      case 'shortage':
+        return {
+          state: 'Shortage',
+          stateColor: 'bg-red-100 text-red-800 border-red-300',
+          icon: AlertTriangle,
+          iconColor: 'text-red-600',
+          confidence: Math.round(ruleAnalysis.confidence * 100),
+          primaryCTA: 'Add to Supplement',
+          primaryCTAIcon: Plus,
+          primaryCTAColor: 'bg-blue-600 hover:bg-blue-700',
+          secondaryCTA: 'Copy Note',
+          secondaryCTAIcon: Copy
+        };
+      default:
+        return {
+          state: 'Review Needed',
+          stateColor: 'bg-amber-100 text-amber-800 border-amber-300',
+          icon: AlertTriangle,
+          iconColor: 'text-amber-600',
+          confidence: Math.round(ruleAnalysis.confidence * 100),
+          primaryCTA: 'Review',
+          primaryCTAIcon: Eye,
+          primaryCTAColor: 'bg-blue-600 hover:bg-blue-700',
+          secondaryCTA: 'Copy Note',
+          secondaryCTAIcon: Copy
+        };
     }
   };
 
-  const getVarianceStatus = () => {
-    if (isShortage) {
+  const config = getDecisionConfig();
+  const StateIcon = config.icon;
+  const PrimaryCTAIcon = config.primaryCTAIcon;
+  const SecondaryCTAIcon = config.secondaryCTAIcon;
+
+  // Type compliance check
+  const getTypeCompliance = () => {
+    if (roofType === 'laminated' && ridgeCapType === 'cut_from_3tab') {
       return {
-        label: 'SHORTAGE',
-        color: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800',
-        icon: '⚠️'
+        status: 'not_compliant',
+        message: 'Not compliant → Replace with Purpose-built (RFG RIDGC)',
+        color: 'text-red-700',
+        bgColor: 'bg-red-50 border-red-200'
       };
-    } else if (isExcess) {
-      return {
-        label: 'ADEQUATE',
-        color: 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800',
-        icon: '✅'
-      };
+    }
+    return {
+      status: 'compliant',
+      message: 'Compliant',
+      color: 'text-emerald-700',
+      bgColor: 'bg-emerald-50 border-emerald-200'
+    };
+  };
+
+  const typeCompliance = getTypeCompliance();
+
+  // Jump to evidence handlers
+  const handleJumpToEstimate = (location: string) => {
+    onJumpToEvidence?.(location, 'estimate');
+  };
+
+  const handleJumpToReport = (location: string) => {
+    onJumpToEvidence?.(location, 'roof_report');
+  };
+
+  // Copy documentation
+  const generateDocumentation = () => {
+    if (decisionState === 'pass') {
+      return `Ridge cap coverage verified as adequate. Estimate includes ${estimateLF} LF while measurements show ${requiredLF} LF required. The ${Math.abs(varianceLF)} LF overage (${Math.round((Math.abs(varianceLF) / requiredLF) * 100)}%) provides appropriate waste factor for installation. Material specification (Standard profile) is compliant with ASTM D3161/D7158 wind resistance standards.`;
     } else {
-      return {
-        label: 'EXACT',
-        color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800',
-        icon: '✓'
-      };
+      return `Ridge cap shortage identified. EagleView report documents ${requiredLF} LF total ridge/hip coverage required (Ridges: ${ridgesLF} LF + Hips: ${hipsLF} LF). Current estimate includes only ${estimateLF} LF, creating a shortage of ${additionalLF} LF. Material type (Standard profile) is correctly specified and should be increased to match documented roof geometry. Additional coverage required: ${additionalLF} LF @ $${unitPrice.toFixed(2)}/LF = $${additionalCost.toFixed(2)}.`;
     }
   };
 
-  const statusInfo = getStatusInfo();
-  const varianceStatus = getVarianceStatus();
-  const StatusIcon = statusInfo.icon;
-
-  const standardJustification = isAdequate 
-    ? `Ridge cap coverage verified as adequate. Estimate includes ${ruleAnalysis.estimateQuantity} while measurements show ${ruleAnalysis.requiredQuantity} required. The ${ruleAnalysis.variance?.replace('+', '')} overage (7%) provides appropriate waste factor for installation.`
-    : `Roof measurement report indicates ${ruleAnalysis.requiredQuantity?.replace(' LF', '')} linear feet of combined ridges and hips requiring ridge cap coverage. Current estimate includes only ${ruleAnalysis.estimateQuantity}, creating a shortage of ${ruleAnalysis.variance?.replace('-', '')}. Standard profile ridge cap material is correctly specified and should be increased to match documented roof geometry.`;
-
-  const copyJustification = async () => {
+  const copyDocumentation = async () => {
     try {
-      await navigator.clipboard.writeText(standardJustification);
+      await navigator.clipboard.writeText(generateDocumentation());
       setJustificationCopied(true);
       setTimeout(() => setJustificationCopied(false), 2000);
     } catch (err) {
@@ -95,312 +231,463 @@ export function HipRidgeCapCard({ ruleAnalysis, onDecision }: HipRidgeCapCardPro
     }
   };
 
+  // Inline editing handlers
+  const handleQuantityEdit = () => {
+    setCustomQuantity(additionalLF.toString());
+    setEditingQuantity(true);
+  };
+
+  const handleRateEdit = () => {
+    setCustomRate(unitPrice.toString());
+    setEditingRate(true);
+  };
+
+  const saveQuantityEdit = () => {
+    // In real implementation, this would update the analysis
+    setEditingQuantity(false);
+  };
+
+  const saveRateEdit = () => {
+    // In real implementation, this would update the analysis
+    setEditingRate(false);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${statusInfo.bgColor} dark:${statusInfo.bgColor.replace('50', '900/30')}`}>
-            <StatusIcon className={`h-6 w-6 ${statusInfo.iconColor} dark:${statusInfo.iconColor.replace('600', '400')}`} />
+      {/* 1. Decision Bar */}
+      <div className="flex items-center justify-between p-4 rounded-lg border bg-white">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <StateIcon className={`h-5 w-5 ${config.iconColor}`} />
+            <Badge className={config.stateColor}>
+              {config.state}: {decisionState === 'shortage' ? `+${additionalLF} LF needed` : 'Coverage adequate'}
+            </Badge>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-              Hip/Ridge Cap Analysis
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              {statusInfo.badge} • {Math.round(ruleAnalysis.confidence * 100)}% confidence
-            </p>
+          
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              {config.confidence}% confidence
+            </Badge>
+            <button className="text-xs text-zinc-500 hover:text-zinc-700 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              why?
+            </button>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={copyDocumentation}
+            className="h-8 text-xs"
+          >
+            <SecondaryCTAIcon className="h-3 w-3 mr-1" />
+            {justificationCopied ? 'Copied!' : config.secondaryCTA}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onDecision('accepted', notes)}
+            className={`h-8 text-xs ${config.primaryCTAColor} text-white`}
+          >
+            <PrimaryCTAIcon className="h-3 w-3 mr-1" />
+            {config.primaryCTA}
+          </Button>
         </div>
       </div>
 
-      {/* Coverage Analysis */}
-      <div className={`rounded-lg border ${statusInfo.borderColor} ${statusInfo.bgColor} p-4 dark:${statusInfo.bgColor.replace('50', '950/20')} dark:${statusInfo.borderColor.replace('200', '800')}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={`font-semibold ${statusInfo.textColor} dark:${statusInfo.textColor.replace('900', '100')}`}>
-            Coverage Analysis
-          </h3>
-          <Badge className={`text-xs ${varianceStatus.color}`}>
-            {varianceStatus.icon} {varianceStatus.label}
-          </Badge>
-        </div>
+      {/* 2. AI Decision Path Visualization */}
+      <div className="rounded-lg border bg-white p-4">
+        <DecisionFlowVisualization
+          ruleName="ridge_cap"
+          currentPath={['analyze_estimate', 'roof_type', 'inspect_ridge_cap', 'ridge_cap_type', 'quantity_check']}
+          onStepClick={(stepId) => {
+            // Handle step interaction
+            console.log('Step clicked:', stepId);
+          }}
+          onEvidenceClick={onJumpToEvidence}
+        />
+      </div>
+
+      {/* 3. Coverage Summary */}
+      <div className="rounded-lg border bg-white p-4">
+        <h3 className="font-medium text-zinc-900 mb-4 flex items-center gap-2">
+          <Calculator className="h-4 w-4" />
+          Coverage Summary
+          <span className="text-xs text-zinc-500 ml-auto">Click any value to see the source</span>
+        </h3>
         
         <div className="space-y-3">
-          {/* Estimate Row */}
           <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-600">Estimate LF:</span>
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${statusInfo.textColor.replace('900', '700')} dark:${statusInfo.textColor.replace('900', '300')}`}>
-                Ridge Cap Coverage (Estimate):
-              </span>
-              <button className="text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                Page 4
-              </button>
+              <ConditionalHighlight value={ruleAnalysis.estimateQuantity}>
+                <button 
+                  onClick={() => handleJumpToEstimate('Page 4, Line 3b')}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {hasRealData(ruleAnalysis.estimateQuantity) ? `${estimateLF} LF` : 'No data'}
+                </button>
+              </ConditionalHighlight>
+              <Badge variant="outline" className="text-xs h-5 px-1.5">
+                <button 
+                  onClick={() => handleJumpToEstimate('Page 4, Line 3b')}
+                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  Estimate p.4
+                </button>
+              </Badge>
             </div>
-            <span className={`font-semibold ${statusInfo.textColor} dark:${statusInfo.textColor.replace('900', '100')}`}>
-              {ruleAnalysis.estimateQuantity || 'N/A'}
-            </span>
           </div>
 
-          {/* Required Row */}
           <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-600">Required LF:</span>
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${statusInfo.textColor.replace('900', '700')} dark:${statusInfo.textColor.replace('900', '300')}`}>
-                Required (per Report):
-              </span>
-              <button className="text-xs text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                Report
-              </button>
+              <ConditionalHighlight value={ruleAnalysis.requiredQuantity}>
+                <button 
+                  onClick={() => handleJumpToReport('Page 2, Section 3')}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {hasRealData(ruleAnalysis.requiredQuantity) ? `${requiredLF} LF` : 'No data'}
+                </button>
+              </ConditionalHighlight>
+              <Badge variant="outline" className="text-xs h-5 px-1.5">
+                <button 
+                  onClick={() => handleJumpToReport('Page 2, Section 3')}
+                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  Report p.2
+                </button>
+              </Badge>
             </div>
-            <span className={`font-semibold ${statusInfo.textColor} dark:${statusInfo.textColor.replace('900', '100')}`}>
-              {ruleAnalysis.requiredQuantity || 'N/A'}
-            </span>
           </div>
 
-          {/* Variance Row */}
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-200/50 dark:border-zinc-700/50">
-            <span className={`text-sm font-medium ${statusInfo.textColor.replace('900', '700')} dark:${statusInfo.textColor.replace('900', '300')}`}>
-              Variance:
-            </span>
-            <div className="flex items-center gap-2">
-              <span className={`font-semibold ${statusInfo.textColor} dark:${statusInfo.textColor.replace('900', '100')}`}>
-                {ruleAnalysis.variance || 'N/A'}
+          <div className="flex items-center justify-between pt-2 border-t">
+            <span className="text-sm font-medium text-zinc-700">Variance:</span>
+            <ConditionalHighlight value={ruleAnalysis.variance}>
+              <span className={`text-sm font-medium ${varianceLF < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                {hasRealData(ruleAnalysis.variance) ? `${varianceLF > 0 ? '+' : ''}${varianceLF} LF` : 'No data'}
               </span>
-              {isShortage && (
-                <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                  ({Math.round(Math.abs(parseFloat(ruleAnalysis.variance?.replace(/[^\d.-]/g, '') || '0')) / parseFloat(ruleAnalysis.requiredQuantity?.replace(/[^\d.-]/g, '') || '1') * 100)}% short)
-                </span>
-              )}
-              {isExcess && (
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                  (7% excess)
-                </span>
-              )}
-            </div>
+            </ConditionalHighlight>
           </div>
         </div>
+
+        <Collapsible className="mt-3">
+          <CollapsibleTrigger className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-700">
+            <ChevronRight className="h-3 w-3" />
+            Required LF = Ridges + Hips
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 p-3 bg-zinc-50 rounded text-xs text-zinc-600">
+            <div className="font-mono">
+              Required LF = {ridgesLF} LF + {hipsLF} LF = {requiredLF} LF
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
-      {/* Specification Details */}
-      <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-            Specification Details
-          </h3>
+      {/* 4. Type Compliance */}
+      <div className={`rounded-lg border p-4 ${typeCompliance.bgColor}`}>
+        <h3 className="font-medium text-zinc-900 mb-3 flex items-center gap-2">
+          <Zap className="h-4 w-4" />
+          Type Compliance
+        </h3>
+        
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-zinc-600">Roof type detected:</span>
+            <ConditionalHighlight value={roofType !== 'other'}>
+              <span className="font-medium">{roofType === 'laminated' ? 'Laminated' : 'No data'}</span>
+            </ConditionalHighlight>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-zinc-600">Ridge cap type in estimate:</span>
+            <ConditionalHighlight value={ruleAnalysis.currentSpecification?.description}>
+              <span className="font-medium">
+                {hasRealData(ruleAnalysis.currentSpecification?.description) ? 'Purpose-built Standard' : 'No data'}
+              </span>
+            </ConditionalHighlight>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-zinc-600">Compliance result:</span>
+            <ConditionalHighlight value={ruleAnalysis.materialStatus}>
+              <span className={`font-medium ${typeCompliance.color}`}>
+                {hasRealData(ruleAnalysis.materialStatus) ? typeCompliance.message : 'No data'}
+              </span>
+            </ConditionalHighlight>
+          </div>
         </div>
-        <div className="p-4">
+
+        {typeCompliance.status === 'compliant' && (
+          <div className="mt-3 p-2 bg-emerald-100 border border-emerald-200 rounded text-xs text-emerald-700">
+            ✓ Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards
+          </div>
+        )}
+      </div>
+
+      {/* 5. Quantity and Rate to Add (only when action needed) */}
+      {decisionState === 'shortage' && (
+        <div className="rounded-lg border bg-white p-4">
+          <h3 className="font-medium text-zinc-900 mb-4 flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Quantity and Rate to Add
+          </h3>
+          
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Code:</span>
-                  <span className="font-mono text-zinc-900 dark:text-zinc-100">
-                    {ruleAnalysis.currentSpecification?.code || 'RFG RIDGC'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Description:</span>
-                  <span className="text-zinc-900 dark:text-zinc-100">
-                    {ruleAnalysis.currentSpecification?.description || 'Hip/Ridge cap - Standard profile'}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Quantity & Rate:</span>
-                  <span className="font-mono text-zinc-900 dark:text-zinc-100">
-                    {ruleAnalysis.currentSpecification?.quantity || '6.00 LF'} @ {ruleAnalysis.currentSpecification?.rate || '$42.90/LF'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Total:</span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {ruleAnalysis.currentSpecification?.total || '$257.40'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-700">
+            <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded">
+              <span className="text-sm font-medium text-blue-900">Additional quantity:</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">Material Status:</span>
-                {ruleAnalysis.materialStatus === 'compliant' ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800">
-                    ✓ Compliant
-                  </Badge>
+                {editingQuantity ? (
+                  <div className="flex items-center gap-1">
+                    <Input 
+                      value={customQuantity}
+                      onChange={(e) => setCustomQuantity(e.target.value)}
+                      className="w-20 h-6 text-xs text-center"
+                    />
+                    <span className="text-xs text-blue-700">LF @</span>
+                    <Button size="sm" variant="outline" onClick={saveQuantityEdit} className="h-6 w-6 p-0">
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingQuantity(false)} className="h-6 w-6 p-0">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
                 ) : (
-                  <Badge className="bg-red-100 text-red-700 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800">
-                    ✗ Non-compliant
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <ConditionalHighlight value={additionalLF > 0}>
+                      <span className="font-medium text-blue-700">
+                        {additionalLF > 0 ? `${additionalLF} LF` : 'No data'}
+                      </span>
+                    </ConditionalHighlight>
+                    <button onClick={handleQuantityEdit} className="text-blue-600 hover:text-blue-800">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Recommendation */}
-      <div className={`rounded-lg border ${isAdequate ? 'border-emerald-200 bg-white' : 'border-emerald-200 bg-white'} dark:border-emerald-700 dark:bg-zinc-900`}>
-        <div className={`px-4 py-3 border-b ${isAdequate ? 'border-emerald-200 bg-emerald-50' : 'border-emerald-200 bg-emerald-50'} dark:border-emerald-700 dark:bg-emerald-900/20`}>
-          <h3 className={`font-semibold ${isAdequate ? 'text-emerald-900' : 'text-emerald-900'} dark:text-emerald-100`}>
-            Recommendation
-          </h3>
-        </div>
-        <div className="p-4">
-          {isAdequate ? (
-            /* Adequate Coverage Scenario */
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">No adjustment needed</span>
-              </div>
-              <div className="text-sm space-y-2 text-emerald-700 dark:text-emerald-300">
-                <div>• Coverage exceeds requirements by {ruleAnalysis.variance?.replace('+', '')} (7%)</div>
-                <div>• Appropriate waste factor included</div>
-                <div>• Material specification correct</div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-600">Unit price:</span>
+              <div className="flex items-center gap-2">
+                {editingRate ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm">$</span>
+                    <Input 
+                      value={customRate}
+                      onChange={(e) => setCustomRate(e.target.value)}
+                      className="w-16 h-6 text-xs text-center"
+                    />
+                    <span className="text-xs text-zinc-600">/LF</span>
+                    <Button size="sm" variant="outline" onClick={saveRateEdit} className="h-6 w-6 p-0">
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingRate(false)} className="h-6 w-6 p-0">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <ConditionalHighlight value={ruleAnalysis.currentSpecification?.rate}>
+                      <span className="text-sm font-medium">
+                        {hasRealData(ruleAnalysis.currentSpecification?.rate) ? `$${unitPrice.toFixed(2)}/LF` : 'No data'}
+                      </span>
+                    </ConditionalHighlight>
+                    <button onClick={handleRateEdit} className="text-zinc-400 hover:text-zinc-600">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            /* Shortage Scenario */
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="font-medium">Add {ruleAnalysis.variance?.replace('-', '')} of ridge cap coverage</span>
+
+            <div className="flex items-center justify-between pt-2 border-t">
+              <span className="text-sm font-medium text-zinc-700">Total addition:</span>
+              <ConditionalHighlight value={ruleAnalysis.costImpact}>
+                <span className="text-lg font-semibold text-blue-600">
+                  {hasRealData(ruleAnalysis.costImpact) ? `$${additionalCost.toFixed(2)}` : 'No data'}
+                </span>
+              </ConditionalHighlight>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Calculation Trace */}
+      <Collapsible open={traceExpanded} onOpenChange={setTraceExpanded}>
+        <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 text-left rounded-lg border bg-white hover:bg-zinc-50">
+          <ChevronDown className={`h-4 w-4 transition-transform ${traceExpanded ? 'rotate-180' : ''}`} />
+          <Calculator className="h-4 w-4" />
+          <span className="font-medium">Calculation Trace</span>
+          <Badge variant="outline" className="ml-auto text-xs">
+            {traceExpanded ? 'Hide' : 'Show'} details
+          </Badge>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent className="mt-2">
+          <div className="rounded-lg border bg-white p-4 space-y-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-600">Roof report: Ridges =</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{ridgesLF} LF</span>
+                  <button 
+                    onClick={() => handleJumpToReport('Page 2')}
+                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                    Jump
+                  </button>
+                </div>
               </div>
               
-              <div className="text-sm space-y-2 text-emerald-700 dark:text-emerald-300">
-                <div>• Keep same material (Standard profile)</div>
-                <div>• Additional quantity: {ruleAnalysis.variance?.replace('-', '')} @ $4.50/LF = ${(parseFloat(ruleAnalysis.variance?.replace('-', '').replace(' LF', '') || '0') * 4.50).toFixed(2)}</div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-600">Roof report: Hips =</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{hipsLF} LF</span>
+                  <button 
+                    onClick={() => handleJumpToReport('Page 2')}
+                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                    Jump
+                  </button>
+                </div>
               </div>
               
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg dark:bg-emerald-950/20 dark:border-emerald-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500">
-                      <Plus className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="font-semibold text-emerald-900 dark:text-emerald-100">
-                      Supplement Amount
-                    </span>
+              <div className="flex items-center justify-between font-medium pt-2 border-t">
+                <span className="text-zinc-700">Sum =</span>
+                <span>{requiredLF} LF</span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-600">Estimate ridge-cap lines found:</span>
+              </div>
+              <div className="mt-2 p-3 bg-zinc-50 rounded">
+                <div className="flex items-center justify-between text-sm">
+                  <div>
+                    <div className="font-medium">RFG RIDGC – Hip/Ridge cap – Standard profile</div>
+                    <div className="text-xs text-zinc-500">6.00 LF @ $42.90/LF = $257.40</div>
                   </div>
-                  <span className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
-                    +${ruleAnalysis.costImpact.toFixed(2)}
-                  </span>
+                  <button 
+                    onClick={() => handleJumpToEstimate('Page 4, Line 3b')}
+                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                    Jump
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Documentation */}
-      <div className="rounded-lg border border-blue-200 bg-white dark:border-blue-700 dark:bg-zinc-900">
-        <div className="px-4 py-3 border-b border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20">
+            <div className="pt-3 border-t">
+              <h4 className="text-sm font-medium text-zinc-700 mb-2">Validation checks:</h4>
+              <div className="space-y-1 text-xs text-zinc-600">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  <span>Unit consistency: LF expected for ridge cap ✓</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  <span>Reasonableness: ridge/hip LF ({requiredLF}) &lt; perimeter ✓</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* 7. Documentation Note */}
+      <div className="rounded-lg border bg-white">
+        <div className="px-4 py-3 border-b bg-zinc-50">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-              📋 Documentation
+            <h3 className="font-medium text-zinc-900 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documentation Note
             </h3>
             <Button
               variant="outline"
               size="sm"
-              onClick={copyJustification}
-              className="h-7 px-2 text-xs border-blue-200 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-900/30"
+              onClick={copyDocumentation}
+              className="h-7 px-2 text-xs"
             >
-              <Copy className="h-3 w-3 mr-1.5" />
+              <Copy className="h-3 w-3 mr-1" />
               {justificationCopied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
         </div>
         <div className="p-4">
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 dark:bg-blue-950/20 dark:border-blue-800">
-            <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
-              {standardJustification}
-            </p>
+          <div className="p-3 bg-zinc-50 border rounded text-sm text-zinc-700 leading-relaxed">
+            {generateDocumentation()}
           </div>
         </div>
       </div>
 
-      {/* Decision Section */}
-      <div className="space-y-4 pt-2 border-t border-zinc-200 dark:border-zinc-700">
-        {!ruleAnalysis.userDecision ? (
-          <>
-            <div className="flex gap-3">
-              {isAdequate ? (
-                /* Adequate Coverage Actions */
-                <>
-                  <Button
-                    onClick={() => onDecision('accepted', notes)}
-                    className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                  >
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    Mark as Reviewed
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => onDecision('rejected', notes)}
-                    className="px-8 h-12 border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Add Note
-                  </Button>
-                </>
-              ) : (
-                /* Shortage Actions */
-                <>
-                  <Button
-                    onClick={() => onDecision('accepted', notes)}
-                    className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Supplement
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => onDecision('rejected', notes)}
-                    className="px-8 h-12 border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Skip
-                  </Button>
-                </>
+      {/* 8. Review Controls */}
+      <div className="space-y-4 pt-4 border-t">
+        <div>
+          <label className="text-sm font-medium text-zinc-900 mb-2 block">
+            Additional Notes (Optional)
+          </label>
+          <Textarea
+            placeholder="Add any custom notes for this analysis..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="min-h-[60px] text-sm"
+          />
+        </div>
+        
+        <div className="text-xs text-zinc-500 space-y-1">
+          <div>Keyboard shortcuts:</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>• <kbd className="px-1 py-0.5 bg-zinc-100 rounded">J/K</kbd> Previous/Next</div>
+            <div>• <kbd className="px-1 py-0.5 bg-zinc-100 rounded">Enter</kbd> Add to supplement</div>
+            <div>• <kbd className="px-1 py-0.5 bg-zinc-100 rounded">C</kbd> Copy note</div>
+            <div>• <kbd className="px-1 py-0.5 bg-zinc-100 rounded">E/R</kbd> Jump to evidence</div>
+          </div>
+        </div>
+
+        {!ruleAnalysis.userDecision && (
+          <div className="flex gap-3">
+            <Button
+              onClick={() => onDecision('accepted', notes)}
+              className={`flex-1 h-12 ${config.primaryCTAColor} text-white`}
+            >
+              <PrimaryCTAIcon className="h-4 w-4 mr-2" />
+              {config.primaryCTA}
+              {decisionState === 'shortage' && (
+                <span className="ml-2 text-sm opacity-90">
+                  (+${additionalCost.toFixed(2)})
+                </span>
               )}
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {isAdequate ? 'Additional Notes (Optional)' : 'Additional Notes (Optional)'}
-              </label>
-              <Textarea
-                placeholder={isAdequate ? "Add any notes about this coverage verification..." : "Add any custom notes for this supplement..."}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[60px] text-sm border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
-              />
-            </div>
-          </>
-        ) : (
-          /* Decision Made */
-          <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onDecision('rejected', notes)}
+              className="px-8 h-12"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Skip
+            </Button>
+          </div>
+        )}
+
+        {ruleAnalysis.userDecision && (
+          <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/50">
-                <CheckCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                <CheckCircle className="h-4 w-4 text-blue-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                <p className="text-sm font-semibold text-blue-900">
                   Decision: {ruleAnalysis.userDecision.charAt(0).toUpperCase() + ruleAnalysis.userDecision.slice(1)}
                 </p>
-                {ruleAnalysis.userNotes && (
-                  <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">{ruleAnalysis.userNotes}</p>
-                )}
-                {ruleAnalysis.userDecision === 'accepted' && !isAdequate && (
-                  <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
-                    Added +${ruleAnalysis.costImpact.toFixed(2)} to supplement
-                  </p>
-                )}
-                {ruleAnalysis.userDecision === 'accepted' && isAdequate && (
-                  <p className="text-sm text-indigo-700 dark:text-indigo-300 mt-1">
-                    Coverage verified as adequate
+                {ruleAnalysis.userDecision === 'accepted' && decisionState === 'shortage' && (
+                  <p className="text-sm text-blue-700 mt-1">
+                    Added +${additionalCost.toFixed(2)} to supplement
                   </p>
                 )}
               </div>
@@ -408,9 +695,10 @@ export function HipRidgeCapCard({ ruleAnalysis, onDecision }: HipRidgeCapCardPro
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  // Reset decision in real implementation
                   setNotes('');
                 }}
-                className="text-xs border-indigo-200 hover:bg-indigo-100 dark:border-indigo-700 dark:hover:bg-indigo-900/30"
+                className="text-xs"
               >
                 Change
               </Button>

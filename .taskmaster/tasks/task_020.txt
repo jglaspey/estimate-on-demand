@@ -1,0 +1,329 @@
+# Task ID: 20
+# Title: Optimize Two-Page Job Workflow System
+# Status: in-progress
+# Dependencies: 6, 7, 19, 18
+# Priority: medium
+# Description: Refine and optimize the two-page job workflow system, including the Job Detail Page and Review Page, focusing on data integration, layout optimization, user workflow, business rule analysis, and information architecture.
+# Details:
+1. Job Detail Page Optimization:
+   - Refine the skeleton layout to ensure proper data loading states with skeleton loaders
+   - Optimize insurance details section with clear visual hierarchy and information grouping
+   - Enhance business rules analysis summary with improved confidence score visualization
+   - Refine roof measurements display with clearer metrics and visual representations
+   - Improve the "Start Review" button placement and visual prominence
+   - Implement smooth transitions between loading and populated states
+   - Fix field persistence issues to maintain extracted data visibility
+
+2. Review Page Enhancement:
+   - Optimize the split-pane interface for better space utilization
+   - Implement responsive behavior for various screen sizes with minimum width constraints
+   - Enhance the business rules panel with collapsible sections and filtering options
+   - Improve the contextual document viewer with better navigation and zoom controls
+   - Add keyboard shortcuts for common actions (panel resizing, navigation, etc.)
+   - Implement smooth scrolling synchronization between document view and rule references
+
+3. Data Integration Refinement:
+   - Audit all dynamic fields to ensure proper data binding and persistence
+   - Optimize data fetching patterns to reduce loading times
+   - Implement progressive loading for large documents
+   - Add field-level validation with clear error states
+   - Enhance caching strategy for frequently accessed data
+   - Implement optimistic UI updates for better perceived performance
+   - Ensure extracted field values remain visible after initial population
+
+4. Business Rule Analysis Improvements:
+   - Refine prompt engineering for each business rule analyzer to improve accuracy
+   - Enhance confidence score calculation with more granular metrics
+   - Improve evidence presentation with direct document references
+   - Implement better visualization of rule dependencies and relationships
+   - Add detailed explanation for each rule decision with supporting evidence
+   - Create improved tooltips and contextual help for complex rule interpretations
+
+5. User Workflow Optimization:
+   - Conduct task flow analysis to identify friction points
+   - Optimize the transition from overview to detailed review
+   - Implement breadcrumbs and navigation aids for context awareness
+   - Add progress indicators for multi-step processes
+   - Enhance keyboard navigation and accessibility
+   - Implement user preference persistence for layout settings
+
+6. Performance Optimization:
+   - Implement code splitting for faster initial page loads
+   - Optimize component rendering with React.memo and useMemo
+   - Reduce unnecessary re-renders with proper state management
+   - Implement virtualization for long lists of rules or documents
+   - Add performance monitoring and analytics
+   - Optimize image and PDF rendering with progressive loading
+
+7. Claude 3.5 Haiku Integration:
+   - Maintain the successful direct PDF processing integration
+   - Ensure consistent 95-100% field extraction rate across priority fields
+   - Optimize real-time field population in the upload workflow
+   - Maintain database integration with extraction confidence scoring
+
+8. Dashboard Page Improvements:
+   - Maintain clean layout with removed redundant headers
+   - Preserve sticky "Estimate on Demand" header with backdrop blur
+   - Continue using streamlined table layout without supplements column and Job #
+   - Ensure proper data transformation using actual database values
+   - Maintain text truncation for all columns for consistent appearance
+   - Keep proper table column alignment with section headers
+
+9. Claim Information Section:
+   - Maintain consistent display of hyphens (-) for missing financial values
+   - Ensure Original Estimate, Potential Supplement, and Total Value show proper defaults
+   - Prepare for business rule analysis integration with clean default state
+
+10. Ridge Cap Analysis Visual Highlighting System:
+    - Maintain the ValueHighlight component with red boxes for placeholder data and green boxes for live data
+    - Preserve the toggle functionality between Live Data mode and Demo Mode
+    - Ensure comprehensive field coverage for all dynamic content in the Ridge Cap Analysis
+    - Connect the visual highlighting system to the actual database ridge cap analysis results
+    - Map extraction pipeline outputs to the ridgeCapData interface
+
+# Test Strategy:
+1. User Interface Testing:
+   - Conduct comprehensive UI testing across different screen sizes and devices
+   - Verify all dynamic fields populate correctly with test data
+   - Test loading states and transitions between pages
+   - Validate responsive behavior of the split-pane interface
+   - Verify all interactive elements function as expected
+   - Test keyboard navigation and accessibility compliance
+   - Verify extracted field values persist after initial population
+
+2. Data Integration Testing:
+   - Create test fixtures with various data scenarios (complete, partial, missing data)
+   - Verify all dynamic fields correctly bind to their data sources
+   - Test error handling for missing or malformed data
+   - Validate caching behavior and data persistence
+   - Measure and benchmark loading performance
+   - Test offline behavior and recovery
+   - Verify field state management correctly maintains extracted values
+
+3. Business Rule Analysis Testing:
+   - Create test cases for each business rule with various scenarios
+   - Validate confidence score calculations against expected outcomes
+   - Test evidence collection and presentation accuracy
+   - Verify rule dependencies and relationships are correctly represented
+   - Conduct A/B testing of different prompt engineering approaches
+   - Measure accuracy improvements against baseline metrics
+
+4. User Workflow Testing:
+   - Conduct user testing sessions with task completion scenarios
+   - Measure time-to-completion for common workflows
+   - Collect qualitative feedback on workflow improvements
+   - Test navigation between pages and sections
+   - Verify breadcrumbs and context indicators are accurate
+   - Test user preference persistence across sessions
+
+5. Performance Testing:
+   - Conduct lighthouse performance audits before and after optimization
+   - Measure Time to Interactive (TTI) and First Contentful Paint (FCP)
+   - Test with throttled network conditions to simulate various connection speeds
+   - Measure memory usage during extended usage sessions
+   - Profile rendering performance with React DevTools
+   - Verify bundle size optimization with webpack bundle analyzer
+
+6. Regression Testing:
+   - Create automated tests for critical user flows
+   - Verify all existing functionality continues to work as expected
+   - Test integration points with other system components
+   - Conduct cross-browser testing on major browsers
+   - Verify mobile responsiveness and touch interactions
+
+7. Claude 3.5 Extraction Testing:
+   - Verify extraction accuracy across all priority fields
+   - Test extraction performance with various PDF types and sizes
+   - Validate confidence scoring accuracy
+   - Test error handling for problematic documents
+   - Verify real-time field population works consistently
+
+8. Dashboard Page Testing:
+   - Verify proper rendering of the streamlined dashboard layout
+   - Test sticky header behavior across different scroll positions
+   - Validate data transformation from database to UI display
+   - Test text truncation behavior with various content lengths
+   - Verify table alignment and responsiveness
+
+9. Claim Information Section Testing:
+   - Test display of financial values with various data scenarios
+   - Verify proper default state rendering
+   - Test transition from default state to populated state
+   - Validate proper handling of missing or zero values
+
+10. Ridge Cap Analysis Visual Highlighting Testing:
+    - Test toggle functionality between Live Data mode and Demo Mode
+    - Verify correct visual highlighting for placeholder data (red) and live data (green)
+    - Test conditional highlighting behavior based on data availability
+    - Validate that all dynamic content fields have proper highlighting
+    - Test integration with actual database ridge cap analysis results
+    - Verify automatic transition from red to green highlighting as data is populated
+
+# Subtasks:
+## 1. Navigation Flow Fixes [done]
+### Dependencies: None
+### Description: Resolved critical navigation issues between dashboard → job overview → job review pages. All routing now works seamlessly with proper data passing.
+### Details:
+
+
+## 2. Database Schema Resolution [done]
+### Dependencies: None
+### Description: Fixed database schema mismatches in Mistral extraction service, particularly for complex object handling and nested data structures.
+### Details:
+
+
+## 3. Mistral OCR Updates [done]
+### Dependencies: None
+### Description: Updated model from 'mistral-ocr-latest' to 'mistral-ocr-2505' for better stability. Verified OCR processing working correctly with 4.3s processing time. Clean markdown output extraction confirmed working.
+### Details:
+
+
+## 4. API Rate Limit Resolution [done]
+### Dependencies: None
+### Description: Disabled problematic Mistral chat completions causing 429 rate limit errors. System now stable without hitting API limits during normal operation.
+### Details:
+
+
+## 5. API Response Parsing [done]
+### Dependencies: None
+### Description: Fixed critical API response parsing in job detail pages to properly extract job object from nested response structure.
+### Details:
+
+
+## 6. End-to-End Verification [done]
+### Dependencies: None
+### Description: Complete system now functional on localhost:3000 with working navigation, data extraction, and display.
+### Details:
+
+
+## 7. UI Refinement - Job Detail Page [done]
+### Dependencies: None
+### Description: Implement visual enhancements to the Job Detail Page including improved layout, typography, spacing, and visual hierarchy. Focus on insurance details section and business rules summary.
+### Details:
+
+
+## 8. UI Refinement - Review Page [to-do]
+### Dependencies: None
+### Description: Enhance the Review Page split-pane interface with better space utilization, responsive behavior, and improved document viewer controls.
+### Details:
+<info added on 2025-08-14T16:57:39.737Z>
+Successfully enhanced the Review Page with split-pane layout matching the prototype. Implemented:
+1. Enhanced Document Viewer component with PDF/extracted text toggle capability
+2. Split-pane layout with business rules panel (left) and document viewer (right)
+3. Integration with real database document pages (extractedContent and rawText)
+4. Measurement comparison panel for Ridge Cap analysis
+5. Sticky footer with supplement impact calculations and rule navigation
+6. Evidence highlighting in extracted text view
+7. Proper spacing and layout matching the prototype design
+
+The app is now running on http://localhost:3003 with all review functionality implemented.
+</info added on 2025-08-14T16:57:39.737Z>
+
+## 9. Business Rule Integration [to-do]
+### Dependencies: None
+### Description: Connect business rule analyzers to the UI, implement confidence score visualization, and enhance evidence presentation with direct document references.
+### Details:
+
+
+## 10. Performance Optimization [to-do]
+### Dependencies: None
+### Description: Implement code splitting, optimize component rendering, reduce unnecessary re-renders, and add performance monitoring for both pages.
+### Details:
+
+
+## 11. User Experience Enhancements [to-do]
+### Dependencies: None
+### Description: Add keyboard shortcuts, improve navigation aids, implement breadcrumbs, and enhance accessibility across the workflow system.
+### Details:
+
+
+## 12. Final Testing and Documentation [to-do]
+### Dependencies: None
+### Description: Conduct comprehensive testing across all components and document the optimized workflow system, including any known limitations and future enhancement opportunities.
+### Details:
+
+
+## 13. Claude 3.5 Haiku PDF Extraction Integration [done]
+### Dependencies: None
+### Description: Successfully implemented Claude 3.5 Haiku direct PDF processing for field extraction with 95-100% accuracy across priority fields. Integrated with database and implemented real-time field population.
+### Details:
+- Integrated Claude 3.5 Haiku for direct PDF processing
+- Achieved 5-7 second processing time for field extraction
+- Successfully extracting Customer Name, Property Address, Carrier, Claim Rep, Estimator, Date of Loss, Claim Number, Policy Number
+- Implemented database integration with confidence scoring
+- Added processing time tracking
+- Implemented graceful error handling and user feedback
+
+## 14. Fix Dynamic Field Display Persistence [done]
+### Dependencies: 20.13
+### Description: Fix critical UI issue where dynamically extracted fields revert to showing default/skeleton values instead of persisting the extracted data after initial population.
+### Details:
+1. Remove all hardcoded default values from UI components
+2. Implement proper state management to persist extracted field values
+3. Replace skeleton loaders with actual extracted field data once available
+4. Fix component re-rendering issues causing field values to reset
+5. Ensure smooth transition from loading → populated → persistent display states
+6. Add proper error handling for failed field extractions
+7. Implement visual indicators for extraction confidence levels
+
+## 15. Dashboard Page Improvements [done]
+### Dependencies: None
+### Description: Implement UI enhancements to the Dashboard page for better usability and cleaner visual presentation.
+### Details:
+1. Removed redundant "Insurance Supplement Dashboard" header
+2. Made "Estimate on Demand" header properly sticky with backdrop blur
+3. Removed supplements column and Job # from table for cleaner layout
+4. Updated data transformation to use actual database values instead of mock data
+5. Removed customer avatar icons and added text truncation to all columns
+6. Fixed table column alignment with section headers
+
+## 16. Claim Information Section Cleanup [done]
+### Dependencies: None
+### Description: Improve the display of financial information in the Claim Information section with better default states.
+### Details:
+1. Updated to show hyphens (-) instead of $0 for missing financial values
+2. Original Estimate, Potential Supplement, and Total Value now show "-" as defaults
+3. Temporarily disabled mock business rule analysis to show clean default state
+
+## 17. Analysis Status Section Improvements [done]
+### Dependencies: None
+### Description: Enhance the Analysis Status section with dynamic state indicators based on actual processing status.
+### Details:
+1. Made status dynamic based on actual processing state
+2. Shows "Pending Analysis" (amber) when no rules processed
+3. Shows "Complete" (green) when business rules are analyzed
+4. Updated icons and colors to reflect actual state
+
+## 18. Field Mapping Fixes [done]
+### Dependencies: 20.14
+### Description: Fix field mappings in OverviewPage component and update data interfaces to match UI expectations.
+### Details:
+1. Fixed field mappings for claimRep and estimator in OverviewPage component
+2. Added missing estimator field to JobData interface
+3. Updated roof measurements object structure to match UI expectations
+
+## 19. Ridge Cap Analysis Visual Highlighting System [done]
+### Dependencies: 20.18
+### Description: Implement comprehensive visual highlighting system for Ridge Cap Analysis UI to provide immediate visual feedback on extraction completeness.
+### Details:
+1. Created ValueHighlight component with red boxes for placeholder data (thick borders) and green boxes for live data (thin borders)
+2. Updated Ridge Cap Analysis component to accept dynamic ridgeCapData props with comprehensive interface
+3. Implemented toggle behavior: Live Data mode shows actual DB values with highlighting, Demo Mode shows clean interface
+4. Added highlighting to all dynamic content including coverage summary values, type compliance fields, calculation values, pricing data, and text content
+5. Used XX-style placeholders for data fields and "String" for text content
+6. Created ConditionalHighlight wrapper component that shows/hides highlighting based on showHighlighting prop
+7. Fixed import issues and component references
+8. Implemented field-level data detection using hasLiveData helper function
+
+## 20. Ridge Cap Analysis Database Integration [to-do]
+### Dependencies: 20.19
+### Description: Connect the Ridge Cap Analysis visual highlighting system to actual database extraction results and map pipeline outputs to the ridgeCapData interface.
+### Details:
+1. Connect to actual database ridge cap analysis results
+2. Map extraction pipeline outputs to ridgeCapData interface
+3. Ensure automatic transition from red to green highlighting as data is populated
+4. Implement data validation and error handling for extraction results
+5. Add confidence scoring for ridge cap analysis fields
+6. Optimize data fetching to minimize loading times
+7. Implement proper state management for extraction results
+

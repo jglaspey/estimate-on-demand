@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { DropZone } from '@/components/upload/DropZone';
-import { Input } from '@/front-end-mockup/catalyst-ui-kit/typescript/input';
-import { Button } from '@/front-end-mockup/catalyst-ui-kit/typescript/button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface JobDetails {
   propertyAddress: string;

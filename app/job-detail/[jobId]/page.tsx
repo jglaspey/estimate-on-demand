@@ -11,11 +11,9 @@ import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
 import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
-import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
-import { JobDetailsCard } from '@/components/JobDetailsCard';
 
-import { OverviewPage } from '@/front-end-mockup/components/OverviewPage';
-import { StickyFooter } from '@/front-end-mockup/components/StickyFooter';
+import { OverviewPage } from '@/components/OverviewPage';
+import { StickyFooter } from '@/components/StickyFooter';
 
 // Types based on our current extraction data structure
 interface JobData {
@@ -92,6 +90,7 @@ export default function JobDetailPage() {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showDemoMode, setShowDemoMode] = useState(false);
+  const [createRuleAnalysisFunction, setCreateRuleAnalysisFunction] = useState<((demoMode: boolean) => RuleAnalysisResult[]) | null>(null);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -133,7 +132,7 @@ export default function JobDetailPage() {
         setJobData(transformedJob);
 
         // Extract roof measurements from job data - match OverviewPage field names
-        const measurements: any = {
+        const measurements: RoofMeasurements = {
           // Primary measurements for OverviewPage display
           totalArea: job.roofSquares ? job.roofSquares * 100 : 0,
           totalSquares: job.roofSquares || 0,
@@ -162,52 +161,35 @@ export default function JobDetailPage() {
         };
         setRoofMeasurements(measurements);
 
-        // Mock business rule analysis based on real extraction data
-        const mockRuleAnalysis: RuleAnalysisResult[] = [
+        // Create rule analysis with different data based on demo mode
+        const createRuleAnalysis = (demoMode: boolean): RuleAnalysisResult[] => [
           {
             ruleName: 'ridge_cap',
             status: 'SUPPLEMENT_NEEDED',
-            confidence: 0.95,
+            confidence: demoMode ? 0.95 : 0.85,
             reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
-            costImpact: 4847.7,
-            estimateQuantity: '6 LF',
-            requiredQuantity: '119 LF',
-            variance: '-113 LF',
-            varianceType: 'shortage',
-            materialStatus: 'compliant',
-            currentSpecification: {
+            costImpact: demoMode ? 4847.7 : undefined,
+            // In demo mode, provide real data. In live mode, simulate missing extractions
+            estimateQuantity: demoMode ? '6 LF' : undefined,
+            requiredQuantity: demoMode ? '119 LF' : undefined,
+            variance: demoMode ? '-113 LF' : undefined,
+            varianceType: demoMode ? 'shortage' : undefined,
+            materialStatus: demoMode ? 'compliant' : undefined,
+            currentSpecification: demoMode ? {
               code: 'RFG RIDGC',
               description: 'Hip/Ridge cap - Standard profile',
               quantity: '6.00 LF',
               rate: '$42.90/LF',
               total: '$257.40',
-            },
+            } : undefined,
           },
-          // {
-          //   ruleName: 'starter_strip',
-          //   status: 'SUPPLEMENT_NEEDED',
-          //   confidence: 0.88,
-          //   reasoning:
-          //     'Universal starter strip required but not properly specified. Current estimate notes "Include eave starter course: Yes (included in waste)" but this does not account for the specific universal starter strip product required for laminate shingles.',
-          //   costImpact: 513.0,
-          // },
-          // {
-          //   ruleName: 'drip_edge',
-          //   status: 'SUPPLEMENT_NEEDED',
-          //   confidence: 0.82,
-          //   reasoning:
-          //     'Insufficient edge flashing coverage. Estimate includes drip edge for rake edges only (120 LF) but missing gutter apron required for eave edges (180 LF). Different components needed for different roof edges.',
-          //   costImpact: 765.0,
-          // },
-          // {
-          //   ruleName: 'ice_water_barrier',
-          //   status: 'SUPPLEMENT_NEEDED',
-          //   confidence: 0.91,
-          //   reasoning:
-          //     'Insufficient ice & water barrier coverage per IRC R905.1.2. Estimate includes 800 SF but calculation based on roof measurements requires 1,167 SF (180 LF eaves × 60.4" width ÷ 12). Shortage of 367 SF.',
-          //   costImpact: 678.95,
-          // },
         ];
+
+        // Store the createRuleAnalysis function for later use
+        setCreateRuleAnalysisFunction(() => createRuleAnalysis);
+        
+        // Initialize with demo mode data (this will update when toggle changes)
+        const mockRuleAnalysis = createRuleAnalysis(showDemoMode);
 
         setRuleAnalysis(mockRuleAnalysis);
 
@@ -243,7 +225,15 @@ export default function JobDetailPage() {
     if (jobId) {
       fetchJobData();
     }
-  }, [jobId]);
+  }, [jobId, showDemoMode]);
+
+  // Update rule analysis when demo mode changes
+  useEffect(() => {
+    if (createRuleAnalysisFunction) {
+      const updatedRuleAnalysis = createRuleAnalysisFunction(showDemoMode);
+      setRuleAnalysis(updatedRuleAnalysis);
+    }
+  }, [showDemoMode, createRuleAnalysisFunction]);
 
   // Map database job status to our interface
   const mapJobStatus = (dbStatus: string): JobData['status'] => {
@@ -308,6 +298,12 @@ export default function JobDetailPage() {
             key={rule.ruleName}
             ruleAnalysis={rule}
             onDecision={onDecision}
+            onJumpToEvidence={(location, type) => {
+              // Handle evidence navigation
+              // In real implementation, this would scroll to or highlight the evidence
+              console.warn('Jump to evidence:', location, type);
+            }}
+            showHighlighting={!showDemoMode} // Show highlighting in Live Data mode
           />
         );
       case 'starter_strip':
@@ -504,29 +500,21 @@ export default function JobDetailPage() {
               <Badge className='bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800'>
                 Review Mode
               </Badge>
-              <span className='text-sm text-zinc-500 dark:text-zinc-400 ml-2'>
-                Rule {currentRuleIndex + 1} of {ruleAnalysis.length}
-              </span>
               <Button
                 variant={showDemoMode ? 'default' : 'outline'}
                 size='sm'
-                className='h-7 text-xs ml-4'
+                className={`h-7 text-xs ml-4 ${
+                  showDemoMode 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800'
+                }`}
                 onClick={() => setShowDemoMode(!showDemoMode)}
               >
-                {showDemoMode ? '🟢 Demo Mode' : '📊 Live Data'}
+                {showDemoMode ? '🟢 Demo Mode' : '🔴 Live Data'}
               </Button>
             </div>
 
             <div className='flex items-center gap-3'>
-              <Badge
-                variant='secondary'
-                className='bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-              >
-                Job #
-                {jobData?.id?.split('-')[1] ||
-                  jobData?.id?.slice(-4) ||
-                  'Loading...'}
-              </Badge>
 
               <div className='flex items-center gap-2'>
                 <Button
@@ -564,73 +552,15 @@ export default function JobDetailPage() {
         <div className='w-1/2 bg-white border-r border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
           <div className='h-full overflow-auto'>
             <div className='p-8 pb-24'>
-              {/* Show Ridge Cap Analysis for ridge_cap rule, otherwise show generic rule cards */}
-              {ruleAnalysis.length > 0 &&
-              ruleAnalysis[currentRuleIndex]?.ruleName === 'ridge_cap' ? (
-                <RidgeCapAnalysis
-                  ruleNumber={currentRuleIndex + 1}
-                  totalRules={ruleAnalysis.length}
-                  showHighlighting={!showDemoMode} // Only show highlighting in Live Data mode
-                  ridgeCapData={
-                    showDemoMode
-                      ? {
-                          // Demo mode with mock extracted data (green highlights)
-                          estimateQuantity: '6 LF',
-                          estimateUnitPrice: '$42.90/LF',
-                          estimateTotal: '$257.40',
-                          requiredQuantity: '119 LF',
-                          ridgeLength: 26,
-                          hipLength: 93,
-                          variance: '-113 LF',
-                          varianceAmount: -113,
-                          costImpact: 4847.7,
-                          confidence: 0.95,
-                          roofType: 'Laminated',
-                          ridgeCapType: 'Purpose-built Standard',
-                          complianceStatus: 'compliant' as const,
-                          lineItemCode: 'RFG RIDGC',
-                          lineItemDescription:
-                            'Hip/Ridge cap - Standard profile',
-                          complianceText:
-                            'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards',
-                          documentationNote:
-                            'Ridge cap shortage identified. EagleView report documents 119 LF total ridge/hip coverage required (Ridges: 26 LF + Hips: 93 LF). Current estimate includes only 6 LF, creating a shortage of 113 LF. Material type (Standard profile) is correctly specified and should be increased to match documented roof geometry. Additional coverage required: 113 LF @ $42.90/LF = $4847.70.',
-                        }
-                      : {
-                          // Live data mode - actual database values (currently undefined = red highlights)
-                          // Future: extract from ruleAnalysis[currentRuleIndex] or API response
-                          estimateQuantity: undefined,
-                          estimateUnitPrice: undefined,
-                          estimateTotal: undefined,
-                          requiredQuantity: undefined,
-                          ridgeLength: undefined,
-                          hipLength: undefined,
-                          variance: undefined,
-                          varianceAmount: undefined,
-                          costImpact: undefined,
-                          confidence: undefined,
-                          roofType: undefined,
-                          ridgeCapType: undefined,
-                          complianceStatus: undefined,
-                          lineItemCode: undefined,
-                          lineItemDescription: undefined,
-                          complianceText: undefined,
-                          documentationNote: undefined,
-                        }
-                  }
-                />
-              ) : (
+              {/* Show enhanced business rule cards for all rules */}
+              {ruleAnalysis.length > 0 ? (
                 <div className='space-y-6'>
-                  {/* Job Details Card */}
-                  <JobDetailsCard
-                    jobData={jobData}
-                    roofMeasurements={roofMeasurements || undefined}
-                    onUpdateField={handleFieldUpdate}
-                  />
-
-                  {/* Business Rule Card */}
-                  {ruleAnalysis.length > 0 &&
-                    renderRuleCard(ruleAnalysis[currentRuleIndex])}
+                  {/* Enhanced Business Rule Card */}
+                  {renderRuleCard(ruleAnalysis[currentRuleIndex])}
+                </div>
+              ) : (
+                <div className='text-center py-12'>
+                  <p className='text-zinc-500'>No business rules to review</p>
                 </div>
               )}
             </div>

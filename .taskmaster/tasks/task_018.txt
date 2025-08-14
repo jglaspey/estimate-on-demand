@@ -1,0 +1,169 @@
+# Task ID: 18
+# Title: WebSocket Implementation for Real-Time Job Progress Tracking
+# Status: done
+# Dependencies: 6, 16, 17
+# Priority: medium
+# Description: Implement WebSocket functionality to provide real-time updates on document processing jobs, including server setup, client connection management, progress event broadcasting, and UI integration.
+# Details:
+1. WebSocket Server Implementation:
+   - Set up a WebSocket server using Socket.IO or native WebSockets
+   - Configure the server to run alongside the existing API routes
+   - Implement authentication and authorization for WebSocket connections
+   - Create namespaces for different types of events (job progress, notifications)
+   - Set up error handling and connection recovery mechanisms
+
+2. Client Connection Management:
+   - Implement connection pooling to handle multiple concurrent clients
+   - Create a connection registry to track active clients and their subscriptions
+   - Implement heartbeat mechanism to detect disconnected clients
+   - Add reconnection logic with exponential backoff
+   - Create middleware for validating client connections
+
+3. Job Progress Event System:
+   - Modify the document processing queue to emit progress events
+   - Create standardized event payloads with job ID, status, progress percentage
+   - Implement event throttling to prevent overwhelming clients
+   - Add detailed status messages for each processing stage
+   - Create event hooks at key points in the processing pipeline
+
+4. Real-Time UI Updates:
+   - Implement a WebSocket client in the frontend
+   - Create a ProgressTracker component with visual indicators
+   - Add animated progress bars for active jobs
+   - Implement toast notifications for job status changes
+   - Create a central WebSocket context provider for app-wide access
+   - Add error handling and offline mode for WebSocket disconnections
+
+5. Testing and Monitoring:
+   - Implement WebSocket connection logging
+   - Create monitoring endpoints for WebSocket server health
+   - Add performance metrics collection for connection counts and message throughput
+   - Implement load testing for concurrent connections
+
+# Test Strategy:
+1. WebSocket Server Testing:
+   - Verify server can handle multiple concurrent connections
+   - Test authentication and authorization mechanisms
+   - Validate server performance under load with simulated clients
+   - Test server recovery after crashes or restarts
+   - Verify proper cleanup of disconnected clients
+
+2. Client Connection Testing:
+   - Test client reconnection logic with forced disconnections
+   - Verify heartbeat mechanism correctly identifies dead connections
+   - Test connection registry accuracy with multiple clients
+   - Validate connection pooling under high load
+   - Test authentication token expiration and renewal
+
+3. Progress Event Testing:
+   - Verify events are emitted at all key processing stages
+   - Test event payload structure and completeness
+   - Validate event delivery to subscribed clients only
+   - Test throttling mechanism under high event frequency
+   - Verify events are received in correct order
+
+4. UI Integration Testing:
+   - Test progress bar updates with simulated job progress events
+   - Verify toast notifications appear for status changes
+   - Test UI behavior during WebSocket disconnections
+   - Validate progress tracking across multiple simultaneous jobs
+   - Test UI responsiveness during high-frequency updates
+
+5. End-to-End Testing:
+   - Create automated tests that upload documents and verify progress tracking
+   - Test with various document sizes and processing times
+   - Verify final job completion events trigger appropriate UI updates
+   - Test system behavior with network interruptions
+   - Validate performance with multiple users tracking multiple jobs
+
+# Subtasks:
+## 1. Set up WebSocket server with Next.js [done]
+### Dependencies: None
+### Description: Implement a WebSocket server using Socket.IO that integrates with the existing Next.js application, including authentication and event namespaces.
+### Details:
+1. Install Socket.IO package and dependencies
+2. Create a custom server.js file to run both Next.js and Socket.IO
+3. Configure CORS settings for WebSocket connections
+4. Implement JWT token validation middleware for socket authentication
+5. Set up namespaces for 'job-progress' and 'notifications' events
+6. Create connection event handlers for socket lifecycle events
+7. Implement error handling for socket server failures
+8. Configure the server to work in both development and production environments
+
+## 2. Implement client connection management [done]
+### Dependencies: 18.1
+### Description: Create a robust client connection management system that handles connection pooling, client tracking, and reconnection logic.
+### Details:
+1. Create a ConnectionManager class to track active client connections
+2. Implement a client registry that maps user IDs to socket connections
+3. Add connection pooling to efficiently manage multiple concurrent clients
+4. Implement a heartbeat mechanism that sends ping/pong messages every 30 seconds
+5. Create reconnection logic with exponential backoff (starting at 1s, max 30s)
+6. Add middleware to validate client permissions for specific job subscriptions
+7. Implement clean disconnection handling to remove clients from registry
+8. Create methods to broadcast messages to specific clients or groups
+
+## 3. Develop job progress event system [done]
+### Dependencies: 18.1
+### Description: Modify the document processing queue to emit progress events at key stages and create a standardized event payload structure.
+### Details:
+1. Identify key progress points in the document processing pipeline
+2. Add event emitters at each stage (upload, extraction, analysis, completion)
+3. Create a standardized event payload format with jobId, status, progress percentage, and timestamp
+4. Implement event throttling to limit updates to max 1 per second per job
+5. Add detailed status messages for each processing stage
+6. Create a central EventEmitter that connects to the WebSocket server
+7. Modify the job queue processor to emit events when status changes
+8. Implement error event handling for failed jobs
+
+## 4. Create real-time UI components for job tracking [done]
+### Dependencies: 18.2, 18.3
+### Description: Implement frontend components that connect to the WebSocket server and display real-time progress updates for document processing jobs.
+### Details:
+1. Create a WebSocketProvider context component to manage socket connection
+2. Implement a useWebSocket hook for components to access socket functionality
+3. Develop a JobProgressTracker component with progress bar and status display
+4. Add toast notifications for job status changes using react-toastify
+5. Create animated progress indicators using CSS transitions
+6. Implement the UI updates on the analysis page to show real-time progress
+7. Add visual indicators for connection status (connected/disconnected)
+8. Create a job history panel showing recently completed jobs
+<info added on 2025-08-14T00:10:12.708Z>
+COMPLETED: Successfully implemented real-time progress tracking system with the following components:
+
+1. **PollingProvider** - Created polling-based real-time updates system that works with Next.js 15
+2. **JobProgressTracker** - Built interactive progress component with:
+   - Real-time progress bars with animation
+   - Live status indicators (connecting/connected/disconnected)  
+   - Error handling and display
+   - Extraction summary display when processing completes
+   - Visual connection status indicators
+
+3. **Processing Queue Integration** - Updated processing queue to emit progress events:
+   - Job queued (20% progress)
+   - Processing started (40% progress)  
+   - Extraction complete (100% progress)
+   - Error states with detailed messaging
+
+4. **Layout Integration** - Successfully integrated PollingProvider into app layout
+5. **Analysis Page Integration** - Updated analysis page to use real-time progress tracking
+
+6. **Mistral OCR API Fix** - Corrected API format from Task Master documentation:
+   - Changed from FormData to chat completions format
+   - Updated to use 'document' field instead of 'file' parameter
+   - Fixed response parsing for chat completion format
+</info added on 2025-08-14T00:10:12.708Z>
+
+## 5. Implement connection state management and error handling [done]
+### Dependencies: 18.2, 18.4
+### Description: Create robust error handling and connection state management for both client and server WebSocket implementations.
+### Details:
+1. Implement a connection state machine with states: connecting, connected, disconnected, reconnecting
+2. Create visual indicators in the UI for connection state
+3. Add offline mode functionality to queue updates when disconnected
+4. Implement error boundary components to catch and display WebSocket errors
+5. Create a reconnection strategy with user-triggered manual reconnect option
+6. Add detailed client-side logging for connection events and errors
+7. Implement server-side logging for connection issues
+8. Create a health check endpoint to monitor WebSocket server status
+

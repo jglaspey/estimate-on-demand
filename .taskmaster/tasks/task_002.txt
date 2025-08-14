@@ -1,0 +1,226 @@
+# Task ID: 2
+# Title: Document Upload Interface Implementation
+# Status: in-progress
+# Dependencies: 1, 11
+# Priority: high
+# Description: Create a drag-and-drop file upload interface with visual feedback, document previews, and validation as specified in US-001 through US-005.
+# Details:
+1. Implement UploadInterface component with drag-and-drop functionality
+2. Create visual states: Default, Hover, Uploading, Success, Error
+3. Add file type validation for PDFs with clear error messages
+4. Implement multi-file upload support with individual progress tracking
+5. Create document thumbnail previews with file type badges
+6. Add file size validation (10MB limit)
+7. Implement API polling for real-time upload progress
+8. Create error handling with recovery instructions
+9. Store uploaded files in the database with organized structure
+10. Integrate with Mistral OCR API for document text extraction
+11. Implement data extraction for customer details, claim information, addresses, and carrier info
+12. Add database storage for extracted fields with proper validation
+13. Implement two-phase processing: Quick priority fields → Full document extraction
+14. Set up hybrid extraction strategy (Mistral OCR + Claude SDK ready)
+15. Implement proper error handling with retry logic and exponential backoff
+
+# Test Strategy:
+1. Test drag-and-drop functionality across supported browsers
+2. Verify all visual states render correctly
+3. Test file validation with valid and invalid file types
+4. Confirm multi-file upload works with progress indicators
+5. Test error handling with corrupted PDFs
+6. Validate file size restrictions
+7. Test upload performance with files approaching size limits
+8. Verify OCR extraction accuracy for different document formats
+9. Test database integration with extracted field validation
+10. Validate end-to-end flow from upload to database storage
+11. Test two-phase processing with priority field extraction
+12. Verify extraction of specific fields (customer addresses, claim numbers, carrier info, etc.)
+13. Test retry logic and exponential backoff for error handling
+
+# Subtasks:
+## 4. Error Handling and Recovery [done]
+### Dependencies: None
+### Description: Implement comprehensive error handling with user recovery options for various failure scenarios.
+### Details:
+1. Create error handling system for upload failures
+2. Implement retry functionality for failed uploads
+3. Add clear recovery instructions for common errors
+4. Create error logging for debugging purposes
+5. Implement graceful degradation for unsupported browsers
+6. Enhance Mistral OCR API integration with robust error handling
+
+## 8. Core Drag-and-Drop Upload Interface [done]
+### Dependencies: None
+### Description: Implement the foundational drag-and-drop file upload interface with basic visual states and component structure.
+### Details:
+1. Create UploadInterface React component with drag-and-drop functionality
+2. Implement visual states: Default, Hover, Uploading, Success, Error
+3. Design responsive layout for the upload area
+4. Add file selection via traditional button as alternative to drag-and-drop
+5. Implement basic file selection handling
+<info added on 2025-08-14T00:22:32.783Z>
+6. Implement "Create New Job" page with the following elements:
+   - Header with skeleton placeholder for job title and address
+   - Three information cards (Insurance Details, Claim Information, Analysis Status) with skeleton loading states
+   - Large central drop zone with text "Drop your estimate and roof report here to start a new job"
+   - Right sidebar with skeleton states for the chat/questions area
+   - Pulsing gray animation for all skeleton elements
+   - Transition functionality from landing page to real-time progress tracking upon document processing
+</info added on 2025-08-14T00:22:32.783Z>
+<info added on 2025-08-14T00:25:52.062Z>
+Successfully implemented CreateNewJob page with all requested features:
+
+- Complete page layout matching job detail design
+- Skeleton loading states with pulsing animation for all UI elements
+- Large central drop zone with exact requested text
+- Drag-and-drop functionality with visual feedback
+- File validation (PDF only, 10MB limit)
+- Upload progress tracking with spinner and progress bar
+- Error handling with user-friendly messages
+- API integration ready for /api/upload endpoint
+- Automatic redirect to analysis page after upload
+
+The page serves as the "before" state that transforms into real-time progress tracking. All skeleton elements will populate with actual data as OCR and business rule analysis complete, providing users with a transparent workflow experience.
+</info added on 2025-08-14T00:25:52.062Z>
+
+## 9. Two-Phase Document Processing Implementation [done]
+### Dependencies: 2.7
+### Description: Implement the two-phase document processing system with quick priority field extraction followed by full document analysis.
+### Details:
+1. Design and implement two-phase processing architecture
+2. Create priority field extraction system for < 30 second response time
+3. Implement full document extraction as second phase
+4. Set up proper database schema for storing extraction results
+5. Implement progress tracking between phases
+6. Create API endpoints for checking extraction status
+7. Add proper error handling between phases
+<info added on 2025-08-14T23:07:53.497Z>
+## Phase 1 vs Phase 2 Separation and PDF Submission Options
+
+- Phase 1 (Priority Fields, 30–60s): Call Claude Haiku messages API with PDF as base64 for small files; for larger files use Claude Files API (upload once, reference file_id). No analysis beyond field parsing. Update Job immediately; emit WS 45%.
+
+- Phase 2 (Background Full Extraction): Use Mistral OCR /v1/ocr. Prefer data: URL (base64) for small files; for large PDFs use hosted URL or Mistral Files+signed URL. Save page text to DocumentPage. Keep extraction and analysis strictly separate.
+
+- Add optional Mistral pages parameter for quick partial runs (e.g., [1,2]) before full doc.
+</info added on 2025-08-14T23:07:53.497Z>
+
+## 10. Hybrid Extraction Strategy [done]
+### Dependencies: 2.7, 2.9
+### Description: Implement hybrid extraction strategy using Mistral OCR with Claude SDK integration readiness.
+### Details:
+1. Implement Mistral OCR as primary extraction engine
+2. Set up architecture for Claude SDK integration
+3. Create abstraction layer for switching between extraction engines
+4. Implement field mapping for different extraction sources
+5. Add validation and normalization for extracted data
+6. Create confidence scoring system for extracted fields
+<info added on 2025-08-14T23:07:59.989Z>
+7. Define Phase 2 field normalizers using Claude (Haiku) on OCR text only:
+   - 2a Line-Item Normalizer (estimate pages): parse {code, description, quantity, unit, unitPrice, totalPrice, category, sourcePages} + classifiers {roofType, ridgeCapType}.
+   - 2b Measurement Normalizer (roof report): parse {ridgeLength, hipLength, eaveLength, rakeLength, valleyLength, squares, slope, stories, sourcePages}.
+   - Merge into latest MistralExtraction.extractedData. No compliance decisions here.
+</info added on 2025-08-14T23:07:59.989Z>
+
+## 11. Advanced Error Handling with Retry Logic [done]
+### Dependencies: 2.5, 2.7
+### Description: Implement robust error handling with retry logic and exponential backoff for extraction failures.
+### Details:
+1. Implement retry logic for OCR API failures
+2. Create exponential backoff strategy for retries
+3. Add comprehensive error logging and reporting
+4. Implement user-friendly error messages
+5. Create recovery paths for different failure scenarios
+6. Add monitoring for extraction success rates
+
+## 2. File Validation System [done]
+### Dependencies: None
+### Description: Implement comprehensive file validation including type checking, size limits, and user feedback.
+### Details:
+1. Create file type validation for PDFs with clear error messages
+2. Implement file size validation with 10MB limit
+3. Add validation for file names and potential duplicates
+4. Create user-friendly error messages for validation failures
+5. Implement client-side validation before upload begins
+6. Add type validation for extracted data (string → float parsing for originalEstimate)
+7. Implement null-safety checks for lineItems iteration
+
+## 3. Real-time Upload Progress Tracking [done]
+### Dependencies: None
+### Description: Implement API polling and progress indicators for real-time upload status feedback.
+### Details:
+1. Set up API polling for real-time upload progress
+2. Create individual progress tracking for multiple files
+3. Implement progress bar UI components
+4. Add upload speed and time remaining indicators
+5. Handle connection interruptions gracefully
+6. Implement comprehensive status tracking and error reporting
+7. Add real-time status updates via API polling
+
+## 5. Error Handling and Recovery [done]
+### Dependencies: None
+### Description: Implement comprehensive error handling with user recovery options for various failure scenarios.
+### Details:
+1. Create error handling system for upload failures
+2. Implement retry functionality for failed uploads
+3. Add clear recovery instructions for common errors
+4. Create error logging for debugging purposes
+5. Implement graceful degradation for unsupported browsers
+6. Enhance Mistral OCR API integration with robust error handling
+
+## 6. File Storage and Security Features [done]
+### Dependencies: None
+### Description: Implement secure file storage with organized structure and basic security scanning.
+### Details:
+1. Create organized file system structure for uploaded documents
+2. Implement basic malware scanning for security
+3. Add file encryption for sensitive documents
+4. Create secure file naming convention to prevent exploits
+5. Implement file cleanup for abandoned uploads
+6. Fix PostgreSQL connection issues (port conflict with Homebrew instance)
+7. Implement proper upsert logic for document pages to prevent duplicates
+
+## 7. OCR Integration and Data Extraction [done]
+### Dependencies: 2.1, 2.2, 2.3
+### Description: Implement integration with Mistral OCR API and extract key data from uploaded documents.
+### Details:
+1. Integrate with Mistral OCR API for document text extraction
+2. Implement extraction of customer details (name, address)
+3. Extract claim information (claim number, date)
+4. Extract carrier information and claim representative details
+5. Add validation and formatting for extracted data
+6. Implement database storage for extracted fields
+7. Create error handling for OCR failures
+
+## 1. Core Drag-and-Drop Upload Interface [done]
+### Dependencies: None
+### Description: Implement the foundational drag-and-drop file upload interface with basic visual states and component structure.
+### Details:
+1. Create UploadInterface React component with drag-and-drop functionality
+2. Implement visual states: Default, Hover, Uploading, Success, Error
+3. Design responsive layout for the upload area
+4. Add file selection via traditional button as alternative to drag-and-drop
+5. Implement basic file selection handling
+<info added on 2025-08-14T00:22:32.783Z>
+6. Implement "Create New Job" page with the following elements:
+   - Header with skeleton placeholder for job title and address
+   - Three information cards (Insurance Details, Claim Information, Analysis Status) with skeleton loading states
+   - Large central drop zone with text "Drop your estimate and roof report here to start a new job"
+   - Right sidebar with skeleton states for the chat/questions area
+   - Pulsing gray animation for all skeleton elements
+   - Transition functionality from landing page to real-time progress tracking upon document processing
+</info added on 2025-08-14T00:22:32.783Z>
+<info added on 2025-08-14T00:25:52.062Z>
+Successfully implemented CreateNewJob page with all requested features:
+
+- Complete page layout matching job detail design
+- Skeleton loading states with pulsing animation for all UI elements
+- Large central drop zone with exact requested text
+- Drag-and-drop functionality with visual feedback
+- File validation (PDF only, 10MB limit)
+- Upload progress tracking with spinner and progress bar
+- Error handling with user-friendly messages
+- API integration ready for /api/upload endpoint
+- Automatic redirect to analysis page after upload
+
+The page serves as the "before" state that transforms into real-time progress tracking. All skeleton elements will populate with actual data as OCR and business rule analysis complete, providing users with a transparent workflow experience.
+</info added on 2025-08-14T00:25:52.062Z>
+

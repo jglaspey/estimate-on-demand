@@ -1,0 +1,76 @@
+# Task ID: 7
+# Title: Business Rule Analyzer Implementation
+# Status: pending
+# Dependencies: 3, 5
+# Priority: high
+# Description: Implement the four business rule analyzers (Ridge Cap, Starter Strip, Drip Edge, Ice & Water Barrier) with logic flows as specified in section 5.
+# Details:
+1. Create base RuleAnalyzer class with common functionality
+2. Implement RidgeCapAnalyzer with specified logic flow
+3. Create StarterStripAnalyzer with coverage calculation
+4. Implement DripEdgeAnalyzer with perimeter calculations
+5. Create IceWaterBarrierAnalyzer with code compliance checks
+6. Implement cost calculation for each rule recommendation
+7. Add confidence scoring for analysis results
+8. Create evidence collection for supporting recommendations
+9. Implement status determination logic
+10. Add user decision tracking and modification support
+
+# Test Strategy:
+1. Test each analyzer with various input scenarios
+2. Verify cost calculations are accurate
+3. Validate evidence collection functionality
+4. Test with edge cases and incomplete data
+5. Verify status determination logic
+6. Test user decision tracking
+7. Validate performance under load
+
+# Subtasks:
+## 1. Create Base RuleAnalyzer Class Architecture [pending]
+### Dependencies: None
+### Description: Design and implement the base RuleAnalyzer class with common functionality that will be inherited by all specific rule analyzers.
+### Details:
+Implement abstract methods for analysis, evidence collection, confidence scoring, and cost calculation. Include shared utility methods for data validation, status determination, and result formatting. Define interfaces for rule analyzer components and establish the inheritance hierarchy.
+
+## 2. Implement RidgeCapAnalyzer [pending]
+### Dependencies: 7.1
+### Description: Create the RidgeCapAnalyzer class that extends the base RuleAnalyzer with ridge cap specific logic flow.
+### Details:
+Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.
+
+## 3. Implement StarterStripAnalyzer [pending]
+### Dependencies: 7.1
+### Description: Create the StarterStripAnalyzer class with coverage calculation logic and roof edge detection.
+### Details:
+Implement perimeter calculation for roof edges requiring starter strip. Add logic to detect existing starter strip from document data. Include material quantity calculations based on roof dimensions. Implement specialized evidence collection and confidence scoring for starter strip recommendations.
+
+## 4. Implement DripEdgeAnalyzer [pending]
+### Dependencies: 7.1
+### Description: Create the DripEdgeAnalyzer class with perimeter calculations and code compliance checks.
+### Details:
+Implement eave and rake edge detection algorithms. Add local building code compliance validation based on property location. Calculate material requirements based on perimeter measurements. Include specialized evidence collection for drip edge recommendations with reference to local code requirements.
+
+## 5. Implement IceWaterBarrierAnalyzer [pending]
+### Dependencies: 7.1
+### Description: Create the IceWaterBarrierAnalyzer with climate zone detection and code compliance checks.
+### Details:
+Implement climate zone determination based on property location. Add logic for detecting ice damming risk factors. Include code compliance validation for different jurisdictions. Calculate coverage area and material requirements. Implement specialized evidence collection with climate data references.
+
+## 6. Implement Cost Calculation System [pending]
+### Dependencies: 7.1, 7.2, 7.3, 7.4, 7.5
+### Description: Create a comprehensive cost calculation system for all rule analyzers with line item breakdown.
+### Details:
+Implement material cost lookup from pricing database. Add labor cost estimation based on installation complexity. Include markup calculations and tax considerations. Create detailed line item breakdown for each recommendation. Implement cost comparison between different material options.
+
+## 7. Implement Evidence Collection System [pending]
+### Dependencies: 7.1
+### Description: Create a robust evidence collection system that gathers and organizes supporting data for rule recommendations.
+### Details:
+Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.
+
+## 8. Implement User Decision Tracking [pending]
+### Dependencies: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7
+### Description: Create a system to track and store user decisions on rule recommendations with modification support.
+### Details:
+Implement decision state management (Accept/Edit/Reject). Add justification field for user notes. Create modification history tracking. Implement recalculation triggers when parameters are modified. Add decision export functionality for reporting. Create notification system for pending decisions.
+

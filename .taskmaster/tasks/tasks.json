@@ -97,7 +97,7 @@
             "dependencies": [
               7
             ],
-            "details": "1. Design and implement two-phase processing architecture\n2. Create priority field extraction system for < 30 second response time\n3. Implement full document extraction as second phase\n4. Set up proper database schema for storing extraction results\n5. Implement progress tracking between phases\n6. Create API endpoints for checking extraction status\n7. Add proper error handling between phases",
+            "details": "1. Design and implement two-phase processing architecture\n2. Create priority field extraction system for < 30 second response time\n3. Implement full document extraction as second phase\n4. Set up proper database schema for storing extraction results\n5. Implement progress tracking between phases\n6. Create API endpoints for checking extraction status\n7. Add proper error handling between phases\n<info added on 2025-08-14T23:07:53.497Z>\n## Phase 1 vs Phase 2 Separation and PDF Submission Options\n\n- Phase 1 (Priority Fields, 30–60s): Call Claude Haiku messages API with PDF as base64 for small files; for larger files use Claude Files API (upload once, reference file_id). No analysis beyond field parsing. Update Job immediately; emit WS 45%.\n\n- Phase 2 (Background Full Extraction): Use Mistral OCR /v1/ocr. Prefer data: URL (base64) for small files; for large PDFs use hosted URL or Mistral Files+signed URL. Save page text to DocumentPage. Keep extraction and analysis strictly separate.\n\n- Add optional Mistral pages parameter for quick partial runs (e.g., [1,2]) before full doc.\n</info added on 2025-08-14T23:07:53.497Z>",
             "testStrategy": "1. Test priority field extraction speed and accuracy\n2. Verify full document extraction completeness\n3. Test database storage of extraction results\n4. Validate progress tracking between phases\n5. Test error handling and recovery between phases"
           },
           {
@@ -109,7 +109,7 @@
               7,
               9
             ],
-            "details": "1. Implement Mistral OCR as primary extraction engine\n2. Set up architecture for Claude SDK integration\n3. Create abstraction layer for switching between extraction engines\n4. Implement field mapping for different extraction sources\n5. Add validation and normalization for extracted data\n6. Create confidence scoring system for extracted fields",
+            "details": "1. Implement Mistral OCR as primary extraction engine\n2. Set up architecture for Claude SDK integration\n3. Create abstraction layer for switching between extraction engines\n4. Implement field mapping for different extraction sources\n5. Add validation and normalization for extracted data\n6. Create confidence scoring system for extracted fields\n<info added on 2025-08-14T23:07:59.989Z>\n7. Define Phase 2 field normalizers using Claude (Haiku) on OCR text only:\n   - 2a Line-Item Normalizer (estimate pages): parse {code, description, quantity, unit, unitPrice, totalPrice, category, sourcePages} + classifiers {roofType, ridgeCapType}.\n   - 2b Measurement Normalizer (roof report): parse {ridgeLength, hipLength, eaveLength, rakeLength, valleyLength, squares, slope, stories, sourcePages}.\n   - Merge into latest MistralExtraction.extractedData. No compliance decisions here.\n</info added on 2025-08-14T23:07:59.989Z>",
             "testStrategy": "1. Test Mistral OCR extraction accuracy\n2. Verify abstraction layer functionality\n3. Test field mapping with sample documents\n4. Validate data normalization across extraction sources"
           },
           {
@@ -300,7 +300,7 @@
               5,
               6
             ],
-            "details": "1. Analyze extraction failure patterns\n2. Refine prompt engineering strategies\n3. Implement specialized handling for problematic document types\n4. Optimize preprocessing for improved accuracy\n5. Enhance post-processing validation\n6. Document refinement process and results\n7. Create final extraction pipeline architecture",
+            "details": "1. Analyze extraction failure patterns\n2. Refine prompt engineering strategies\n3. Implement specialized handling for problematic document types\n4. Optimize preprocessing for improved accuracy\n5. Enhance post-processing validation\n6. Document refinement process and results\n7. Create final extraction pipeline architecture\n<info added on 2025-08-14T23:08:07.355Z>\n8. Implement size-based PDF submission strategy + security.\n   - Claude: if >10MB or many pages, upload via Files API then reference file_id; else base64 inline.\n   - Mistral: if >5MB, prefer temporary URL (or Mistral file + signed URL); else data: URL base64.\n   - Add retries/backoff for file upload + signed URL fetch; log provenance (method used) in processing_metadata.\n   - Document thresholds and env toggles.\n</info added on 2025-08-14T23:08:07.355Z>",
             "testStrategy": "1. Compare extraction accuracy before and after refinement\n2. Test handling of previously problematic documents\n3. Validate improved success rates\n4. Measure performance impacts of refinements"
           }
         ]
@@ -445,7 +445,7 @@
               "5.2",
               "5.3"
             ],
-            "details": "1. Create LLM service wrapper class\n2. Implement retry logic with exponential backoff\n3. Add request timeout handling\n4. Set up API key rotation for reliability\n5. Implement request batching for efficiency\n6. Add detailed logging for API interactions",
+            "details": "1. Create LLM service wrapper class\n2. Implement retry logic with exponential backoff\n3. Add request timeout handling\n4. Set up API key rotation for reliability\n5. Implement request batching for efficiency\n6. Add detailed logging for API interactions\n<info added on 2025-08-14T23:08:12.413Z>\n7. Handle Claude Files API and Mistral Files signed URLs with resilient retry/backoff (429/5xx)\n8. Implement idempotent uploads (hash-based dedupe)\n9. Add fallback mechanisms for file uploads (base64 inline or direct data: URL)\n10. Mask sensitive URLs in logs to prevent credential leakage\n</info added on 2025-08-14T23:08:12.413Z>",
             "status": "pending",
             "testStrategy": ""
           },
@@ -1090,7 +1090,7 @@
         "id": 12,
         "title": "Hip/Ridge Business Rule Deep Dive Analysis",
         "description": "Analyze prototype learnings, design data extraction patterns, processing workflows, and database optimization strategy specifically for the Hip/Ridge cap business rule implementation.",
-        "details": "1. Review prototype implementation data and user feedback:\n   - Analyze user interaction patterns with the Hip/Ridge rule\n   - Document pain points and improvement opportunities\n   - Identify edge cases not handled by current implementation\n\n2. Design optimized data extraction patterns:\n   - Create specialized extraction algorithms for Hip/Ridge measurements from roof diagrams\n   - Define pattern recognition techniques for identifying Hip/Ridge features in documents\n   - Establish confidence scoring methodology for extracted Hip/Ridge data\n   - Document required input fields and optional enhancements\n\n3. Design processing workflows:\n   - Map complete Hip/Ridge rule processing flow from document upload to decision\n   - Identify optimization opportunities in the analysis pipeline\n   - Create decision tree for Hip/Ridge rule validation logic\n   - Define error handling and fallback procedures for incomplete data\n   - Document integration points with other business rules\n\n4. Database optimization strategy:\n   - Design efficient schema for storing Hip/Ridge specific measurements and calculations\n   - Create indexing strategy for Hip/Ridge rule queries\n   - Define caching approach for frequently accessed Hip/Ridge data\n   - Document data retention and archiving policies\n\n5. Create comprehensive documentation:\n   - Develop technical specification for Hip/Ridge rule implementation\n   - Create developer guide with code examples and implementation patterns\n   - Document all business logic and calculation formulas\n   - Prepare knowledge transfer materials for future rule implementations\n\n6. Establish metrics and monitoring:\n   - Define KPIs for Hip/Ridge rule performance and accuracy\n   - Create monitoring dashboard for Hip/Ridge rule processing\n   - Establish baseline performance metrics for future comparison",
+        "details": "1. Review prototype implementation data and user feedback:\n   - Analyze user interaction patterns with the Hip/Ridge rule\n   - Document pain points and improvement opportunities\n   - Identify edge cases not handled by current implementation\n\n2. Design optimized data extraction patterns:\n   - Create specialized extraction algorithms for Hip/Ridge measurements from roof diagrams\n   - Define pattern recognition techniques for identifying Hip/Ridge features in documents\n   - Establish confidence scoring methodology for extracted Hip/Ridge data\n   - Document required input fields and optional enhancements\n\n3. Design processing workflows:\n   - Map complete Hip/Ridge rule processing flow from document upload to decision\n   - Identify optimization opportunities in the analysis pipeline\n   - Create decision tree for Hip/Ridge rule validation logic\n   - Define error handling and fallback procedures for incomplete data\n   - Document integration points with other business rules\n\n4. Database optimization strategy:\n   - Design efficient schema for storing Hip/Ridge specific measurements and calculations\n   - Create indexing strategy for Hip/Ridge rule queries\n   - Define caching approach for frequently accessed Hip/Ridge data\n   - Document data retention and archiving policies\n\n5. Create comprehensive documentation:\n   - Develop technical specification for Hip/Ridge rule implementation\n   - Create developer guide with code examples and implementation patterns\n   - Document all business logic and calculation formulas\n   - Prepare knowledge transfer materials for future rule implementations\n\n6. Establish metrics and monitoring:\n   - Define KPIs for Hip/Ridge rule performance and accuracy\n   - Create monitoring dashboard for Hip/Ridge rule processing\n   - Establish baseline performance metrics for future comparison\n<info added on 2025-08-14T23:08:19.807Z>\n7. Rule 1 (Hip/Ridge) extraction inputs and mapping:\n   - Define required extraction inputs:\n     * roofMeasurements: {ridgeLength, hipLength, eaveLength, rakeLength, squares, slope}\n     * estimate line item: {code, description, quantity (LF), unitPrice, totalPrice}\n   - Map source document pages to each extracted value for evidence traceability\n   - Design extraction output schema as structured JSON format\n   - Ensure extraction output is fully compatible with `mapDatabaseToRidgeCapData` function\n   - Establish strict separation between Extraction and Analysis components\n   - Document data transformation patterns between extraction output and RuleAnalysisResult\n   - Define validation requirements for extracted data before analysis processing\n</info added on 2025-08-14T23:08:19.807Z>",
         "testStrategy": "1. Prototype analysis validation:\n   - Review findings with stakeholders to confirm accuracy\n   - Validate that all user feedback has been properly categorized\n   - Verify edge cases are comprehensive and well-documented\n\n2. Data extraction pattern testing:\n   - Test extraction algorithms against sample documents with known Hip/Ridge features\n   - Validate confidence scoring against human-verified data\n   - Measure extraction accuracy across different document types and formats\n   - Verify performance meets requirements for production use\n\n3. Processing workflow validation:\n   - Conduct walkthrough of complete workflow with development team\n   - Verify all decision paths in the Hip/Ridge rule logic\n   - Test error handling with deliberately malformed inputs\n   - Validate integration points with mock implementations of dependent systems\n\n4. Database optimization verification:\n   - Benchmark query performance with proposed schema and indexing\n   - Load test with production-scale data volumes\n   - Verify caching strategy improves performance as expected\n   - Validate data integrity through various update scenarios\n\n5. Documentation review:\n   - Conduct peer review of all technical documentation\n   - Verify completeness of business logic documentation\n   - Test implementation of sample code in documentation\n   - Have a developer unfamiliar with the system attempt to implement features using only the documentation\n\n6. Metrics baseline establishment:\n   - Verify all KPIs can be accurately measured\n   - Establish performance benchmarks for future comparison\n   - Validate monitoring dashboard provides actionable insights",
         "status": "pending",
         "dependencies": [
@@ -1544,11 +1544,79 @@
             "testStrategy": "1. Test integration with actual database ridge cap analysis results\n2. Verify automatic transition from red to green highlighting as data is populated\n3. Test with various extraction scenarios (complete, partial, missing data)\n4. Validate error handling for problematic extraction results\n5. Measure and benchmark loading performance\n6. Test state persistence across page navigation"
           }
         ]
+      },
+      {
+        "id": 21,
+        "title": "Claude Extraction Pipeline Implementation",
+        "description": "Implement production-grade file handling and Claude extractors for the dual-phase document processing pipeline, focusing on robust PDF submission and cost-efficient extraction processes.",
+        "details": "1. Claude Files API Integration:\n   - Implement hashing/idempotency checks to prevent duplicate processing\n   - Create document lifecycle management with proper cleanup procedures\n   - Add size-based strategy selection (base64 for <10MB, Files API for larger documents)\n   - Store provenance and method information in processing_metadata\n\n2. Mistral Files Integration:\n   - Implement signed URL helper for secure file access\n   - Create secure temporary storage path for document processing\n   - Add size-based strategy (data: URL for <5MB, URL/signed URL for larger files)\n   - Ensure proper cleanup of temporary files after processing\n\n3. Claude Extractors Implementation:\n   - Create `lib/extraction/claude-extractors.ts` module with specialized extractors:\n     - Line item extractor with structured output schema\n     - Measurements extractor with standardized units\n   - Wire extractors into Phase 2 orchestrator\n   - Implement strict JSON schema validation for extractor outputs\n   - Store extraction results in MistralExtraction.extractedData field\n\n4. Resilience and Error Handling:\n   - Implement retry/backoff mechanisms for API rate limits (429) and server errors (5xx)\n   - Create safe fallback strategies when primary extraction methods fail\n   - Add detailed error logging with context for debugging\n\n5. Telemetry and Cost Tracking:\n   - Implement per-document cost tracking for both Phase 1 and Phase 2\n   - Add per-phase processing metrics (time, tokens, API calls)\n   - Create threshold alerts for abnormal processing costs\n   - Set up monitoring dashboards for extraction performance\n\n6. Extraction-Analysis Separation:\n   - Enforce strict separation between extraction and analysis phases\n   - Ensure no compliance decisions are made during extraction\n   - Create clean interfaces between pipeline stages",
+        "testStrategy": "1. File Handling Tests:\n   - Verify correct strategy selection based on file size (base64 vs Files API)\n   - Test idempotency with duplicate document submissions\n   - Validate proper file cleanup after processing\n   - Test handling of various PDF formats and sizes\n\n2. Claude Extractor Tests:\n   - Create test suite with sample PDFs containing known line items and measurements\n   - Verify extractors produce correctly structured JSON output\n   - Test extraction accuracy against manually labeled ground truth\n   - Validate error handling with malformed or unexpected documents\n\n3. Integration Tests:\n   - Test end-to-end flow from document upload through both phases\n   - Verify correct storage of extraction results in database\n   - Validate processing_metadata contains accurate provenance information\n   - Test pipeline with various document types and sizes\n\n4. Resilience Tests:\n   - Simulate API failures (429/5xx) to verify retry/backoff behavior\n   - Test fallback mechanisms when primary extraction fails\n   - Verify system handles partial extraction results appropriately\n\n5. Performance and Cost Tests:\n   - Measure processing time and API costs for various document types\n   - Verify cost tracking accuracy against actual API usage\n   - Test alert thresholds with simulated high-cost documents\n   - Validate telemetry data collection and reporting",
+        "status": "pending",
+        "dependencies": [
+          3,
+          5,
+          16
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Claude Files API integration utility",
+            "description": "Create a utility wrapping Anthropic Files API: upload (multipart), get status, reuse by content hash, delete on TTL. Provide function to choose base64 vs file_id by size/pages. Mask file_id in logs.",
+            "details": "- Module: lib/extraction/claude-files.ts\n- Functions: uploadPdf(buffer, meta) -> file_id; getOrUploadByHash(hash, buffer)\n- Store SHA-256 for idempotency; add retries/backoff; expose metrics\n- Env gates for enabling Files API and thresholds\n- Unit tests with mocked HTTP",
+            "status": "pending",
+            "dependencies": [
+              2,
+              3,
+              5
+            ],
+            "parentTaskId": 21
+          },
+          {
+            "id": 2,
+            "title": "Implement Claude extractors (line-items & measurements)",
+            "description": "Create `lib/extraction/claude-extractors.ts` with two pure parsers: estimate line-items, roof report measurements. Operate only on OCR text; return strict JSON. Include unit tests for common patterns.",
+            "details": "- Functions: extractEstimateLineItems(text), extractRoofReportMeasurements(text)\n- Deterministic prompts, temperature 0, JSON-only responses\n- Validate with zod schemas; map to MistralExtraction.extractedData\n- Capture sourcePages and classifiers (roofType, ridgeCapType)",
+            "status": "pending",
+            "dependencies": [
+              2,
+              3,
+              5
+            ],
+            "parentTaskId": 21
+          },
+          {
+            "id": 3,
+            "title": "Wire extractors into Phase 2 orchestrator",
+            "description": "Invoke line-item and measurement extractors after saving OCR pages; merge results and upsert into latest MistralExtraction.extractedData. Persist provenance and page sources.",
+            "details": "- Update smart-extraction-service.ts: call extractors per doc type with concurrency 4–6\n- Merge per the mapDatabaseToRidgeCapData expectations\n- Store processing_metadata: {method, model, version, pages, timings}\n- Unit tests against fixture OCR text",
+            "status": "pending",
+            "dependencies": [
+              2,
+              3,
+              5
+            ],
+            "parentTaskId": 21
+          },
+          {
+            "id": 4,
+            "title": "Telemetry & cost tracking per phase",
+            "description": "Track tokens, cost, processing time, and success/failure per phase and per document; persist to DB and surface in logs.",
+            "details": "- Add counters to Phase 1 Claude calls and Phase 2 OCR + extractors\n- Persist to job metrics table/fields; include thresholds and alerts\n- Dashboard summary util for quick diagnostics",
+            "status": "pending",
+            "dependencies": [
+              2,
+              3,
+              5
+            ],
+            "parentTaskId": 21
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-14T10:18:59.465Z",
+      "updated": "2025-08-14T23:18:32.987Z",
       "description": "Tasks for master context"
     }
   }
