@@ -49,7 +49,9 @@ const eslintConfig = [
       "coverage/**",
       "front-end-mockup/**",
       ".taskmaster/**",
-      "examples/**"
+      "examples/**",
+      "src/generated/**",
+      "prisma/generated/**"
     ]
   }
 ];

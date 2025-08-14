@@ -2,18 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  Download,
-  Share,
-  RefreshCw,
-  CheckCircle,
-  AlertTriangle,
-  XCircle,
-  HelpCircle,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +11,10 @@ import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard';
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
-import { ContextualDocumentViewer } from '@/components/ContextualDocumentViewer';
+import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
+import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
 import { JobDetailsCard } from '@/components/JobDetailsCard';
+import { StickyFooter } from '@/front-end-mockup/components/StickyFooter';
 
 // Types based on our current extraction data structure
 interface JobData {
@@ -81,6 +72,7 @@ interface RoofMeasurements {
   totalRakes?: number;
   totalRidges?: number;
   totalValleys?: number;
+  [key: string]: any; // Allow additional properties
 }
 
 export default function JobDetailPage() {
@@ -92,11 +84,12 @@ export default function JobDetailPage() {
   const [roofMeasurements, setRoofMeasurements] =
     useState<RoofMeasurements | null>(null);
   const [ruleAnalysis, setRuleAnalysis] = useState<RuleAnalysisResult[]>([]);
-  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [_documents, setDocuments] = useState<DocumentData[]>([]);
   const [currentRuleIndex, setCurrentRuleIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -105,9 +98,7 @@ export default function JobDetailPage() {
         setLoading(true);
 
         // Fetch job data
-        console.log('Fetching job with ID:', jobId);
         const jobResponse = await fetch(`/api/jobs/${jobId}`);
-        console.log('Job response status:', jobResponse.status);
         if (!jobResponse.ok) {
           const errorText = await jobResponse.text();
           console.error('API Error:', errorText);
@@ -169,27 +160,27 @@ export default function JobDetailPage() {
         };
         setRoofMeasurements(measurements);
 
-        // Mock business rule analysis based on real extraction data - temporarily disabled to show clean default state
+        // Mock business rule analysis based on real extraction data
         const mockRuleAnalysis: RuleAnalysisResult[] = [
-          // {
-          //   ruleName: 'ridge_cap',
-          //   status: 'SUPPLEMENT_NEEDED',
-          //   confidence: 0.95,
-          //   reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
-          //   costImpact: 489.6,
-          //   estimateQuantity: '6 LF',
-          //   requiredQuantity: '119 LF',
-          //   variance: '-113 LF',
-          //   varianceType: 'shortage',
-          //   materialStatus: 'compliant',
-          //   currentSpecification: {
-          //     code: 'RFG RIDGC',
-          //     description: 'Hip/Ridge cap - Standard profile',
-          //     quantity: '6.00 LF',
-          //     rate: '$42.90/LF',
-          //     total: '$257.40',
-          //   },
-          // },
+          {
+            ruleName: 'ridge_cap',
+            status: 'SUPPLEMENT_NEEDED',
+            confidence: 0.95,
+            reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
+            costImpact: 4847.7,
+            estimateQuantity: '6 LF',
+            requiredQuantity: '119 LF',
+            variance: '-113 LF',
+            varianceType: 'shortage',
+            materialStatus: 'compliant',
+            currentSpecification: {
+              code: 'RFG RIDGC',
+              description: 'Hip/Ridge cap - Standard profile',
+              quantity: '6.00 LF',
+              rate: '$42.90/LF',
+              total: '$257.40',
+            },
+          },
           // {
           //   ruleName: 'starter_strip',
           //   status: 'SUPPLEMENT_NEEDED',
@@ -511,6 +502,9 @@ export default function JobDetailPage() {
               <Badge className='bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800'>
                 Review Mode
               </Badge>
+              <span className='text-sm text-zinc-500 dark:text-zinc-400 ml-2'>
+                Rule {currentRuleIndex + 1} of {ruleAnalysis.length}
+              </span>
             </div>
 
             <div className='flex items-center gap-3'>
@@ -555,122 +549,60 @@ export default function JobDetailPage() {
       </header>
 
       {/* Main Content - Split Screen */}
-      <main className='h-[calc(100vh-4rem)] flex bg-zinc-50 dark:bg-zinc-950'>
+      <main className='h-[calc(100vh-8rem)] flex bg-zinc-50 dark:bg-zinc-950'>
         {/* Left Panel - Business Rules */}
         <div className='w-1/2 bg-white border-r border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
           <div className='h-full overflow-auto'>
-            <div className='p-6 space-y-6'>
-              {/* Job Details Card */}
-              <JobDetailsCard
-                jobData={jobData}
-                roofMeasurements={roofMeasurements || undefined}
-                onUpdateField={handleFieldUpdate}
-              />
-
-              {/* Business Rule Card */}
+            <div className='p-8 pb-24'>
+              {/* Show Ridge Cap Analysis for ridge_cap rule, otherwise show generic rule cards */}
               {ruleAnalysis.length > 0 &&
-                renderRuleCard(ruleAnalysis[currentRuleIndex])}
+              ruleAnalysis[currentRuleIndex]?.ruleName === 'ridge_cap' ? (
+                <RidgeCapAnalysis
+                  ruleNumber={currentRuleIndex + 1}
+                  totalRules={ruleAnalysis.length}
+                />
+              ) : (
+                <div className='space-y-6'>
+                  {/* Job Details Card */}
+                  <JobDetailsCard
+                    jobData={jobData}
+                    roofMeasurements={roofMeasurements || undefined}
+                    onUpdateField={handleFieldUpdate}
+                  />
 
-              {/* Navigation between rules */}
-              <div className='flex items-center justify-between pt-4'>
-                <Button
-                  variant='outline'
-                  onClick={handlePreviousRule}
-                  disabled={currentRuleIndex === 0}
-                  className='flex items-center gap-2'
-                >
-                  <ChevronLeft className='h-4 w-4' />
-                  Previous Rule
-                </Button>
-
-                <span className='text-sm text-zinc-500'>
-                  Rule {currentRuleIndex + 1} of {ruleAnalysis.length}
-                </span>
-
-                <Button
-                  variant='outline'
-                  onClick={handleNextRule}
-                  disabled={currentRuleIndex === ruleAnalysis.length - 1}
-                  className='flex items-center gap-2'
-                >
-                  Next Rule
-                  <ChevronRight className='h-4 w-4' />
-                </Button>
-              </div>
+                  {/* Business Rule Card */}
+                  {ruleAnalysis.length > 0 &&
+                    renderRuleCard(ruleAnalysis[currentRuleIndex])}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right Panel - Contextual Documents */}
+        {/* Right Panel - Interactive Roof Diagram and Evidence */}
         <div className='w-1/2 bg-zinc-50 dark:bg-zinc-950'>
-          <div className='h-full p-6'>
-            <ContextualDocumentViewer
-              documents={documents}
+          <div className='h-full p-8 pb-24 overflow-auto'>
+            <InteractiveRoofDiagram
               selectedRule={ruleAnalysis[currentRuleIndex]?.ruleName || null}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
             />
           </div>
         </div>
       </main>
 
-      {/* Sticky Footer with Summary */}
-      <div className='fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 p-4'>
-        <div className='max-w-7xl mx-auto flex items-center justify-between'>
-          <div className='flex items-center gap-6'>
-            <div className='text-sm'>
-              <span className='text-zinc-500 dark:text-zinc-400'>
-                Total Supplement Impact:
-              </span>
-              <span className='ml-2 font-semibold text-green-600 dark:text-green-400'>
-                +${getSupplementTotal().toLocaleString()}
-              </span>
-            </div>
-            <div className='text-sm'>
-              <span className='text-zinc-500 dark:text-zinc-400'>
-                Original Estimate:
-              </span>
-              <span className='ml-2 font-semibold'>
-                ${jobData?.totalEstimateValue?.toLocaleString() || '0'}
-              </span>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            {ruleAnalysis.map((rule, index) => {
-              const isActive = index === currentRuleIndex;
-              const IconComponent =
-                rule.status === 'COMPLIANT'
-                  ? CheckCircle
-                  : rule.status === 'SUPPLEMENT_NEEDED'
-                    ? AlertTriangle
-                    : rule.status === 'INSUFFICIENT_DATA'
-                      ? HelpCircle
-                      : XCircle;
-
-              return (
-                <button
-                  key={rule.ruleName}
-                  onClick={() => setCurrentRuleIndex(index)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-blue-100 border-2 border-blue-300 dark:bg-blue-900/50 dark:border-blue-600'
-                      : 'bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 dark:hover:bg-zinc-700'
-                  }`}
-                >
-                  <IconComponent
-                    className={`h-4 w-4 ${
-                      rule.status === 'COMPLIANT'
-                        ? 'text-green-600'
-                        : rule.status === 'SUPPLEMENT_NEEDED'
-                          ? 'text-red-600'
-                          : 'text-orange-600'
-                    }`}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {/* Sticky Footer */}
+      <StickyFooter
+        currentRule={currentRuleIndex}
+        totalRules={ruleAnalysis.length}
+        ruleAnalysis={ruleAnalysis}
+        onPrevious={handlePreviousRule}
+        onNext={handleNextRule}
+        onRuleSelect={index => setCurrentRuleIndex(index)}
+        mode='review'
+        supplementTotal={getSupplementTotal()}
+        originalTotal={jobData?.totalEstimateValue || 0}
+      />
     </div>
   );
 }
