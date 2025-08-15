@@ -14,6 +14,7 @@
  */
 
 import { readFileSync } from 'fs';
+
 import { Mistral } from '@mistralai/mistralai';
 
 const mistral = new Mistral({

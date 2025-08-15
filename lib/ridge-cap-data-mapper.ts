@@ -46,7 +46,8 @@ interface LineItem {
 interface MistralExtraction {
   id: string;
   jobId: string;
-  extractedFields: Record<string, unknown>; // JSON field containing extracted data
+  extractedData: Record<string, unknown>; // JSON field containing extracted data
+  extractedFields?: Record<string, unknown>; // Legacy field name for compatibility
   extractedAt: string;
 }
 
@@ -120,16 +121,33 @@ export function mapDatabaseToRidgeCapData(
   dbJob: DatabaseExtractionResult,
   ruleAnalysis?: RuleAnalysisResult
 ): RidgeCapData {
-  // Try to extract line items from the latest Mistral extraction results
-  let ridgeCapLineItem: LineItem | undefined;
+  // Extract ridge cap line items from Claude extractions (new format)
+  let ridgeCapLineItem: Record<string, unknown> | undefined;
+  let roofTypeData: Record<string, unknown> | null = null;
+  let roofMeasurements: Record<string, unknown> | null = null;
   
   if (dbJob.mistralExtractions && dbJob.mistralExtractions.length > 0) {
     const latestExtraction = dbJob.mistralExtractions[0];
-    const extractedFields = latestExtraction.extractedFields;
+    const extractedData = latestExtraction.extractedData || latestExtraction.extractedFields;
     
-    // Look for ridge cap line items in the extracted fields
-    if (extractedFields && extractedFields.lineItems) {
-      ridgeCapLineItem = extractedFields.lineItems.find((item: LineItem) => 
+    // Look for Claude-extracted ridge cap items (new format)
+    if (extractedData && extractedData.ridgeCapItems && extractedData.ridgeCapItems.length > 0) {
+      ridgeCapLineItem = extractedData.ridgeCapItems[0]; // Use primary ridge cap item
+    }
+    
+    // Get roof type from Claude extraction
+    if (extractedData && extractedData.roofType) {
+      roofTypeData = extractedData.roofType;
+    }
+    
+    // Get roof measurements from Claude extraction
+    if (extractedData && extractedData.roofMeasurements) {
+      roofMeasurements = extractedData.roofMeasurements;
+    }
+    
+    // Fallback: Look for ridge cap in general line items (legacy format)
+    if (!ridgeCapLineItem && extractedData && extractedData.lineItems) {
+      ridgeCapLineItem = extractedData.lineItems.find((item: Record<string, unknown>) => 
         item.code?.includes('RIDG') || 
         item.description?.toLowerCase().includes('ridge') ||
         item.description?.toLowerCase().includes('hip')
@@ -137,7 +155,7 @@ export function mapDatabaseToRidgeCapData(
     }
   }
   
-  // Fallback to manually provided extracted line items
+  // Final fallback to manually provided extracted line items
   if (!ridgeCapLineItem) {
     ridgeCapLineItem = dbJob.extractedLineItems?.find(item => 
       item.code?.includes('RIDG') || 
@@ -146,21 +164,35 @@ export function mapDatabaseToRidgeCapData(
     );
   }
 
-  // Extract roof measurements from the latest extraction results or fallback to job data
+  // Extract roof measurements from Claude extractions (prioritize new format)
   let ridgeLength = 26; // Default fallback
   let hipLength = 93; // Default fallback
   
-  if (dbJob.mistralExtractions && dbJob.mistralExtractions.length > 0) {
-    const extractedFields = dbJob.mistralExtractions[0].extractedFields;
-    if (extractedFields?.roofMeasurements) {
-      ridgeLength = extractedFields.roofMeasurements.ridgeLength || ridgeLength;
-      hipLength = extractedFields.roofMeasurements.hipLength || hipLength;
+  // Priority 1: Claude measurement extraction results
+  if (roofMeasurements) {
+    ridgeLength = roofMeasurements.ridgeLength || ridgeLength;
+    hipLength = roofMeasurements.hipLength || hipLength;
+    
+    // If we have total but not components, calculate split
+    if (roofMeasurements.totalRidgeHip && (!roofMeasurements.ridgeLength || !roofMeasurements.hipLength)) {
+      const totalLength = roofMeasurements.totalRidgeHip;
+      ridgeLength = Math.round(totalLength * 0.218); // ~26/119 ratio from mock data
+      hipLength = totalLength - ridgeLength;
     }
   }
   
-  // Use job-level measurements if available
-  if (dbJob.ridgeHipLength) {
-    // If we have combined ridge/hip length, use a 26:93 ratio as default
+  // Priority 2: Legacy extraction format
+  else if (dbJob.mistralExtractions && dbJob.mistralExtractions.length > 0) {
+    const latestExtraction = dbJob.mistralExtractions[0];
+    const extractedData = latestExtraction.extractedData || latestExtraction.extractedFields;
+    if (extractedData?.roofMeasurements) {
+      ridgeLength = extractedData.roofMeasurements.ridgeLength || ridgeLength;
+      hipLength = extractedData.roofMeasurements.hipLength || hipLength;
+    }
+  }
+  
+  // Priority 3: Job-level measurements if available
+  if (dbJob.ridgeHipLength && !roofMeasurements) {
     const totalLength = dbJob.ridgeHipLength;
     ridgeLength = Math.round(totalLength * 0.218); // ~26/119 ratio
     hipLength = totalLength - ridgeLength;
@@ -168,27 +200,72 @@ export function mapDatabaseToRidgeCapData(
   
   const totalRequiredLF = ridgeLength + hipLength;
 
-  // Extract current estimate quantities
-  const estimateQuantity = ruleAnalysis?.estimateQuantity || ridgeCapLineItem?.quantity || '6 LF';
-  const estimateQtyNumber = parseFloat(estimateQuantity.replace(/[^\d.]/g, '') || '6');
-  const unitPrice = parseFloat(ridgeCapLineItem?.rate?.replace(/[^\d.]/g, '') || ruleAnalysis?.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '42.90');
+  // Extract current estimate quantities (prioritize Claude extraction format)
+  let estimateQuantity: string;
+  let estimateQtyNumber: number;
+  let unitPrice: number;
+  
+  if (ridgeCapLineItem && ridgeCapLineItem.quantity) {
+    // Claude extraction format
+    if (typeof ridgeCapLineItem.quantity === 'object' && ridgeCapLineItem.quantity.value) {
+      estimateQtyNumber = ridgeCapLineItem.quantity.value;
+      estimateQuantity = `${estimateQtyNumber} ${ridgeCapLineItem.quantity.unit || 'LF'}`;
+    } else {
+      // Legacy string format
+      estimateQuantity = ridgeCapLineItem.quantity.toString();
+      estimateQtyNumber = parseFloat(estimateQuantity.replace(/[^\d.]/g, '') || '6');
+    }
+    
+    unitPrice = ridgeCapLineItem.unitPrice || parseFloat(ridgeCapLineItem.rate?.replace(/[^\d.]/g, '') || '42.90');
+  } else {
+    // Use rule analysis or defaults
+    estimateQuantity = ruleAnalysis?.estimateQuantity || '6 LF';
+    estimateQtyNumber = parseFloat(estimateQuantity.replace(/[^\d.]/g, '') || '6');
+    unitPrice = parseFloat(ruleAnalysis?.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '42.90');
+  }
   
   // Calculate variance
   const varianceAmount = estimateQtyNumber - totalRequiredLF;
   const variance = varianceAmount >= 0 ? `+${varianceAmount} LF` : `${varianceAmount} LF`;
 
-  // Determine roof type from shingle line items
-  const shingleLineItem = dbJob.extractedLineItems?.find(item => 
-    item.description?.toLowerCase().includes('shingle') ||
-    item.description?.toLowerCase().includes('comp') ||
-    item.description?.toLowerCase().includes('laminate')
-  );
+  // Determine roof type (prioritize Claude extraction)
+  let roofType = 'Unknown';
   
-  const roofType = shingleLineItem?.description?.toLowerCase().includes('laminate') ? 'Laminated' : 'Unknown';
+  if (roofTypeData && roofTypeData.roofType) {
+    // Claude extraction format
+    roofType = roofTypeData.roofType === 'laminated' ? 'Laminated' : 
+               roofTypeData.roofType === '3-tab' ? '3-Tab' : 
+               'Unknown';
+  } else {
+    // Fallback to legacy line item analysis
+    const shingleLineItem = dbJob.extractedLineItems?.find(item => 
+      item.description?.toLowerCase().includes('shingle') ||
+      item.description?.toLowerCase().includes('comp') ||
+      item.description?.toLowerCase().includes('laminate')
+    );
+    
+    roofType = shingleLineItem?.description?.toLowerCase().includes('laminate') ? 'Laminated' : 'Unknown';
+  }
   
-  // Determine ridge cap type
-  const ridgeCapType = ridgeCapLineItem?.description?.toLowerCase().includes('standard') ? 
-    'Purpose-built Standard' : 'Unknown';
+  // Determine ridge cap type (prioritize Claude extraction)
+  let ridgeCapType = 'Unknown';
+  
+  if (ridgeCapLineItem) {
+    if (ridgeCapLineItem.ridgeCapQuality) {
+      // Claude extraction format
+      ridgeCapType = ridgeCapLineItem.ridgeCapQuality === 'purpose-built' ? 'Purpose-built' :
+                     ridgeCapLineItem.ridgeCapQuality === 'high-profile' ? 'High-profile' :
+                     ridgeCapLineItem.ridgeCapQuality === 'cut-from-3tab' ? 'Cut from 3-tab' :
+                     'Unknown';
+    } else if (ridgeCapLineItem.description) {
+      // Legacy description analysis
+      const desc = ridgeCapLineItem.description.toLowerCase();
+      ridgeCapType = desc.includes('standard') ? 'Purpose-built Standard' :
+                     desc.includes('high') ? 'High-profile' :
+                     desc.includes('3-tab') || desc.includes('cut') ? 'Cut from 3-tab' :
+                     'Unknown';
+    }
+  }
 
   // Determine compliance status
   const complianceStatus: 'compliant' | 'non-compliant' = 

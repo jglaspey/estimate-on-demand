@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+
 import pdf from 'pdf-parse';
 
 async function debugPdfParsing() {

@@ -8,6 +8,7 @@ export interface JobData {
   dateOfLoss: string;
   adjusterId: string;
   adjusterName: string;
+  estimator: string;
   policyNumber: string;
   totalEstimateValue: number;
   status: 'uploading' | 'extracting' | 'analyzing' | 'reviewing' | 'complete';
@@ -98,6 +99,7 @@ export const mockJobData: JobData = {
   dateOfLoss: '2024-01-15',
   adjusterId: 'ADJ-5847',
   adjusterName: 'Sarah Thompson',
+  estimator: 'Sarah Thompson',
   policyNumber: 'POL-123456789',
   totalEstimateValue: 18750,
   status: 'reviewing',
@@ -115,6 +117,7 @@ export const mockJobDataJill: JobData = {
   dateOfLoss: '2024-02-10',
   adjusterId: 'ADJ-6132',
   adjusterName: 'Mike Rodriguez',
+  estimator: 'Mike Rodriguez',
   policyNumber: 'POL-987654321',
   totalEstimateValue: 24500,
   status: 'complete',

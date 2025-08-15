@@ -100,7 +100,7 @@ export class ExtractionPipeline {
       const pageBreakPattern = /\f|\n\s*Page\s+\d+/gi;
       const pages = fullText.split(pageBreakPattern);
       
-      pages.forEach((pageText, index) => {
+      pages.forEach((pageText, _index) => {
         if (pageText.trim()) {
           pageTexts.push(pageText.trim());
         }

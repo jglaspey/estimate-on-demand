@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+
 import { createExtractionPipeline, ExtractedData, BusinessRuleAssessment } from './extraction-pipeline';
 
 interface PipelineTestResult {

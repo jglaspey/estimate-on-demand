@@ -6,8 +6,10 @@
  */
 
 import { Mistral } from '@mistralai/mistralai';
-import type { ExtractionResult, ExtractionMetrics } from './haiku-extraction-engine';
+
 import { convertPDFBufferToBase64Images } from '../utils/pdf-to-images';
+
+import type { ExtractionResult, ExtractionMetrics } from './haiku-extraction-engine';
 
 export class MistralExtractionEngine {
   private mistral: Mistral;
@@ -98,7 +100,7 @@ IMPORTANT:
       // Process all pages (limit to first 3 for cost control)
       const imagesToProcess = conversionResult.base64Images.slice(0, 3);
       let bestResult: ExtractionResult | null = null;
-      let allResults: ExtractionResult[] = [];
+      const allResults: ExtractionResult[] = [];
 
       for (let i = 0; i < imagesToProcess.length; i++) {
         const base64Image = imagesToProcess[i];

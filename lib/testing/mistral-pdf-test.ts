@@ -5,14 +5,16 @@
  * Compare with our existing Haiku approach
  */
 
-import { config } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+
+import { config } from 'dotenv';
 
 // Load environment variables
 config({ path: path.join(__dirname, '..', '..', '.env') });
 
 import { Mistral } from '@mistralai/mistralai';
+
 import { createHaikuEngine } from '../extraction/haiku-extraction-engine';
 
 async function testMistralPDFCapabilities() {

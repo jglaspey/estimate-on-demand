@@ -5,16 +5,18 @@
  * Test if pre-extracting text gives better results for some models
  */
 
-import { config } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+
+import { config } from 'dotenv';
 
 // Load environment variables
 config({ path: path.join(__dirname, '..', '..', '.env') });
 
 import { Mistral } from '@mistralai/mistralai';
-import { createHaikuEngine } from '../extraction/haiku-extraction-engine';
 import pdfParse from 'pdf-parse';
+
+import { createHaikuEngine } from '../extraction/haiku-extraction-engine';
 
 async function compareTextExtractionMethods() {
   console.log('📊 Text Extraction Method Comparison\n');

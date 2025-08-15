@@ -384,6 +384,82 @@ To attach region-level boxes (for PDF highlights), add `bbox_annotation_format` 
 - Current code already produces per-page markdown and raw JSON; a transformer can normalize into the smart JSON above and build `index` and `validations`.
 - For jump-to-PDF links in a web viewer, construct `#page=<page>&search=<term>` anchors; bbox highlighting can be layered in once available.
 
+## LLM Calls Inventory (where, inputs, prompts, outputs, persistence, consumers)
+
+1) Phase 1: Priority Fields (Claude Haiku)
+- Where: `lib/extraction/claude-phase1-extractor.ts` (invoked from `lib/extraction/upload-integration.ts` → processing queue)
+- Endpoint/Model: `POST https://api.anthropic.com/v1/messages` `claude-3-5-haiku-20241022`
+- Inputs: PDF as base64 document (current) or `file_id` via Claude Files (planned, size-based). Temperature 0, JSON-only response.
+- Prompt (summary): Extract exactly the 8 priority fields and return strict JSON; allow nulls when not present. No analysis.
+- Output: `{ customerName, propertyAddress, claimNumber, policyNumber, dateOfLoss, carrier, claimRep, estimator, originalEstimate? }` plus run metadata (processing time, confidence).
+- Persistence: Writes fields into `job` record immediately; progress events via WebSocket (≈45%).
+- Consumers: `/app/analysis/[jobId]`, `/app/job-detail/[jobId]` for early UI population.
+
+2) Phase 2: Full OCR (Mistral OCR)
+- Where: `lib/extraction/mistral-service.ts` (orchestrated by `lib/extraction/smart-extraction-service.ts`)
+- Endpoint/Model: `POST https://api.mistral.ai/v1/ocr` `mistral-ocr-2505` (or `mistral-ocr-latest`)
+- Inputs: PDF as data URL (current) or public/signed URL (planned for large files). Optional `pages: number[]` and `document_annotation_format` for structured JSON.
+- Output: Page-by-page markdown/text, optionally annotations JSON.
+- Persistence: `DocumentPage.rawText` per page; creates/updates a `MistralExtraction` record.
+- Consumers: Phase 2a/2b Claude extractors, downstream analysis.
+
+3) Phase 2a: Estimate Line-Item Extractor (Claude Haiku)
+- Where: `lib/extraction/claude-line-item-extractor.ts`
+- Endpoint/Model: `POST https://api.anthropic.com/v1/messages` `claude-3-5-haiku-20241022`
+- Inputs: OCR text chunks from estimate pages; deterministic prompt; temperature 0; JSON-only schema.
+- Output: Array of normalized line items: `{ code?, description, quantity{value,unit}, unitPrice?, totalPrice?, section?, pageIndex, sourcePages[] }` and classifiers like `{ roofType?, ridgeCapType? }` where available.
+- Persistence: Merged into latest `MistralExtraction.extractedData.lineItems[]` with provenance and page refs.
+- Consumers: Rule 1 UI (ridge cap line), future rules, evidence linking.
+
+4) Phase 2b: Roof Measurement Extractor (Claude Haiku)
+- Where: `lib/extraction/claude-measurement-extractor.ts`
+- Endpoint/Model: `POST https://api.anthropic.com/v1/messages` `claude-3-5-haiku-20241022`
+- Inputs: OCR text chunks from roof reports; deterministic prompt; temperature 0; JSON-only schema.
+- Output: `roofMeasurements` object: `{ ridgeLength, hipLength, eaveLength, rakeLength, valleyLength, squares, slope, stories, sourcePages[] }`.
+- Persistence: Merged into latest `MistralExtraction.extractedData.roofMeasurements{}` with provenance.
+- Consumers: Rule 1 analysis and UI display.
+
+5) Rule Analysis (separate from extraction)
+- Where: Analysis worker (separate process/route) consuming DB JSON; not coupled to OCR.
+- Endpoint/Model: `POST https://api.anthropic.com/v1/messages` `claude-3-5-haiku-20241022`
+- Inputs: Strict structured JSON only (extractedData and required fields), no raw OCR text. Temperature 0.
+- Output: `RuleAnalysisResult` with status, confidence, reasoning, and computed deltas.
+- Persistence: `RuleAnalysis` per rule; exposed via `/api/jobs/[jobId]/business-rules`.
+- Consumers: `/app/analysis/[jobId]`, `/app/job-detail/[jobId]`.
+
+## Frontend contract and availability audit
+
+What UI expects for Hip/Ridge (Rule 1) per `lib/ridge-cap-data-mapper.ts` and `app/job-detail/[jobId]/page.tsx`:
+- Roof measurements: `ridgeLength`, `hipLength`, `eaveLength`, `rakeLength`, `valleyLength`, `squares`, `slope`.
+- Estimate line item for ridge cap: `{ code?, description, quantity (LF), unitPrice, totalPrice }` and ideally `sourcePages` for evidence.
+- Analysis result: `RuleAnalysisResult` for ridge cap with status, reasoning, and shortage/excess LF calculations.
+
+Currently available
+- Phase 1: The 8 priority fields populate early (present in Job record).
+- Phase 2 (storage): `DocumentPage.rawText` is populated for each page (present).
+- Phase 2 extractors (code present): `claude-line-item-extractor.ts`, `claude-measurement-extractor.ts` exist and return strict JSON.
+- API: `/api/jobs/[jobId]` returns job with pages/extractions; `/api/jobs/[jobId]/business-rules` returns latest per rule.
+
+Gaps to close (to fully satisfy UI contract)
+- Ensure `extractedData.roofMeasurements{}` is populated with all required numeric fields and persisted on Phase 2 completion.
+- Ensure ridge cap line item detection is robust and includes `quantity` in LF, `unitPrice`, `totalPrice`, plus `sourcePages`.
+- Persist provenance and `sourcePages[]` for both measurements and line items so the UI can deep-link to evidence.
+- Guarantee the Extraction → Analysis boundary: analysis must only consume structured JSON; no OCR text leakage.
+- Telemetry/cost metadata for observability (optional for UI, critical for ops).
+
+Action items (tracked in Taskmaster)
+- 21.1 Claude Files API integration utility
+- 21.2 Mistral Files + signed URL helper
+- 21.3 Wire extractors into Phase 2 orchestrator and persist `extractedData` (line items + roofMeasurements) with provenance
+- 21.4 Telemetry & cost tracking per phase
+
+## Decisions & changes (archived)
+- Always separate Extraction and Analysis. Analysis uses Claude Haiku 3.5 on structured JSON only.
+- Size-based submission strategy: Claude base64 <10MB else Files API; Mistral data URL <5MB else URL/signed URL.
+- Use optional `pages` for rapid partial OCR when needed; run full-document OCR in background.
+- Persist provenance: `{ method, model, version, pages, timings }` and `sourcePages[]` per extracted datum.
+- Frontend relies on `mapDatabaseToRidgeCapData()`; maintain consistent shapes in `extractedData` and `RuleAnalysisResult`.
+
 ### Conclusion
 - Mistral OCR is reliable across URL and base64 Data URL inputs for these docs.
 - Returning structured JSON through annotations plus a robust page-parser gives supplement writers instant, trustworthy access to the numbers they care about and one-click PDF verification.

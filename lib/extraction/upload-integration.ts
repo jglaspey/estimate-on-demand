@@ -5,8 +5,9 @@
  * and graceful degradation for production use.
  */
 
-import { extractPhase1Fields, quickExtractPhase1, type Phase1Fields, type Phase1ExtractionResult } from './claude-phase1-extractor';
 import { WebSocket } from 'ws';
+
+import { extractPhase1Fields, quickExtractPhase1, type Phase1Fields, type Phase1ExtractionResult } from './claude-phase1-extractor';
 
 export interface UploadExtractionOptions {
   jobId: string;

@@ -44,14 +44,20 @@ const eslintConfig = [
     ignores: [
       "node_modules/**",
       ".next/**",
-      "dist/**",
+      "dist/**", 
+      "out/**",
       "build/**",
       "coverage/**",
       "front-end-mockup/**",
       ".taskmaster/**",
       "examples/**",
       "src/generated/**",
-      "prisma/generated/**"
+      "prisma/generated/**",
+      "prisma/migrations/**",
+      "public/**",
+      "*.js.map",
+      "*.log",
+      "scripts/check-data.js"
     ]
   }
 ];

@@ -5,8 +5,9 @@
  * Designed for production use with graceful degradation and error handling.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync } from 'fs';
+
+import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 
 // Load environment variables

@@ -9,11 +9,12 @@ import {
   Receipt,
   Home,
   FileText,
-  Image,
+  Image as ImageIcon,
   Highlighter,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -25,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 interface DocumentPage {
   pageNumber: number;
-  content: any; // JSON content from extraction
+  content: Record<string, unknown>; // JSON content from extraction
   rawText: string | null;
   wordCount: number;
   confidence: number | null;
@@ -75,7 +76,7 @@ export function EnhancedDocumentViewer({
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<string>('');
   const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('extracted');
-  const [showHighlights] = useState(true);
+  const [_showHighlights] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Track which rule we already auto-navigated for, so we don't keep forcing the page/tab
   const [lastAutoRule, setLastAutoRule] = useState<string | null>(null);
@@ -104,7 +105,7 @@ export function EnhancedDocumentViewer({
     if (jobId) {
       fetchDocuments();
     }
-  }, [jobId, reloadVersion]);
+  }, [jobId, reloadVersion, documents]);
   // Initialize default view: Estimate, Extracted, Page 1
   useEffect(() => {
     if (hasInitializedRef.current) return;
@@ -142,8 +143,8 @@ export function EnhancedDocumentViewer({
     });
 
     const idle = (cb: () => void) =>
-      (window as any).requestIdleCallback
-        ? (window as any).requestIdleCallback(cb)
+      (window as Window & { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
+        ? (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(cb)
         : setTimeout(cb, 150);
 
     const abortControllers: AbortController[] = [];
@@ -316,10 +317,167 @@ export function EnhancedDocumentViewer({
 
   // Render extracted text with optional markdown and highlights
   const renderExtractedText = (page: DocumentPage) => {
-    const text = page.rawText || '';
+    // Normalize escape sequences that sometimes arrive as literal characters
+    let text = page.rawText || '';
+    // Turn literal "\n" into real newlines, and "\t" into spaces
+    text = text.replace(/\\n/g, '\n').replace(/\\t/g, '  ');
+    // Remove escaped dollars so currency renders cleanly
+    text = text.replace(/\\\$/g, '$');
 
     // Determine highlights for this page up-front
-    const pageHighlights = highlights.filter(h => h.page === page.pageNumber);
+    const _pageHighlights = highlights.filter(h => h.page === page.pageNumber);
+
+    // Heuristic formatter pipeline to produce more readable Markdown from raw OCR text
+    // 1) Promote probable section headings (ALL CAPS lines, or Title Case lines with no trailing colon) to H2/H3
+    // 2) Bold label-value pairs like "Claim Number: 123" → **Claim Number**: 123
+    // 3) Convert enumerated items like "3a. Remove Flashing" to bullet list items
+    // 4) Preserve existing paragraphs and whitespace sensibly
+    const toStructuredMarkdown = (input: string): string => {
+      // Pre-pass: normalize separators and synthesize logical breaks
+      let pre = input
+        // Normalize repeated pipes and add spacing around them to help table detection
+        .replace(/\|{2,}/g, '|')
+        .replace(/\s*\|\s*/g, ' | ')
+        // Promote inline heading markers that appear without newlines
+        .replace(/\s##\s+/g, '\n## ')
+        .replace(/\s#\s+/g, '\n## ')
+        // Numbered or lettered list markers like " 3." or " 3a." → newline before
+        .replace(/\s(\d+[a-zA-Z]?)\.(?=\s)/g, '\n$1.')
+        // Common section keywords (start new lines)
+        .replace(/\s(Subtotals|Estimate Total|Estimated Total RC|Loss of Use|Claim Number|Policy Number|Type of Loss|Insurance Company|Date of Loss|Property|Benefits|Taxes|Replacement Cost|Deductible|Overpayment|Summary of this Payment)\b/g, '\n$1')
+        // Table-ish section starters
+        .replace(/\s(Description\s+Qty\s+.*?Actual Replacement Cost w\/Tax)\b/g, '\n$1')
+        // Break before "Source -" blocks seen in reports
+        .replace(/\s(Source\s+-\s+EagleView[^\n]*)/g, '\n$1');
+
+      // Insert breaks before any label-like token "Word Word:"
+      pre = pre.replace(/([^\n])\s([A-Z][A-Za-z /()&]+:\s)/g, '$1\n$2');
+
+      // If still a single long line, add soft breaks after periods followed by Capital
+      if (!/\n/.test(pre)) {
+        pre = pre.replace(/\.\s+(?=[A-Z])/g, '.\n');
+      }
+
+      const rawLines = pre.split(/\r?\n/);
+
+      const processed: string[] = [];
+      let inList = false;
+
+      const isLikelyHeading = (line: string): boolean => {
+        const trimmed = line.trim();
+        if (trimmed.length < 4) return false;
+        // All caps (with symbols/spaces) and at least two words
+        const allCaps = /^[A-Z0-9 &()\/\-.,']{6,}$/.test(trimmed) && /\s[A-Z]/.test(trimmed);
+        // Title-ish case with no trailing colon
+        const titleCase = /^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){1,}$/.test(trimmed) && !trimmed.endsWith(':');
+        // Avoid lines that look like addresses or phone numbers
+        const looksLikeContact = /(Phone|Fax|Email|E-mail|\d{3}[-). ]?\d{3}[-.]?\d{4})/i.test(trimmed);
+        return (allCaps || titleCase) && !looksLikeContact;
+      };
+
+      rawLines.forEach((line, _idx) => {
+        const l = line.replace(/\s+$/g, ''); // trim right only to keep left alignment
+
+        // Convert label-value pairs to bold labels
+        const labelValue = l.replace(
+          /(^|\s)([A-Z][A-Za-z ]{2,}?):\s*(.+)$/,
+          (_m, leading, label, value) => `${leading}**${label.trim()}**: ${value.trim()}`
+        );
+
+        // Detect list items like "1.", "12.", or "3a." at start of line
+        const listMatch = labelValue.match(/^\s*(\d+[a-zA-Z]?)\./);
+        if (listMatch && labelValue.length > listMatch[0].length + 1) {
+          if (!inList) {
+            // add a blank line to open a list block if previous content wasn't a list
+            if (processed.length > 0 && processed[processed.length - 1] !== '') {
+              processed.push('');
+            }
+            inList = true;
+          }
+          processed.push(`- ${labelValue.replace(/^\s*\d+[a-zA-Z]?\.[\s]*/, '')}`);
+          return;
+        }
+
+        // Close list block when encountering a non-list line
+        if (inList) {
+          inList = false;
+          if (processed.length > 0 && processed[processed.length - 1] !== '') {
+            processed.push('');
+          }
+        }
+
+        // Promote likely headings
+        if (isLikelyHeading(labelValue)) {
+          // Determine depth: start new sections as H2, sub-sections as H3 if previous line was empty
+          const prev = processed[processed.length - 1] || '';
+          const depth = prev === '' ? '##' : '###';
+          processed.push(`${depth} ${labelValue.trim()}`);
+          // Ensure blank line after a heading for proper rendering
+          processed.push('');
+          return;
+        }
+
+        // Reduce excessive internal whitespace (but preserve alignment in tables handled later)
+        const squeezed = labelValue.replace(/\s{3,}/g, '  ');
+        processed.push(squeezed);
+      });
+
+      // Close any open list at EOF
+      if (inList) processed.push('');
+
+      let md = processed.join('\n');
+
+      // Post-pass A: normalize money artifacts like "- $$ 2,000.00$" → "- $2,000.00"
+      md = md
+        .replace(/\$\$\s*/g, '$')
+        .replace(/(\d)\$/g, '$1')
+        .replace(/\$\s+(\d)/g, '$$1');
+
+      // Post-pass B: convert consecutive dotted/leader key-value rows into a table
+      // Supports optional trailing notes column
+      // e.g., "Taxes....................... $409.68" → "| Taxes | $409.68 |"
+      // e.g., "Overpayment............... - $0.00$ note" → "| Overpayment | - $0.00 | note |"
+      const lines2 = md.split(/\r?\n/);
+      const out: string[] = [];
+      let block: string[] = [];
+      const kvRegex = /^\s*([A-Za-z][A-Za-z \-/()&%]+?)\s*[.:·•\-\s]{4,}\s*(\(?-?\$?[\d,]+(?:\.\d{1,2})?\)?|\$?0(?:\.00)?)\s*(.*)$/;
+      const flushBlock = () => {
+        if (block.length >= 2) {
+          out.push('');
+          const hasNotes = block.some(r => r.match(kvRegex)?.[3]?.trim());
+          out.push(hasNotes ? '| Item | Amount | Notes |' : '| Item | Amount |');
+          out.push(hasNotes ? '| --- | ---: | --- |' : '| --- | ---: |');
+          block.forEach(row => {
+            const m = row.match(kvRegex);
+            if (m) {
+              const [_full, k, v, note] = m;
+              const val = v.replace(/\)$/,'').replace(/^\(/,'-');
+              if (hasNotes) {
+                out.push(`| ${k.trim()} | ${val.trim()} | ${note?.trim() || ''} |`);
+              } else {
+                out.push(`| ${k.trim()} | ${val.trim()} |`);
+              }
+            }
+          });
+          out.push('');
+        } else {
+          out.push(...block);
+        }
+        block = [];
+      };
+
+      for (const ln of lines2) {
+        if (kvRegex.test(ln)) {
+          block.push(ln);
+        } else {
+          if (block.length) flushBlock();
+          out.push(ln);
+        }
+      }
+      if (block.length) flushBlock();
+
+      return out.join('\n');
+    };
 
     // Lightweight formatter: convert pipe-delimited lines into GFM tables
     const toMarkdownTables = (input: string): string => {
@@ -380,35 +538,14 @@ export function EnhancedDocumentViewer({
       return output.join('\n');
     };
 
-    // Prefer Markdown rendering when there are no page-specific highlights
-    if (!showHighlights || !selectedRule || pageHighlights.length === 0) {
-      const md = toMarkdownTables(text);
-      return (
-        <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
-        </div>
-      );
-    }
-
-    // Apply highlights to text
-    let highlightedText = text;
-    pageHighlights.forEach(highlight => {
-      if (highlight.textMatch) {
-        const regex = new RegExp(highlight.textMatch, 'gi');
-        highlightedText = highlightedText.replace(regex, match => {
-          const className = highlight.issue
-            ? 'bg-red-200 dark:bg-red-900/50 border-b-2 border-red-500'
-            : 'bg-yellow-200 dark:bg-yellow-900/50 border-b-2 border-yellow-500';
-          return `<mark class="${className} px-1 rounded">${match}</mark>`;
-        });
-      }
-    });
-
+    // Always prefer Markdown rendering for readability, even when highlights exist
+    // We keep the highlights count badge in the UI controls, but avoid injecting raw HTML
+    // so that our markdown structuring renders consistently.
+    const md = toMarkdownTables(toStructuredMarkdown(text));
     return (
-      <div
-        className='prose prose-zinc dark:prose-invert max-w-none text-sm'
-        dangerouslySetInnerHTML={{ __html: highlightedText }}
-      />
+      <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{md}</ReactMarkdown>
+      </div>
     );
   };
 
@@ -421,10 +558,7 @@ export function EnhancedDocumentViewer({
       return (
         <div className='flex items-center justify-center h-full bg-zinc-100 dark:bg-zinc-800 rounded-lg'>
           <div className='text-center'>
-            <Image
-              className='h-16 w-16 text-zinc-400 mx-auto mb-4'
-              alt='PDF not available'
-            />
+            <ImageIcon className='h-16 w-16 text-zinc-400 mx-auto mb-4' />
             <p className='text-zinc-500 dark:text-zinc-400'>
               PDF not available
             </p>
@@ -513,7 +647,7 @@ export function EnhancedDocumentViewer({
                 onClick={() => setViewMode('pdf')}
                 className='h-8'
               >
-                <Image className='h-3.5 w-3.5 mr-1.5' alt='PDF' />
+                <ImageIcon className='h-3.5 w-3.5 mr-1.5' />
                 PDF
               </Button>
 
@@ -667,6 +801,21 @@ export function EnhancedDocumentViewer({
                       <Button variant='outline' size='sm' className='h-8'>
                         <Download className='h-4 w-4' />
                       </Button>
+                      {viewMode === 'extracted' && activePage && (
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='h-8'
+                          onClick={() => {
+                            if (activePage?.rawText) {
+                              navigator.clipboard.writeText(activePage.rawText).catch(() => {});
+                            }
+                          }}
+                          title='Copy raw OCR text to clipboard'
+                        >
+                          Copy Raw Text
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -682,8 +831,8 @@ export function EnhancedDocumentViewer({
                                 {activePage.images.map((src, idx) => (
                                   <img
                                     key={idx}
+                                    alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
                                     src={src}
-                                    alt={`Page ${currentPage} Image ${idx + 1}`}
                                     className='w-full h-auto block rounded'
                                   />
                                 ))}
@@ -691,6 +840,10 @@ export function EnhancedDocumentViewer({
                             ) : null}
                             <div className='p-8'>
                               {renderExtractedText(activePage)}
+                              {/* Hidden debug container to retrieve raw OCR text via the console */}
+                              <pre data-doc-debug className='hidden'>
+                                {activePage.rawText || ''}
+                              </pre>
                             </div>
                           </div>
                         ) : (

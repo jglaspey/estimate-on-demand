@@ -7,9 +7,10 @@
  * 3. Pattern analysis across document types
  */
 
-import { config } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+
+import { config } from 'dotenv';
 
 // Load environment variables
 config({ path: path.join(__dirname, '..', '..', '.env') });

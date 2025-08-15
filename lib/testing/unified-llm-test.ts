@@ -5,9 +5,10 @@
  * Generates one JSON file per model for easy comparison
  */
 
-import { config } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+
+import { config } from 'dotenv';
 
 // Load .env from project root
 config({ path: path.join(__dirname, '..', '..', '.env') });

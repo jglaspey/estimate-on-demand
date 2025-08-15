@@ -3,15 +3,12 @@ import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle,
   AlertTriangle,
-  DollarSign,
   Calendar,
   MapPin,
   Building,
   ChevronRight,
-  BarChart3,
   Clock,
   Play,
-  User,
   Shield
 } from 'lucide-react';
 import { ChatBox } from '@/components/ChatBox';
@@ -21,7 +18,7 @@ interface OverviewPageProps {
   jobData: JobData;
   roofMeasurements: RoofMeasurements;
   ruleAnalysis: RuleAnalysisResult[];
-  onFieldUpdate: (field: string, value: string | number) => void;
+  _onFieldUpdate: (field: string, value: string | number) => void;
   onStartReview: () => void;
 }
 
@@ -29,7 +26,7 @@ export function OverviewPage({
   jobData, 
   roofMeasurements, 
   ruleAnalysis, 
-  onFieldUpdate, 
+  _onFieldUpdate, 
   onStartReview 
 }: OverviewPageProps) {
   const getComplianceStats = () => {
@@ -94,7 +91,7 @@ export function OverviewPage({
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Estimator:</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">Mike Rodriguez</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">{jobData.estimator || jobData.adjusterName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Claim #:</span>

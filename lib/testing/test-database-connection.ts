@@ -5,8 +5,9 @@
  * to ensure database setup is working correctly
  */
 
-import { config } from 'dotenv';
 import path from 'path';
+
+import { config } from 'dotenv';
 
 // Load environment variables
 config({ path: path.join(__dirname, '..', '..', '.env') });

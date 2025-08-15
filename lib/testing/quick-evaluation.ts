@@ -3,11 +3,12 @@
  */
 
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import fs from 'fs';
-import path from 'path';
 import pdf from 'pdf-parse';
 
 interface QuickResult {

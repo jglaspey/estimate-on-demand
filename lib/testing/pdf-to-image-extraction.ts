@@ -4,11 +4,12 @@
  */
 
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
 import { fromPath } from 'pdf2pic';
 import sharp from 'sharp';
 

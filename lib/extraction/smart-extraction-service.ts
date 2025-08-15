@@ -180,6 +180,22 @@ export class SmartExtractionService {
           pageImagePaths
         );
 
+        // Get Phase 1 core info from job record for context
+        const job = await prisma.job.findUnique({
+          where: { id: jobId }
+        });
+        
+        const coreInfo: CoreInfo = {
+          customerName: job?.customerName || undefined,
+          propertyAddress: job?.customerAddress || undefined,
+          insuranceCarrier: job?.carrier || undefined,
+          claimNumber: job?.claimNumber || undefined,
+          policyNumber: job?.policyNumber || undefined,
+          dateOfLoss: job?.dateOfLoss?.toISOString() || undefined,
+          adjusterName: job?.claimRep || undefined,
+          originalEstimate: job?.originalEstimate || undefined,
+        };
+
         // Phase 2a & 2b: Claude-based structured extraction
         // Fix: Use the correct property 'content' from Mistral OCR pages
         const structuredData = await this.extractStructuredDataWithClaude(
