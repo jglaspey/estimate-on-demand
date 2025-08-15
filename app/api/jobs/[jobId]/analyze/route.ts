@@ -187,19 +187,20 @@ export async function GET(
     );
 
     if (ridgeCapAnalysis) {
-      const analysisData = ridgeCapAnalysis.analysisData as any;
+      // Extract data directly from RuleAnalysis fields and findings JSON
+      const findings = ridgeCapAnalysis.findings as any;
       const ruleAnalysisResult = {
         ruleName: 'ridge_cap',
-        status: analysisData.status,
-        confidence: analysisData.confidence,
-        reasoning: analysisData.reasoning,
-        costImpact: analysisData.costImpact,
-        estimateQuantity: analysisData.estimateQuantity,
-        requiredQuantity: analysisData.requiredQuantity,
-        variance: analysisData.variance,
-        varianceType: analysisData.varianceType,
-        materialStatus: analysisData.materialStatus,
-        currentSpecification: analysisData.currentSpecification,
+        status: ridgeCapAnalysis.status,
+        confidence: ridgeCapAnalysis.confidence || 0,
+        reasoning: ridgeCapAnalysis.reasoning || '',
+        costImpact: findings?.costImpact || 0,
+        estimateQuantity: findings?.estimateQuantity || '',
+        requiredQuantity: findings?.requiredQuantity || '',
+        variance: findings?.variance || '',
+        varianceType: findings?.varianceType || 'adequate',
+        materialStatus: findings?.materialStatus || 'compliant',
+        currentSpecification: findings?.currentSpecification || {},
       };
 
       ridgeCapUiData = mapDatabaseToRidgeCapData(
@@ -216,13 +217,16 @@ export async function GET(
       uiData: {
         ridgeCap: ridgeCapUiData,
       },
-      analyses: job.ruleAnalyses.map(analysis => ({
-        ruleType: analysis.ruleType,
-        status: analysis.status,
-        confidence: analysis.confidence,
-        costImpact: analysis.costImpact,
-        analyzedAt: analysis.analyzedAt,
-      })),
+      analyses: job.ruleAnalyses.map(analysis => {
+        const findings = analysis.findings as any;
+        return {
+          ruleType: analysis.ruleType,
+          status: analysis.status,
+          confidence: analysis.confidence,
+          costImpact: findings?.costImpact || 0,
+          analyzedAt: analysis.analyzedAt,
+        };
+      }),
     });
   } catch (error) {
     console.error('❌ Failed to get analysis status:', error);

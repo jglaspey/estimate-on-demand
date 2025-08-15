@@ -105,7 +105,7 @@ export function EnhancedDocumentViewer({
     if (jobId) {
       fetchDocuments();
     }
-  }, [jobId, reloadVersion, documents]);
+  }, [jobId, reloadVersion]);
   // Initialize default view: Estimate, Extracted, Page 1
   useEffect(() => {
     if (hasInitializedRef.current) return;
@@ -143,8 +143,11 @@ export function EnhancedDocumentViewer({
     });
 
     const idle = (cb: () => void) =>
-      (window as Window & { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback
-        ? (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(cb)
+      (window as Window & { requestIdleCallback?: (cb: () => void) => void })
+        .requestIdleCallback
+        ? (
+            window as Window & { requestIdleCallback: (cb: () => void) => void }
+          ).requestIdleCallback(cb)
         : setTimeout(cb, 150);
 
     const abortControllers: AbortController[] = [];
@@ -344,9 +347,15 @@ export function EnhancedDocumentViewer({
         // Numbered or lettered list markers like " 3." or " 3a." → newline before
         .replace(/\s(\d+[a-zA-Z]?)\.(?=\s)/g, '\n$1.')
         // Common section keywords (start new lines)
-        .replace(/\s(Subtotals|Estimate Total|Estimated Total RC|Loss of Use|Claim Number|Policy Number|Type of Loss|Insurance Company|Date of Loss|Property|Benefits|Taxes|Replacement Cost|Deductible|Overpayment|Summary of this Payment)\b/g, '\n$1')
+        .replace(
+          /\s(Subtotals|Estimate Total|Estimated Total RC|Loss of Use|Claim Number|Policy Number|Type of Loss|Insurance Company|Date of Loss|Property|Benefits|Taxes|Replacement Cost|Deductible|Overpayment|Summary of this Payment)\b/g,
+          '\n$1'
+        )
         // Table-ish section starters
-        .replace(/\s(Description\s+Qty\s+.*?Actual Replacement Cost w\/Tax)\b/g, '\n$1')
+        .replace(
+          /\s(Description\s+Qty\s+.*?Actual Replacement Cost w\/Tax)\b/g,
+          '\n$1'
+        )
         // Break before "Source -" blocks seen in reports
         .replace(/\s(Source\s+-\s+EagleView[^\n]*)/g, '\n$1');
 
@@ -367,11 +376,15 @@ export function EnhancedDocumentViewer({
         const trimmed = line.trim();
         if (trimmed.length < 4) return false;
         // All caps (with symbols/spaces) and at least two words
-        const allCaps = /^[A-Z0-9 &()\/\-.,']{6,}$/.test(trimmed) && /\s[A-Z]/.test(trimmed);
+        const allCaps =
+          /^[A-Z0-9 &()\/\-.,']{6,}$/.test(trimmed) && /\s[A-Z]/.test(trimmed);
         // Title-ish case with no trailing colon
-        const titleCase = /^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){1,}$/.test(trimmed) && !trimmed.endsWith(':');
+        const titleCase =
+          /^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){1,}$/.test(trimmed) &&
+          !trimmed.endsWith(':');
         // Avoid lines that look like addresses or phone numbers
-        const looksLikeContact = /(Phone|Fax|Email|E-mail|\d{3}[-). ]?\d{3}[-.]?\d{4})/i.test(trimmed);
+        const looksLikeContact =
+          /(Phone|Fax|Email|E-mail|\d{3}[-). ]?\d{3}[-.]?\d{4})/i.test(trimmed);
         return (allCaps || titleCase) && !looksLikeContact;
       };
 
@@ -381,7 +394,8 @@ export function EnhancedDocumentViewer({
         // Convert label-value pairs to bold labels
         const labelValue = l.replace(
           /(^|\s)([A-Z][A-Za-z ]{2,}?):\s*(.+)$/,
-          (_m, leading, label, value) => `${leading}**${label.trim()}**: ${value.trim()}`
+          (_m, leading, label, value) =>
+            `${leading}**${label.trim()}**: ${value.trim()}`
         );
 
         // Detect list items like "1.", "12.", or "3a." at start of line
@@ -389,12 +403,17 @@ export function EnhancedDocumentViewer({
         if (listMatch && labelValue.length > listMatch[0].length + 1) {
           if (!inList) {
             // add a blank line to open a list block if previous content wasn't a list
-            if (processed.length > 0 && processed[processed.length - 1] !== '') {
+            if (
+              processed.length > 0 &&
+              processed[processed.length - 1] !== ''
+            ) {
               processed.push('');
             }
             inList = true;
           }
-          processed.push(`- ${labelValue.replace(/^\s*\d+[a-zA-Z]?\.[\s]*/, '')}`);
+          processed.push(
+            `- ${labelValue.replace(/^\s*\d+[a-zA-Z]?\.[\s]*/, '')}`
+          );
           return;
         }
 
@@ -440,20 +459,25 @@ export function EnhancedDocumentViewer({
       const lines2 = md.split(/\r?\n/);
       const out: string[] = [];
       let block: string[] = [];
-      const kvRegex = /^\s*([A-Za-z][A-Za-z \-/()&%]+?)\s*[.:·•\-\s]{4,}\s*(\(?-?\$?[\d,]+(?:\.\d{1,2})?\)?|\$?0(?:\.00)?)\s*(.*)$/;
+      const kvRegex =
+        /^\s*([A-Za-z][A-Za-z \-/()&%]+?)\s*[.:·•\-\s]{4,}\s*(\(?-?\$?[\d,]+(?:\.\d{1,2})?\)?|\$?0(?:\.00)?)\s*(.*)$/;
       const flushBlock = () => {
         if (block.length >= 2) {
           out.push('');
           const hasNotes = block.some(r => r.match(kvRegex)?.[3]?.trim());
-          out.push(hasNotes ? '| Item | Amount | Notes |' : '| Item | Amount |');
+          out.push(
+            hasNotes ? '| Item | Amount | Notes |' : '| Item | Amount |'
+          );
           out.push(hasNotes ? '| --- | ---: | --- |' : '| --- | ---: |');
           block.forEach(row => {
             const m = row.match(kvRegex);
             if (m) {
               const [_full, k, v, note] = m;
-              const val = v.replace(/\)$/,'').replace(/^\(/,'-');
+              const val = v.replace(/\)$/, '').replace(/^\(/, '-');
               if (hasNotes) {
-                out.push(`| ${k.trim()} | ${val.trim()} | ${note?.trim() || ''} |`);
+                out.push(
+                  `| ${k.trim()} | ${val.trim()} | ${note?.trim() || ''} |`
+                );
               } else {
                 out.push(`| ${k.trim()} | ${val.trim()} |`);
               }
@@ -544,7 +568,9 @@ export function EnhancedDocumentViewer({
     const md = toMarkdownTables(toStructuredMarkdown(text));
     return (
       <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{md}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+          {md}
+        </ReactMarkdown>
       </div>
     );
   };
@@ -808,7 +834,9 @@ export function EnhancedDocumentViewer({
                           className='h-8'
                           onClick={() => {
                             if (activePage?.rawText) {
-                              navigator.clipboard.writeText(activePage.rawText).catch(() => {});
+                              navigator.clipboard
+                                .writeText(activePage.rawText)
+                                .catch(() => {});
                             }
                           }}
                           title='Copy raw OCR text to clipboard'
