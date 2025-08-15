@@ -220,3 +220,172 @@ if (pdfBuffer.length > 5 * 1024 * 1024) { // > 5MB
 - **Files API**: Documents stored temporarily in provider systems
 - **Public URLs**: Require secure hosting and access controls
 - **Recommendation**: Use base64 for sensitive documents, Files API for efficiency
+
+
+## OCR Extraction Insights
+
+### Scope
+This document summarizes the experiments, reliability results, and JSON extraction design for insurance estimate PDFs processed with Mistral OCR.
+
+### What we tested
+- OCR via URL (https): Mistral OCR endpoint with a publicly accessible link
+- OCR via Data URL (base64): same endpoint using `data:application/pdf;base64,...`
+- Optional cleanup: post-processing the OCR text with `mistral-small-latest` to normalize prose/markdown
+
+Inputs used:
+- Estimate: `Evans___Bob_NE_5916_estimate_from_url.pdf`
+- Roof report: `Evans___Bob_NE_5916_roof-report.pdf`
+
+Artifacts: `experiments/ocr_matrix_results/` (JSON + MD per run), analysis in `experiments/ocr_matrix_results/analysis/`
+
+### Findings (reliability)
+- Estimate (URL vs Data URL)
+  - Page identity: 16/17 identical; one page had trivial formatting differences.
+  - Word similarity: Jaccard 100.00%, Cosine 100.00%.
+  - Numeric consistency: identical (0 differences across 348 numeric tokens).
+  - Conclusion: URL and base64 Data URL are functionally equivalent for this doc.
+
+- Roof report (Data URL only in this run)
+  - Cleanup is shorter prose; not comparable for totals. Use raw OCR for quantitative analysis.
+
+Sources (internal):
+- Matrix table: `experiments/ocr_matrix_results/analysis/compare_all.md`
+- Pair report: `experiments/ocr_matrix_results/analysis/report.md`
+
+References (external):
+- Mistral OCR API and schema: https://docs.mistral.ai/api/#tag/ocr/operation/ocr_v1_ocr_post
+- OCR annotations for structured JSON: https://docs.mistral.ai/capabilities/OCR/annotations
+
+### Key takeaways
+- Use the OCR API with either https URL or base64 Data URL. Prefer URL for simplicity, Data URL for private/local input.
+- Numeric integrity is the critical metric for claims; both paths preserved it perfectly in our test.
+- Markdown page text is consistent; minor differences are layout/spacing.
+
+### Smart JSON for supplements
+Goal: ultra-fast lookup (e.g., “ridge cap, page 3, 104.25 LF”), accurate totals, and jump-to-PDF UX.
+
+Proposed top-level structure:
+```json
+{
+  "document": { "id": "...", "sourceUrl": "...", "pagesProcessed": 17, "docSizeBytes": 83098 },
+  "meta": {
+    "insured": "Evans, Robert",
+    "claimNumber": "1354565-242889-014101",
+    "policyNumber": "NEA47803",
+    "dateOfLoss": "2024-05-21",
+    "priceList": "NEOM8X_JUN24",
+    "estimator": "David Sanchez"
+  },
+  "lineItems": [
+    {
+      "id": "li-12-ridge-cap",
+      "pageIndex": 2,
+      "section": "Exterior > Roofing",
+      "lineNumber": 12,
+      "description": {
+        "raw": "Hip / Ridge cap - Standard profile - composition shingles",
+        "normalized": "ridge cap - composition",
+        "tags": ["ridge_cap", "hip_cap"]
+      },
+      "quantity": { "value": 104.25, "unit": "LF", "unitNormalized": "linear_feet" },
+      "unitPrice": { "value": 7.15, "currency": "USD" },
+      "tax": { "value": 17.14, "currency": "USD" },
+      "rcv": { "value": 762.53, "currency": "USD" },
+      "depreciation": { "value": 124.23, "currency": "USD" },
+      "acv": { "value": 638.30, "currency": "USD" },
+      "confidence": 0.98,
+      "source": {
+        "markdownSnippet": "12. Hip / Ridge cap ... | 104.25 LF | 7.15 | 17.14 | 762.53 | (124.23) | 638.30",
+        "markdownOffset": { "start": 12345, "end": 12480 },
+        "pdf": { "page": 3, "bbox": null }
+      }
+    }
+  ],
+  "totals": {
+    "dwelling": { "rcv": 27757.04, "acv": 23619.62, "depreciation": 4137.42 },
+    "otherStructures": { "rcv": 291.46 }
+  },
+  "index": {
+    "byTag": { "ridge_cap": ["li-12-ridge-cap"] },
+    "byPage": { "3": ["li-12-ridge-cap"] }
+  },
+  "validations": [
+    { "rule": "sum(rcv.roofing) == recap.roofing.rcv", "status": "ok" }
+  ]
+}
+```
+
+Why it works for supplement writers
+- `pageIndex` and (future) `source.pdf.bbox` enable precise PDF jumps/highlights.
+- `tags` and `index.byTag` power instant search (“ridge_cap”).
+- `quantity`, `unit`, `rcv/acv` normalized → accurate math & deltas.
+- `validations` surface mismatches to verify supplement recommendations quickly.
+
+### Getting JSON directly from Mistral OCR
+Use annotations to receive structured JSON along with pages:
+```json
+{
+  "model": "mistral-ocr-latest",
+  "document": { "type": "document_url", "document_url": "<https-or-data-url>" },
+  "document_annotation_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "estimate",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "insured": { "type": "string" },
+              "claimNumber": { "type": "string" },
+              "policyNumber": { "type": "string" },
+              "dateOfLoss": { "type": "string" }
+            },
+            "required": ["insured", "claimNumber"]
+          },
+          "line_items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pageIndex": { "type": "integer" },
+                "lineNumber": { "type": "integer" },
+                "section": { "type": "string" },
+                "description": { "type": "string" },
+                "quantity": {
+                  "type": "object",
+                  "properties": {
+                    "value": { "type": "number" },
+                    "unit": { "type": "string" }
+                  },
+                  "required": ["value", "unit"]
+                },
+                "unitPrice": { "type": "number" },
+                "rcv": { "type": "number" },
+                "depreciation": { "type": "number" },
+                "acv": { "type": "number" }
+              },
+              "required": ["pageIndex", "description", "quantity"]
+            }
+          }
+        },
+        "required": ["line_items"]
+      }
+    }
+  }
+}
+```
+
+To attach region-level boxes (for PDF highlights), add `bbox_annotation_format` with a JSON schema focused on per-image/table items; OCR will return `imageAnnotation` entries that you can map to PDF coordinates later.
+
+### Implementation notes
+- Current code already produces per-page markdown and raw JSON; a transformer can normalize into the smart JSON above and build `index` and `validations`.
+- For jump-to-PDF links in a web viewer, construct `#page=<page>&search=<term>` anchors; bbox highlighting can be layered in once available.
+
+### Conclusion
+- Mistral OCR is reliable across URL and base64 Data URL inputs for these docs.
+- Returning structured JSON through annotations plus a robust page-parser gives supplement writers instant, trustworthy access to the numbers they care about and one-click PDF verification.
+
+

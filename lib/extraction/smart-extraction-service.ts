@@ -1,4 +1,5 @@
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import path from 'path';
 
 import { prisma } from '../database/client';
 import { wsManager } from '../websocket/socket-handler';
@@ -134,11 +135,43 @@ export class SmartExtractionService {
           `📖 Processing document ${index + 1}/${filePaths.length}: ${filePath}`
         );
 
-        // Extract all pages
+        // Extract all pages (text + embedded image base64s)
         const fullText = await this.extractAllPagesOCR(filePath);
 
-        // Save raw page content to database
-        await this.savePageContentToDatabase(jobId, filePath, fullText);
+        // Persist embedded images to /uploads and build page->paths mapping
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        try {
+          mkdirSync(uploadsDir, { recursive: true });
+        } catch {}
+
+        const pageImagePaths: string[][] = [];
+        for (const p of fullText.pages) {
+          const paths: string[] = [];
+          if (p.imagesBase64 && p.imagesBase64.length > 0) {
+            p.imagesBase64.forEach((b64, i) => {
+              try {
+                const fileBase = `${path.basename(filePath, path.extname(filePath))}-p${p.pageNumber}-img${i + 1}.jpeg`;
+                const outPath = path.join(uploadsDir, fileBase);
+                if (!existsSync(outPath)) {
+                  const buf = Buffer.from(b64, 'base64');
+                  writeFileSync(outPath, buf);
+                }
+                paths.push(outPath);
+              } catch (err) {
+                console.warn('Failed to write OCR image:', err);
+              }
+            });
+          }
+          pageImagePaths.push(paths);
+        }
+
+        // Save raw page content to database (attach extracted image paths)
+        await this.savePageContentToDatabase(
+          jobId,
+          filePath,
+          fullText,
+          pageImagePaths
+        );
 
         // Extract structured data using regex + simple parsing (no AI)
         const structuredData = this.extractStructuredDataFromText(
@@ -325,7 +358,7 @@ export class SmartExtractionService {
       }
 
       const result = await response.json();
-      const ocrPages = result.pages || [];
+      const ocrPages = result.pages || result.data?.pages || [];
 
       return ocrPages
         .map((page: any) => page.markdown || page.text || page.content || '')
@@ -341,13 +374,19 @@ export class SmartExtractionService {
    */
   private async extractAllPagesOCR(filePath: string): Promise<{
     fullText: string;
-    pages: Array<{ pageNumber: number; content: string; confidence: number }>;
+    pages: Array<{
+      pageNumber: number;
+      content: string;
+      confidence: number;
+      imagesBase64?: string[];
+    }>;
   }> {
     try {
       const pdfBuffer = readFileSync(filePath);
       const base64Pdf = pdfBuffer.toString('base64');
 
-      const response = await fetch('https://api.mistral.ai/v1/ocr', {
+      // Attempt with snake_case first (HTTP API often expects snake_case)
+      let response = await fetch('https://api.mistral.ai/v1/ocr', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.MISTRAL_API_KEY || ''}`,
@@ -360,8 +399,28 @@ export class SmartExtractionService {
             document_url: `data:application/pdf;base64,${base64Pdf}`,
           },
           // No pages parameter = extract all pages
+          include_image_base64: true,
         }),
       });
+
+      // If unprocessable (likely param mismatch), retry with camelCase param
+      if (!response.ok && response.status === 422) {
+        response = await fetch('https://api.mistral.ai/v1/ocr', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.MISTRAL_API_KEY || ''}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: MISTRAL_OCR_MODEL,
+            document: {
+              type: 'document_url',
+              document_url: `data:application/pdf;base64,${base64Pdf}`,
+            },
+            includeImageBase64: true,
+          }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -374,14 +433,25 @@ export class SmartExtractionService {
 
       const extractedPages = ocrPages.map((page: any, index: number) => {
         const content = page.markdown || page.text || page.content || '';
+        const imgs = Array.isArray(page.images)
+          ? page.images
+              .map((img: any) => img.image_base64 || img.imageBase64)
+              .filter((b64: any) => typeof b64 === 'string' && b64.length > 0)
+          : [];
+        console.log(
+          `📄 OCR page ${index + 1}: text=${String(content || '').length} chars, images=${imgs.length}`
+        );
         return {
           pageNumber: index + 1,
           content: String(content || '').trim(),
           confidence: page.confidence || 0.95,
+          imagesBase64: imgs,
         };
       });
 
-      const fullText = extractedPages.map(p => p.content).join('\n\n');
+      const fullText = extractedPages
+        .map((p: { content: string }) => p.content)
+        .join('\n\n');
 
       return { fullText, pages: extractedPages };
     } catch (error) {
@@ -420,13 +490,12 @@ export class SmartExtractionService {
 
       for (const pattern of addressPatterns) {
         const match = text.match(pattern);
-        if (
-          match && match[1]
-            ? match[1].trim().length > 5
-            : match[0].trim().length > 5
-        ) {
-          coreInfo.propertyAddress = (match[1] || match[0]).trim();
-          break;
+        if (match) {
+          const candidate = (match[1] || match[0] || '').trim();
+          if (candidate.length > 5) {
+            coreInfo.propertyAddress = candidate;
+            break;
+          }
         }
       }
 
@@ -748,10 +817,27 @@ export class SmartExtractionService {
   private async savePageContentToDatabase(
     jobId: string,
     filePath: string,
-    ocrResult: any
+    ocrResult: any,
+    pageImagePaths?: string[][]
   ): Promise<void> {
-    const document = await prisma.document.findFirst({ where: { jobId } });
-    if (!document) return;
+    // Important: ensure pages are saved to the correct document for this file
+    // We uploaded with the absolute file path; documents store that path.
+    // Match by both jobId and filePath so estimate and roof report don't collide.
+    let document = await prisma.document.findFirst({
+      where: {
+        jobId,
+        filePath,
+      },
+    });
+
+    // Fallback to first document (legacy behavior) if exact match not found
+    if (!document) {
+      console.warn(
+        `No document found for job ${jobId} with filePath ${filePath}. Falling back to first document.`
+      );
+      document = await prisma.document.findFirst({ where: { jobId } });
+      if (!document) return;
+    }
 
     for (const page of ocrResult.pages) {
       const extractedContent = {
@@ -765,8 +851,42 @@ export class SmartExtractionService {
           total_pages: ocrResult.pages.length,
           document_type: 'unknown',
           source_file: filePath,
+          page_images: undefined as any,
+        },
+        assets: {
+          pageImages: undefined as any,
         },
       };
+
+      // Attach per-page image paths if available
+      const idx = (page.pageNumber || 1) - 1;
+      const pathsForPage: string[] | undefined =
+        pageImagePaths && pageImagePaths[idx];
+      if (pathsForPage && pathsForPage.length > 0) {
+        const normalizedArray = pathsForPage.map(pth =>
+          pth.startsWith('/uploads/') ? pth : `/uploads/${pth.split('/').pop()}`
+        );
+        (extractedContent.processing_metadata as any).page_images =
+          normalizedArray;
+        (extractedContent.assets as any).pageImages = normalizedArray;
+
+        // Replace any inline markdown image references like (img-0.jpeg) with our saved paths
+        if (typeof page.content === 'string') {
+          let replacementIndex = 0;
+          const mappedContent = page.content.replace(
+            /\((img-\d+\.(?:jpg|jpeg|png))\)/gi,
+            () => {
+              const pathToUse =
+                normalizedArray[
+                  Math.min(replacementIndex, normalizedArray.length - 1)
+                ];
+              replacementIndex++;
+              return `(${pathToUse})`;
+            }
+          );
+          page.content = mappedContent;
+        }
+      }
 
       await prisma.documentPage.upsert({
         where: {
@@ -780,6 +900,7 @@ export class SmartExtractionService {
           rawText: page.content,
           extractedAt: new Date(),
           confidence: page.confidence,
+          imageCount: pathsForPage ? pathsForPage.length : 0,
         },
         create: {
           documentId: document.id,
@@ -789,6 +910,7 @@ export class SmartExtractionService {
           rawText: page.content,
           extractedAt: new Date(),
           confidence: page.confidence,
+          imageCount: pathsForPage ? pathsForPage.length : 0,
         },
       });
     }

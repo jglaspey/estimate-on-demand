@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  RefreshCw,
+  Calculator,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +16,8 @@ import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard';
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
-import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
-
+// import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
+import { EnhancedDocumentViewer } from '@/components/EnhancedDocumentViewer';
 import { OverviewPage } from '@/components/OverviewPage';
 import { StickyFooter } from '@/components/StickyFooter';
 
@@ -71,7 +77,7 @@ interface RoofMeasurements {
   totalRakes?: number;
   totalRidges?: number;
   totalValleys?: number;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 export default function JobDetailPage() {
@@ -88,9 +94,13 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  // const [currentPage, setCurrentPage] = useState(1);
   const [showDemoMode, setShowDemoMode] = useState(false);
-  const [createRuleAnalysisFunction, setCreateRuleAnalysisFunction] = useState<((demoMode: boolean) => RuleAnalysisResult[]) | null>(null);
+  const [isReprocessing, setIsReprocessing] = useState(false);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [createRuleAnalysisFunction, setCreateRuleAnalysisFunction] = useState<
+    ((demoMode: boolean) => RuleAnalysisResult[]) | null
+  >(null);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -162,7 +172,9 @@ export default function JobDetailPage() {
         setRoofMeasurements(measurements);
 
         // Create rule analysis with different data based on demo mode
-        const createRuleAnalysis = (demoMode: boolean): RuleAnalysisResult[] => [
+        const createRuleAnalysis = (
+          demoMode: boolean
+        ): RuleAnalysisResult[] => [
           {
             ruleName: 'ridge_cap',
             status: 'SUPPLEMENT_NEEDED',
@@ -175,19 +187,21 @@ export default function JobDetailPage() {
             variance: demoMode ? '-113 LF' : undefined,
             varianceType: demoMode ? 'shortage' : undefined,
             materialStatus: demoMode ? 'compliant' : undefined,
-            currentSpecification: demoMode ? {
-              code: 'RFG RIDGC',
-              description: 'Hip/Ridge cap - Standard profile',
-              quantity: '6.00 LF',
-              rate: '$42.90/LF',
-              total: '$257.40',
-            } : undefined,
+            currentSpecification: demoMode
+              ? {
+                  code: 'RFG RIDGC',
+                  description: 'Hip/Ridge cap - Standard profile',
+                  quantity: '6.00 LF',
+                  rate: '$42.90/LF',
+                  total: '$257.40',
+                }
+              : undefined,
           },
         ];
 
         // Store the createRuleAnalysis function for later use
         setCreateRuleAnalysisFunction(() => createRuleAnalysis);
-        
+
         // Initialize with demo mode data (this will update when toggle changes)
         const mockRuleAnalysis = createRuleAnalysis(showDemoMode);
 
@@ -341,6 +355,26 @@ export default function JobDetailPage() {
       .reduce((total, rule) => total + rule.costImpact, 0);
   };
 
+  // Simple polling util: wait until job status matches one of the targets
+  async function pollForJobStatus(
+    id: string,
+    targets: Array<'ANALYSIS_READY' | 'COMPLETED'>
+  ): Promise<void> {
+    const timeoutMs = 60_000; // 60s cap
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await fetch(`/api/jobs/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          const status = data?.job?.status;
+          if (targets.includes(status)) return;
+        }
+      } catch {}
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+
   if (loading) {
     return (
       <div className='min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center'>
@@ -420,10 +454,36 @@ export default function JobDetailPage() {
                   <Button
                     variant='outline'
                     size='sm'
-                    className='h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
+                    disabled={isReprocessing}
+                    className={`h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 ${isReprocessing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    onClick={async () => {
+                      setIsReprocessing(true);
+                      try {
+                        const res = await fetch(
+                          `/api/jobs/${jobId}/reprocess`,
+                          { method: 'POST' }
+                        );
+                        if (!res.ok) {
+                          const t = await res.text();
+                          throw new Error(t || 'Failed to queue re-run');
+                        }
+                        // Poll until analysis-ready, then reload data
+                        await pollForJobStatus(jobId, [
+                          'ANALYSIS_READY',
+                          'COMPLETED',
+                        ]);
+                        setReloadVersion(v => v + 1);
+                      } catch (err) {
+                        console.error('Re-run failed', err);
+                      } finally {
+                        setIsReprocessing(false);
+                      }
+                    }}
                   >
-                    <RefreshCw className='h-3.5 w-3.5 mr-1.5' />
-                    Refresh
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 mr-1.5 ${isReprocessing ? 'animate-spin' : ''}`}
+                    />
+                    {isReprocessing ? 'Re-Running…' : 'Re-Run'}
                   </Button>
                   <Button
                     variant='outline'
@@ -504,8 +564,8 @@ export default function JobDetailPage() {
                 variant={showDemoMode ? 'default' : 'outline'}
                 size='sm'
                 className={`h-7 text-xs ml-4 ${
-                  showDemoMode 
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                  showDemoMode
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
                     : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800'
                 }`}
                 onClick={() => setShowDemoMode(!showDemoMode)}
@@ -515,15 +575,38 @@ export default function JobDetailPage() {
             </div>
 
             <div className='flex items-center gap-3'>
-
               <div className='flex items-center gap-2'>
                 <Button
                   variant='outline'
                   size='sm'
-                  className='h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
+                  disabled={isReprocessing}
+                  className={`h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 ${isReprocessing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  onClick={async () => {
+                    setIsReprocessing(true);
+                    try {
+                      const res = await fetch(`/api/jobs/${jobId}/reprocess`, {
+                        method: 'POST',
+                      });
+                      if (!res.ok) {
+                        const t = await res.text();
+                        throw new Error(t || 'Failed to queue re-run');
+                      }
+                      await pollForJobStatus(jobId, [
+                        'ANALYSIS_READY',
+                        'COMPLETED',
+                      ]);
+                      setReloadVersion(v => v + 1);
+                    } catch (err) {
+                      console.error('Re-run failed', err);
+                    } finally {
+                      setIsReprocessing(false);
+                    }
+                  }}
                 >
-                  <RefreshCw className='h-3.5 w-3.5 mr-1.5' />
-                  Refresh
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 mr-1.5 ${isReprocessing ? 'animate-spin' : ''}`}
+                  />
+                  {isReprocessing ? 'Re-Running…' : 'Re-Run'}
                 </Button>
                 <Button
                   variant='outline'
@@ -555,6 +638,45 @@ export default function JobDetailPage() {
               {/* Show enhanced business rule cards for all rules */}
               {ruleAnalysis.length > 0 ? (
                 <div className='space-y-6'>
+                  {/* Measurement Comparison for Ridge Cap */}
+                  {ruleAnalysis[currentRuleIndex]?.ruleName === 'ridge_cap' && (
+                    <div className='px-6 py-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950/20 dark:border-red-800'>
+                      <div className='flex items-center gap-2 mb-3'>
+                        <Calculator className='h-4 w-4 text-red-600 dark:text-red-400' />
+                        <h4 className='text-sm font-medium text-red-900 dark:text-red-100'>
+                          Measurement Comparison
+                        </h4>
+                      </div>
+                      <div className='grid grid-cols-2 gap-4 text-xs'>
+                        <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
+                          <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
+                            From Estimate:
+                          </div>
+                          <div className='space-y-1 text-red-700 dark:text-red-300'>
+                            <div>• Ridge cap: 6.00 LF</div>
+                            <div>• Type: Standard profile ✓</div>
+                            <div>• Rate: $42.90/LF</div>
+                          </div>
+                        </div>
+                        <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
+                          <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
+                            From EagleView:
+                          </div>
+                          <div className='space-y-1 text-red-700 dark:text-red-300'>
+                            <div>• Total: 119 ft</div>
+                            <div>• Ridges: 26 ft, Hips: 93 ft</div>
+                            <div>• Shortage: 113 LF (95% short)</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className='mt-3 p-2 bg-red-200 border border-red-300 rounded text-center dark:bg-red-800 dark:border-red-700'>
+                        <span className='text-sm font-semibold text-red-900 dark:text-red-100'>
+                          💰 Supplement Impact: 113 LF × $4.50 = $508.50
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Enhanced Business Rule Card */}
                   {renderRuleCard(ruleAnalysis[currentRuleIndex])}
                 </div>
@@ -567,13 +689,14 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {/* Right Panel - Interactive Roof Diagram and Evidence */}
-        <div className='w-1/2 bg-zinc-50 dark:bg-zinc-950'>
-          <div className='h-full p-8 pb-24 overflow-auto'>
-            <InteractiveRoofDiagram
+        {/* Right Panel - Document Viewer (PDF / Extracted with fullscreen) */}
+        <div className='w-1/2 bg-zinc-50 dark:bg-zinc-950 flex'>
+          <div className='flex-1 p-8 pb-8 flex flex-col min-h-0'>
+            <EnhancedDocumentViewer
+              jobId={jobId}
               selectedRule={ruleAnalysis[currentRuleIndex]?.ruleName || null}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
+              reloadVersion={reloadVersion}
+              busy={isReprocessing}
             />
           </div>
         </div>

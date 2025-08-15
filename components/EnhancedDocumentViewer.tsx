@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -8,13 +8,12 @@ import {
   Eye,
   Receipt,
   Home,
-  Calculator,
   FileText,
   Image,
-  ToggleLeft,
-  ToggleRight,
   Highlighter,
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -22,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 interface DocumentPage {
   pageNumber: number;
@@ -33,6 +33,7 @@ interface DocumentPage {
     width: number | null;
     height: number | null;
   };
+  images?: string[]; // normalized /uploads paths if present
 }
 
 interface DocumentData {
@@ -47,6 +48,8 @@ interface DocumentData {
 interface EnhancedDocumentViewerProps {
   jobId: string;
   selectedRule: string | null;
+  reloadVersion?: number; // bump to re-fetch
+  busy?: boolean; // external loading state for skeletons
 }
 
 interface DocumentHighlight {
@@ -63,6 +66,8 @@ interface DocumentHighlight {
 export function EnhancedDocumentViewer({
   jobId,
   selectedRule,
+  reloadVersion = 0,
+  busy = false,
 }: EnhancedDocumentViewerProps) {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +75,12 @@ export function EnhancedDocumentViewer({
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<string>('');
   const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('extracted');
-  const [showHighlights, setShowHighlights] = useState(true);
+  const [showHighlights] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Track which rule we already auto-navigated for, so we don't keep forcing the page/tab
+  const [lastAutoRule, setLastAutoRule] = useState<string | null>(null);
+  // Ensure we only set initial doc/page once per mount
+  const hasInitializedRef = useRef(false);
 
   // Fetch documents and their extracted content
   useEffect(() => {
@@ -83,10 +93,7 @@ export function EnhancedDocumentViewer({
         const data = await response.json();
         setDocuments(data.documents);
 
-        // Set the first document as active
-        if (data.documents.length > 0) {
-          setActiveTab(data.documents[0].id);
-        }
+        // Do not set active tab here; defer to initializer effect to pick the estimate
       } catch (error) {
         console.error('Error fetching documents:', error);
       } finally {
@@ -97,7 +104,74 @@ export function EnhancedDocumentViewer({
     if (jobId) {
       fetchDocuments();
     }
-  }, [jobId]);
+  }, [jobId, reloadVersion]);
+  // Initialize default view: Estimate, Extracted, Page 1
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    if (documents.length === 0) return;
+
+    const estimateDoc =
+      documents.find(d => d.fileType === 'estimate') || documents[0];
+
+    setActiveTab(estimateDoc.id);
+    setViewMode('extracted');
+    setCurrentPage(1);
+    // Prevent immediate auto-jump on first render
+    setLastAutoRule(selectedRule);
+    hasInitializedRef.current = true;
+  }, [documents, selectedRule]);
+
+  // Prefetch PDF assets in the background for instant switching
+  useEffect(() => {
+    if (documents.length === 0) return;
+    const pdfUrls = documents
+      .map(d => d.filePath)
+      .filter((u): u is string => Boolean(u));
+
+    if (pdfUrls.length === 0) return;
+
+    // Inject <link rel="prefetch"> tags
+    const links: HTMLLinkElement[] = [];
+    pdfUrls.forEach(url => {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.as = 'document';
+      link.href = url;
+      document.head.appendChild(link);
+      links.push(link);
+    });
+
+    const idle = (cb: () => void) =>
+      (window as any).requestIdleCallback
+        ? (window as any).requestIdleCallback(cb)
+        : setTimeout(cb, 150);
+
+    const abortControllers: AbortController[] = [];
+    idle(() => {
+      pdfUrls.forEach(url => {
+        const ac = new AbortController();
+        abortControllers.push(ac);
+        // Warm HTTP cache; errors are non-fatal
+        fetch(url, { cache: 'force-cache', signal: ac.signal }).catch(() => {});
+      });
+    });
+
+    return () => {
+      links.forEach(l => l.remove());
+      abortControllers.forEach(ac => ac.abort());
+    };
+  }, [documents]);
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    // When tab changes, clamp the page to the new document's range
+    const doc = documents.find(d => d.id === activeTab);
+    if (!doc) {
+      setCurrentPage(1);
+      return;
+    }
+    setCurrentPage(prev => Math.min(Math.max(1, prev), doc.pageCount || 1));
+  }, [activeTab]);
 
   // Get highlights based on the selected rule
   const getHighlights = (rule: string | null): DocumentHighlight[] => {
@@ -195,26 +269,32 @@ export function EnhancedDocumentViewer({
 
   const highlights = getHighlights(selectedRule);
 
-  // Auto-switch to relevant page based on rule
+  // Auto-jump once when a rule changes, but never override user tab/page thereafter
   useEffect(() => {
-    if (selectedRule && highlights.length > 0) {
+    // Only run once per new rule and only after documents are loaded
+    if (!selectedRule || documents.length === 0) return;
+    if (lastAutoRule === selectedRule) return;
+
+    if (highlights.length > 0) {
       const firstHighlight = highlights[0];
-      setCurrentPage(firstHighlight.page);
 
-      // Find the appropriate document
-      const targetDoc = documents.find(doc => {
-        if (firstHighlight.page <= 4 && doc.fileType === 'estimate')
-          return true;
-        if (firstHighlight.page > 4 && doc.fileType === 'roof_report')
-          return true;
-        return false;
-      });
+      // Set page within current tab; if out of range, clamp
+      const activeDoc = documents.find(d => d.id === activeTab) || documents[0];
+      const targetPage = Math.min(
+        Math.max(1, firstHighlight.page),
+        activeDoc?.pageCount || firstHighlight.page
+      );
+      setCurrentPage(targetPage);
 
-      if (targetDoc) {
-        setActiveTab(targetDoc.id);
+      // Only set the tab if none is chosen yet
+      if (!activeTab) {
+        const fallbackDoc = documents[0];
+        setActiveTab((activeDoc || fallbackDoc).id);
       }
     }
-  }, [selectedRule, highlights, documents]);
+
+    setLastAutoRule(selectedRule);
+  }, [selectedRule, documents, highlights, activeTab, lastAutoRule]);
 
   const getDocumentInfo = (doc: DocumentData) => {
     if (doc.fileType === 'estimate') {
@@ -234,18 +314,81 @@ export function EnhancedDocumentViewer({
     }
   };
 
-  // Render extracted text with highlights
+  // Render extracted text with optional markdown and highlights
   const renderExtractedText = (page: DocumentPage) => {
     const text = page.rawText || '';
 
-    if (!showHighlights || !selectedRule) {
+    // Determine highlights for this page up-front
+    const pageHighlights = highlights.filter(h => h.page === page.pageNumber);
+
+    // Lightweight formatter: convert pipe-delimited lines into GFM tables
+    const toMarkdownTables = (input: string): string => {
+      const lines = input.split(/\r?\n/);
+      const output: string[] = [];
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        const pipeCount = (line.match(/\|/g) || []).length;
+        const looksTabular = pipeCount >= 3 && line.includes('|');
+        if (!looksTabular) {
+          output.push(line);
+          i++;
+          continue;
+        }
+
+        // Collect consecutive pipe-heavy lines to form a table block
+        const block: string[] = [];
+        while (i < lines.length) {
+          const l = lines[i];
+          const pc = (l.match(/\|/g) || []).length;
+          if (pc >= 3) {
+            block.push(l);
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        if (block.length > 0) {
+          // Use first line as header; split on pipes and trim cells
+          const split = (s: string) =>
+            s
+              .split('|')
+              .map(c => c.trim())
+              .filter(c => c.length > 0);
+          const headerCells = split(block[0]);
+          if (headerCells.length >= 2) {
+            output.push('');
+            output.push(`| ${headerCells.join(' | ')} |`);
+            output.push(`| ${headerCells.map(() => '---').join(' | ')} |`);
+            for (let r = 1; r < block.length; r++) {
+              const rowCells = split(block[r]);
+              // Pad/truncate to header length for stable table layout
+              const normalized = headerCells.map(
+                (_, idx) => rowCells[idx] ?? ''
+              );
+              output.push(`| ${normalized.join(' | ')} |`);
+            }
+            output.push('');
+            continue;
+          }
+        }
+
+        // Fallback if parsing failed
+        output.push(...block);
+      }
+      return output.join('\n');
+    };
+
+    // Prefer Markdown rendering when there are no page-specific highlights
+    if (!showHighlights || !selectedRule || pageHighlights.length === 0) {
+      const md = toMarkdownTables(text);
       return (
-        <div className='whitespace-pre-wrap font-mono text-sm'>{text}</div>
+        <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
+        </div>
       );
     }
-
-    // Find highlights for this page
-    const pageHighlights = highlights.filter(h => h.page === page.pageNumber);
 
     // Apply highlights to text
     let highlightedText = text;
@@ -263,7 +406,7 @@ export function EnhancedDocumentViewer({
 
     return (
       <div
-        className='whitespace-pre-wrap font-mono text-sm'
+        className='prose prose-zinc dark:prose-invert max-w-none text-sm'
         dangerouslySetInnerHTML={{ __html: highlightedText }}
       />
     );
@@ -296,12 +439,14 @@ export function EnhancedDocumentViewer({
     // Use embed instead of iframe for better PDF rendering
     return (
       <div className='w-full h-full bg-white rounded-lg shadow-sm'>
-        <embed
-          src={`${pdfUrl}#page=${pageNum}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-          type='application/pdf'
-          className='w-full h-full rounded-lg'
-          title={`${doc.fileName} - Page ${pageNum}`}
-        />
+        <div className='w-full h-[calc(100vh-16rem)] sm:h-[calc(100vh-14rem)] lg:h-[calc(100vh-12rem)]'>
+          <embed
+            src={`${pdfUrl}#page=${pageNum}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+            type='application/pdf'
+            className='w-full h-full rounded-lg'
+            title={`${doc.fileName} - Page ${pageNum}`}
+          />
+        </div>
       </div>
     );
   };
@@ -311,7 +456,7 @@ export function EnhancedDocumentViewer({
     p => p.pageNumber === currentPage
   );
 
-  if (loading) {
+  if (loading || busy) {
     return (
       <Card className='h-full'>
         <CardContent className='flex items-center justify-center h-full'>
@@ -327,281 +472,285 @@ export function EnhancedDocumentViewer({
   }
 
   return (
-    <Card className='h-full flex flex-col'>
-      <CardHeader className='pb-4'>
-        <div className='flex items-center justify-between'>
-          <CardTitle className='flex items-center gap-3'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30'>
-              <Eye className='h-4 w-4 text-blue-600 dark:text-blue-400' />
-            </div>
-            <div>
-              <h3 className='text-base font-semibold text-zinc-900 dark:text-zinc-100'>
-                Document Evidence
-              </h3>
-              {selectedRule && highlights.length > 0 && (
-                <p className='text-sm text-zinc-500 dark:text-zinc-400'>
-                  {selectedRule
-                    .replace(/_/g, ' ')
-                    .replace(/\b\w/g, l => l.toUpperCase())}{' '}
-                  •{highlights.length} evidence item
-                  {highlights.length !== 1 ? 's' : ''}
-                </p>
-              )}
-            </div>
-          </CardTitle>
-
-          {/* View Mode Toggle */}
-          <div className='flex items-center gap-2'>
-            <Button
-              variant={viewMode === 'extracted' ? 'default' : 'outline'}
-              size='sm'
-              onClick={() => setViewMode('extracted')}
-              className='h-8'
-            >
-              <FileText className='h-3.5 w-3.5 mr-1.5' />
-              Extracted
-            </Button>
-            <Button
-              variant={viewMode === 'pdf' ? 'default' : 'outline'}
-              size='sm'
-              onClick={() => setViewMode('pdf')}
-              className='h-8'
-            >
-              <Image className='h-3.5 w-3.5 mr-1.5' alt='PDF' />
-              PDF
-            </Button>
-
-            {viewMode === 'extracted' && (
-              <div className='ml-2 flex items-center gap-2'>
-                <span className='text-xs text-zinc-500'>Highlights</span>
-                <button
-                  onClick={() => setShowHighlights(!showHighlights)}
-                  className='p-1'
-                >
-                  {showHighlights ? (
-                    <ToggleRight className='h-5 w-5 text-blue-600' />
-                  ) : (
-                    <ToggleLeft className='h-5 w-5 text-zinc-400' />
-                  )}
-                </button>
+    <>
+      <Card className='h-full flex flex-col'>
+        <CardHeader className='pb-4 flex-shrink-0'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center gap-3'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30'>
+                <Eye className='h-4 w-4 text-blue-600 dark:text-blue-400' />
               </div>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className='p-0 flex-1 flex flex-col overflow-hidden'>
-        {documents.length === 0 ? (
-          <div className='flex items-center justify-center h-full'>
-            <p className='text-zinc-500 dark:text-zinc-400'>
-              No documents available
-            </p>
-          </div>
-        ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className='flex-1 flex flex-col'
-          >
-            {/* Document Tabs */}
-            <div className='px-6 pb-4'>
-              <TabsList className='grid w-full grid-cols-2 h-12'>
-                {documents.map(doc => {
-                  const docInfo = getDocumentInfo(doc);
-                  const DocIcon = docInfo.icon;
-
-                  return (
-                    <TabsTrigger
-                      key={doc.id}
-                      value={doc.id}
-                      className='flex items-center gap-2 h-10 px-4'
-                    >
-                      <div
-                        className={`flex h-6 w-6 items-center justify-center rounded ${docInfo.bgColor}`}
-                      >
-                        <DocIcon className={`h-3.5 w-3.5 ${docInfo.color}`} />
-                      </div>
-                      <span className='text-sm font-medium'>
-                        {docInfo.shortName}
-                      </span>
-                      <Badge variant='outline' className='ml-auto text-xs'>
-                        {doc.pageCount} pages
-                      </Badge>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </div>
-
-            {/* Measurement Comparison for Ridge Cap */}
-            {selectedRule === 'ridge_cap' && viewMode === 'extracted' && (
-              <div className='px-6 py-4 border-y bg-red-50 dark:bg-red-950/20'>
-                <div className='flex items-center gap-2 mb-3'>
-                  <Calculator className='h-4 w-4 text-red-600 dark:text-red-400' />
-                  <h4 className='text-sm font-medium text-red-900 dark:text-red-100'>
-                    Measurement Comparison
-                  </h4>
-                </div>
-                <div className='grid grid-cols-2 gap-4 text-xs'>
-                  <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
-                    <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
-                      From Estimate:
-                    </div>
-                    <div className='space-y-1 text-red-700 dark:text-red-300'>
-                      <div>• Ridge cap: 6.00 LF</div>
-                      <div>• Type: Standard profile ✓</div>
-                      <div>• Rate: $42.90/LF</div>
-                    </div>
-                  </div>
-                  <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
-                    <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
-                      From EagleView:
-                    </div>
-                    <div className='space-y-1 text-red-700 dark:text-red-300'>
-                      <div>• Total: 119 ft</div>
-                      <div>• Ridges: 26 ft, Hips: 93 ft</div>
-                      <div>• Shortage: 113 LF (95% short)</div>
-                    </div>
-                  </div>
-                </div>
-                <div className='mt-3 p-2 bg-red-200 border border-red-300 rounded text-center dark:bg-red-800 dark:border-red-700'>
-                  <span className='text-sm font-semibold text-red-900 dark:text-red-100'>
-                    💰 Supplement Impact: 113 LF × $4.50 = $508.50
-                  </span>
-                </div>
+              <div>
+                <h3 className='text-base font-semibold text-zinc-900 dark:text-zinc-100'>
+                  Document Evidence
+                </h3>
+                {selectedRule && highlights.length > 0 && (
+                  <p className='text-sm text-zinc-500 dark:text-zinc-400'>
+                    {selectedRule
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, l => l.toUpperCase())}{' '}
+                    •{highlights.length} evidence item
+                    {highlights.length !== 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
-            )}
+            </CardTitle>
 
-            {/* Document Content */}
-            {documents.map(doc => (
-              <TabsContent
-                key={doc.id}
-                value={doc.id}
-                className='flex-1 flex flex-col mt-0 overflow-hidden'
+            {/* View Mode Toggle */}
+            <div className='flex items-center gap-2'>
+              <Button
+                variant={viewMode === 'extracted' ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => setViewMode('extracted')}
+                className='h-8'
               >
-                {/* Controls */}
-                <div className='flex items-center justify-between px-6 py-3 border-b bg-zinc-50 dark:bg-zinc-800/50'>
-                  <div className='flex items-center gap-3'>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        setCurrentPage(Math.max(1, currentPage - 1))
-                      }
-                      disabled={currentPage === 1}
-                      className='h-8'
-                    >
-                      <ChevronLeft className='h-4 w-4' />
-                    </Button>
-                    <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
-                      Page {currentPage} of {doc.pageCount}
-                    </span>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        setCurrentPage(Math.min(doc.pageCount, currentPage + 1))
-                      }
-                      disabled={currentPage === doc.pageCount}
-                      className='h-8'
-                    >
-                      <ChevronRight className='h-4 w-4' />
-                    </Button>
+                <FileText className='h-3.5 w-3.5 mr-1.5' />
+                Extracted
+              </Button>
+              <Button
+                variant={viewMode === 'pdf' ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => setViewMode('pdf')}
+                className='h-8'
+              >
+                <Image className='h-3.5 w-3.5 mr-1.5' alt='PDF' />
+                PDF
+              </Button>
 
-                    {highlights.filter(h => h.page === currentPage).length >
-                      0 && (
-                      <>
-                        <Separator orientation='vertical' className='h-4' />
-                        <Badge variant='secondary' className='text-xs'>
-                          <Highlighter className='h-3 w-3 mr-1' />
-                          {
-                            highlights.filter(h => h.page === currentPage)
-                              .length
-                          }{' '}
-                          on this page
-                        </Badge>
-                      </>
-                    )}
+              <Button
+                variant='outline'
+                size='sm'
+                className='h-8 ml-2'
+                onClick={() => setIsFullscreen(true)}
+              >
+                <Eye className='h-3.5 w-3.5 mr-1.5' />
+                Fullscreen
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
 
-                    {activePage && activePage.confidence && (
-                      <>
-                        <Separator orientation='vertical' className='h-4' />
-                        <Badge variant='outline' className='text-xs'>
-                          {Math.round(activePage.confidence * 100)}% confidence
-                        </Badge>
-                      </>
-                    )}
-                  </div>
+        <CardContent className='p-0 flex-1 flex flex-col min-h-0'>
+          {documents.length === 0 ? (
+            <div className='flex items-center justify-center h-full'>
+              <p className='text-zinc-500 dark:text-zinc-400'>
+                No documents available
+              </p>
+            </div>
+          ) : (
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className='flex-1 flex flex-col'
+            >
+              {/* Document Tabs */}
+              <div className='px-6 pb-4'>
+                <TabsList className='grid w-full grid-cols-2 h-12'>
+                  {documents.map(doc => {
+                    const docInfo = getDocumentInfo(doc);
+                    const DocIcon = docInfo.icon;
 
-                  <div className='flex items-center gap-2'>
-                    {viewMode === 'pdf' && (
-                      <>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => setZoom(Math.max(50, zoom - 25))}
-                          disabled={zoom <= 50}
-                          className='h-8'
-                        >
-                          <ZoomOut className='h-4 w-4' />
-                        </Button>
-                        <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 w-12 text-center'>
-                          {zoom}%
-                        </span>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => setZoom(Math.min(200, zoom + 25))}
-                          disabled={zoom >= 200}
-                          className='h-8'
-                        >
-                          <ZoomIn className='h-4 w-4' />
-                        </Button>
-                        <Separator orientation='vertical' className='h-4' />
-                      </>
-                    )}
-                    <Button variant='outline' size='sm' className='h-8'>
-                      <Download className='h-4 w-4' />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Content Viewer */}
-                <div className='flex-1 overflow-auto bg-gray-50 dark:bg-zinc-900/50'>
-                  {viewMode === 'extracted' ? (
-                    <ScrollArea className='h-full p-6'>
-                      {activePage ? (
-                        <div className='max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8'>
-                          {renderExtractedText(activePage)}
-                        </div>
-                      ) : (
-                        <div className='flex items-center justify-center h-full'>
-                          <p className='text-zinc-500 dark:text-zinc-400'>
-                            No content available for this page
-                          </p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  ) : (
-                    <div className='h-full p-6'>
-                      <div
-                        className='h-full mx-auto'
-                        style={{
-                          maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
-                          transform: `scale(${zoom / 100})`,
-                          transformOrigin: 'top center',
-                        }}
+                    return (
+                      <TabsTrigger
+                        key={doc.id}
+                        value={doc.id}
+                        className='flex items-center gap-2 h-10 px-4'
                       >
-                        {renderPDFView(doc, currentPage)}
+                        <div
+                          className={`flex h-6 w-6 items-center justify-center rounded ${docInfo.bgColor}`}
+                        >
+                          <DocIcon className={`h-3.5 w-3.5 ${docInfo.color}`} />
+                        </div>
+                        <span className='text-sm font-medium'>
+                          {docInfo.shortName}
+                        </span>
+                        <Badge variant='outline' className='ml-auto text-xs'>
+                          {doc.pageCount} pages
+                        </Badge>
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </div>
+
+              {/* Document Content */}
+              {documents.map(doc => (
+                <TabsContent
+                  key={doc.id}
+                  value={doc.id}
+                  className='flex-1 flex flex-col mt-0 min-h-0'
+                >
+                  {/* Controls */}
+                  <div className='flex items-center justify-between px-6 py-3 border-b bg-zinc-50 dark:bg-zinc-800/50 flex-shrink-0'>
+                    <div className='flex items-center gap-3'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() =>
+                          setCurrentPage(Math.max(1, currentPage - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className='h-8'
+                      >
+                        <ChevronLeft className='h-4 w-4' />
+                      </Button>
+                      <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+                        Page {currentPage} of {doc.pageCount}
+                      </span>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() =>
+                          setCurrentPage(
+                            Math.min(doc.pageCount, currentPage + 1)
+                          )
+                        }
+                        disabled={currentPage === doc.pageCount}
+                        className='h-8'
+                      >
+                        <ChevronRight className='h-4 w-4' />
+                      </Button>
+
+                      {highlights.filter(h => h.page === currentPage).length >
+                        0 && (
+                        <>
+                          <Separator orientation='vertical' className='h-4' />
+                          <Badge variant='secondary' className='text-xs'>
+                            <Highlighter className='h-3 w-3 mr-1' />
+                            {
+                              highlights.filter(h => h.page === currentPage)
+                                .length
+                            }{' '}
+                            on this page
+                          </Badge>
+                        </>
+                      )}
+
+                      {activePage && activePage.confidence && (
+                        <>
+                          <Separator orientation='vertical' className='h-4' />
+                          <Badge variant='outline' className='text-xs'>
+                            {Math.round(activePage.confidence * 100)}%
+                            confidence
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                      {viewMode === 'pdf' && (
+                        <>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => setZoom(Math.max(50, zoom - 25))}
+                            disabled={zoom <= 50}
+                            className='h-8'
+                          >
+                            <ZoomOut className='h-4 w-4' />
+                          </Button>
+                          <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 w-12 text-center'>
+                            {zoom}%
+                          </span>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => setZoom(Math.min(200, zoom + 25))}
+                            disabled={zoom >= 200}
+                            className='h-8'
+                          >
+                            <ZoomIn className='h-4 w-4' />
+                          </Button>
+                          <Separator orientation='vertical' className='h-4' />
+                        </>
+                      )}
+                      <Button variant='outline' size='sm' className='h-8'>
+                        <Download className='h-4 w-4' />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Content Viewer */}
+                  <div className='flex-1 overflow-auto bg-gray-50 dark:bg-zinc-900/50 min-h-0'>
+                    {viewMode === 'extracted' ? (
+                      <div className='h-full overflow-auto p-6'>
+                        {activePage ? (
+                          <div className='max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
+                            {activePage.images &&
+                            activePage.images.length > 0 ? (
+                              <div className='bg-zinc-50 dark:bg-zinc-900 border-b grid grid-cols-1 gap-2 p-2'>
+                                {activePage.images.map((src, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={src}
+                                    alt={`Page ${currentPage} Image ${idx + 1}`}
+                                    className='w-full h-auto block rounded'
+                                  />
+                                ))}
+                              </div>
+                            ) : null}
+                            <div className='p-8'>
+                              {renderExtractedText(activePage)}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className='flex items-center justify-center h-full'>
+                            <p className='text-zinc-500 dark:text-zinc-400'>
+                              No content available for this page
+                            </p>
+                          </div>
+                        )}
                       </div>
+                    ) : (
+                      <div className='h-full overflow-auto p-6'>
+                        <div
+                          className='mx-auto'
+                          style={{
+                            maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
+                            transform: `scale(${zoom / 100})`,
+                            transformOrigin: 'top center',
+                          }}
+                        >
+                          {renderPDFView(doc, currentPage)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          )}
+        </CardContent>
+      </Card>
+      <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+        <DialogContent className='w-[95vw] h-[90vh] p-0'>
+          <DialogHeader className='px-4 py-2'>
+            <DialogTitle>Document Viewer</DialogTitle>
+          </DialogHeader>
+          <div className='h-[calc(90vh-48px)]'>
+            {activeDocument &&
+              (viewMode === 'extracted' ? (
+                <ScrollArea className='h-full p-6'>
+                  {activePage ? (
+                    <div className='max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8'>
+                      {renderExtractedText(activePage)}
+                    </div>
+                  ) : (
+                    <div className='flex items-center justify-center h-full'>
+                      <p className='text-zinc-500 dark:text-zinc-400'>
+                        No content available for this page
+                      </p>
                     </div>
                   )}
+                </ScrollArea>
+              ) : (
+                <div className='h-full p-4'>
+                  {renderPDFView(activeDocument, currentPage)}
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-  PrismaClient,
-  UserDecision,
-} from '../../../../../src/generated/prisma';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/database/client';
+import { UserDecision } from '@/src/generated/prisma';
 
 export async function GET(
   request: NextRequest,

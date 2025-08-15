@@ -5,6 +5,10 @@ import {
   Building,
   TrendingUp,
   Calendar,
+  MoreHorizontal,
+  Archive,
+  RefreshCw,
+  Link as LinkIcon,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +22,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { JobSummary } from '@/lib/mockData';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface JobsDashboardProps {
   onJobSelect: (jobId: string) => void;
@@ -212,7 +222,7 @@ export function JobsDashboard({
                 <TableHead className='text-center font-medium text-zinc-700 dark:text-zinc-300'>
                   Created
                 </TableHead>
-                <TableHead className='w-[100px] font-medium text-zinc-700 dark:text-zinc-300'>
+                <TableHead className='w-[140px] font-medium text-zinc-700 dark:text-zinc-300'>
                   Action
                 </TableHead>
               </TableRow>
@@ -265,18 +275,58 @@ export function JobsDashboard({
                     </span>
                   </TableCell>
                   <TableCell className='py-4'>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className='h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'
-                      onClick={e => {
-                        e.stopPropagation();
-                        onJobSelect(job.id);
-                      }}
-                    >
-                      <ExternalLink className='h-4 w-4' />
-                      <span className='sr-only'>Open job</span>
-                    </Button>
+                    <div className='flex items-center gap-1 justify-end'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'
+                        onClick={e => {
+                          e.stopPropagation();
+                          onJobSelect(job.id);
+                        }}
+                      >
+                        <ExternalLink className='h-4 w-4' />
+                        <span className='sr-only'>Open job</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            className='h-8 w-8 p-0'
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className='h-4 w-4' />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align='end'>
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation(); /* TODO archive */
+                            }}
+                          >
+                            <Archive className='h-4 w-4 mr-2' /> Archive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation(); /* TODO reprocess */
+                            }}
+                          >
+                            <RefreshCw className='h-4 w-4 mr-2' /> Re-Process
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(
+                                `${location.origin}/share/${job.id}`
+                              );
+                            }}
+                          >
+                            <LinkIcon className='h-4 w-4 mr-2' /> Copy Link
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
