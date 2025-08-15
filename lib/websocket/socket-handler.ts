@@ -1,6 +1,7 @@
+import { Server as HttpServer } from 'http';
+
 import { NextApiRequest } from 'next';
 import { Server as SocketIOServer } from 'socket.io';
-import { Server as HttpServer } from 'http';
 
 interface SocketApiResponse {
   socket?: {
@@ -32,17 +33,18 @@ class WebSocketManager {
 
     if (!res.socket.server.io) {
       console.log('🚀 Initializing WebSocket server...');
-      
+
       const io = new SocketIOServer(res.socket.server as any, {
         path: '/api/socketio',
         addTrailingSlash: false,
         cors: {
-          origin: process.env.NODE_ENV === 'production' 
-            ? process.env.NEXTAUTH_URL 
-            : ["http://localhost:3000", "http://127.0.0.1:3000"],
-          methods: ["GET", "POST"],
-          credentials: true
-        }
+          origin:
+            process.env.NODE_ENV === 'production'
+              ? process.env.NEXTAUTH_URL
+              : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+          methods: ['GET', 'POST'],
+          credentials: true,
+        },
       });
 
       res.socket.server.io = io;
@@ -60,20 +62,20 @@ class WebSocketManager {
   private setupEventHandlers() {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', socket => {
       console.log(`🔌 Client connected: ${socket.id}`);
       this.connectedClients.set(socket.id, socket);
 
       // Handle job subscription
       socket.on('subscribe-job', (data: { jobId: string; userId?: string }) => {
-        const { jobId, userId } = data;
+        const { jobId, userId: _userId } = data;
         socket.join(`job-${jobId}`);
-        
+
         console.log(`📱 Client ${socket.id} subscribed to job ${jobId}`);
-        
+
         // Send acknowledgment
         socket.emit('subscribed', { jobId, timestamp: Date.now() });
-        
+
         // Send current job status if available
         this.sendCurrentJobStatus(socket, jobId);
       });
@@ -91,16 +93,16 @@ class WebSocketManager {
       });
 
       // Handle disconnection
-      socket.on('disconnect', (reason) => {
+      socket.on('disconnect', reason => {
         console.log(`🔌 Client disconnected: ${socket.id} (${reason})`);
         this.connectedClients.delete(socket.id);
       });
 
       // Send welcome message
-      socket.emit('connected', { 
+      socket.emit('connected', {
         message: 'Connected to WebSocket server',
         clientId: socket.id,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     });
   }
@@ -109,10 +111,10 @@ class WebSocketManager {
     try {
       // We'll implement this to fetch current job status
       // For now, just acknowledge the subscription
-      socket.emit('job-status', { 
+      socket.emit('job-status', {
         jobId,
         message: 'Subscribed to job updates',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       console.error(`Failed to send current status for job ${jobId}:`, error);
@@ -122,14 +124,20 @@ class WebSocketManager {
   // Public methods for emitting events
   public emitJobProgress(event: JobProgressEvent) {
     if (!this.io) {
-      console.warn('WebSocket server not initialized, cannot emit job progress');
+      // Silently skip if WebSocket server not initialized - this is normal during development
+      // or when no clients are connected
       return;
     }
 
-    // Emit to all clients subscribed to this job
-    this.io.to(`job-${event.jobId}`).emit('job-progress', event);
-    
-    console.log(`📡 Emitted job progress for ${event.jobId}: ${event.stage} (${event.progress}%)`);
+    try {
+      // Emit to all clients subscribed to this job
+      this.io.to(`job-${event.jobId}`).emit('job-progress', event);
+      console.log(
+        `📡 Emitted job progress for ${event.jobId}: ${event.stage} (${event.progress}%)`
+      );
+    } catch (error) {
+      console.error('Failed to emit job progress:', error);
+    }
   }
 
   public emitJobStatusChange(jobId: string, status: string, message?: string) {
@@ -139,7 +147,7 @@ class WebSocketManager {
       jobId,
       status,
       message: message || `Job status changed to ${status}`,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.io.to(`job-${jobId}`).emit('job-status-change', event);
@@ -154,7 +162,7 @@ class WebSocketManager {
       status: 'completed',
       result,
       message: 'Document processing complete',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.io.to(`job-${jobId}`).emit('job-complete', event);
@@ -169,7 +177,7 @@ class WebSocketManager {
       status: 'failed',
       error,
       message: 'Document processing failed',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.io.to(`job-${jobId}`).emit('job-error', event);
@@ -179,7 +187,7 @@ class WebSocketManager {
   public getConnectionStats() {
     return {
       connectedClients: this.connectedClients.size,
-      isInitialized: !!this.io
+      isInitialized: !!this.io,
     };
   }
 

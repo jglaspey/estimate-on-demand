@@ -2,24 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  Download,
-  Share,
-  RefreshCw,
-  Calculator,
-} from 'lucide-react';
+import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard';
+// import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard'; // Unused - using SimplifiedRidgeCapAnalysis instead
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
+import { SimplifiedRidgeCapAnalysis } from '@/components/SimplifiedRidgeCapAnalysis';
 // import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
 import { EnhancedDocumentViewer } from '@/components/EnhancedDocumentViewer';
 import { OverviewPage } from '@/components/OverviewPage';
-import { StickyFooter } from '@/components/StickyFooter';
+// import { StickyFooter } from '@/components/StickyFooter'; // Removed - no longer using rule navigation
 
 // Types based on our current extraction data structure
 interface JobData {
@@ -36,6 +31,33 @@ interface JobData {
   status: 'uploading' | 'extracting' | 'analyzing' | 'reviewing' | 'complete';
   createdAt: string;
   updatedAt: string;
+}
+
+interface RidgeCapData {
+  estimateQuantity?: string;
+  estimateUnitPrice?: string;
+  estimateTotal?: string;
+  requiredQuantity?: string;
+  ridgeLength?: number;
+  hipLength?: number;
+  variance?: string;
+  varianceAmount?: number;
+  costImpact?: number;
+  confidence?: number;
+  roofType?: string;
+  ridgeCapType?: string;
+  complianceStatus?: 'compliant' | 'non-compliant';
+  lineItemCode?: string;
+  lineItemDescription?: string;
+  complianceText?: string;
+  documentationNote?: string;
+}
+
+interface AnalysisResults {
+  ridgeCap?: RidgeCapData;
+  starterStrip?: any;
+  dripEdge?: any;
+  iceAndWater?: any;
 }
 
 interface RuleAnalysisResult {
@@ -90,17 +112,17 @@ export default function JobDetailPage() {
     useState<RoofMeasurements | null>(null);
   const [ruleAnalysis, setRuleAnalysis] = useState<RuleAnalysisResult[]>([]);
   const [_documents, setDocuments] = useState<DocumentData[]>([]);
-  const [currentRuleIndex, setCurrentRuleIndex] = useState(0);
+  const [analysisResults, setAnalysisResults] =
+    useState<AnalysisResults | null>(null);
+  // Removed manual analysis state - now automatic
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
   // const [currentPage, setCurrentPage] = useState(1);
-  const [showDemoMode, setShowDemoMode] = useState(false);
+  // Demo mode removed - now using real extracted data only
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [reloadVersion, setReloadVersion] = useState(0);
-  const [createRuleAnalysisFunction, setCreateRuleAnalysisFunction] = useState<
-    ((demoMode: boolean) => RuleAnalysisResult[]) | null
-  >(null);
+  // createRuleAnalysisFunction removed - now using real analysis results only
 
   // Fetch job data on mount
   useEffect(() => {
@@ -171,41 +193,9 @@ export default function JobDetailPage() {
         };
         setRoofMeasurements(measurements);
 
-        // Create rule analysis with different data based on demo mode
-        const createRuleAnalysis = (
-          demoMode: boolean
-        ): RuleAnalysisResult[] => [
-          {
-            ruleName: 'ridge_cap',
-            status: 'SUPPLEMENT_NEEDED',
-            confidence: demoMode ? 0.95 : 0.85,
-            reasoning: `Critical shortage detected: Estimate includes only 6 LF of ridge cap while analysis shows 119 ft total needed. Material type (Standard profile) is correct but quantity needs significant adjustment for customer ${transformedJob.customerName}.`,
-            costImpact: demoMode ? 4847.7 : undefined,
-            // In demo mode, provide real data. In live mode, simulate missing extractions
-            estimateQuantity: demoMode ? '6 LF' : undefined,
-            requiredQuantity: demoMode ? '119 LF' : undefined,
-            variance: demoMode ? '-113 LF' : undefined,
-            varianceType: demoMode ? 'shortage' : undefined,
-            materialStatus: demoMode ? 'compliant' : undefined,
-            currentSpecification: demoMode
-              ? {
-                  code: 'RFG RIDGC',
-                  description: 'Hip/Ridge cap - Standard profile',
-                  quantity: '6.00 LF',
-                  rate: '$42.90/LF',
-                  total: '$257.40',
-                }
-              : undefined,
-          },
-        ];
-
-        // Store the createRuleAnalysis function for later use
-        setCreateRuleAnalysisFunction(() => createRuleAnalysis);
-
-        // Initialize with demo mode data (this will update when toggle changes)
-        const mockRuleAnalysis = createRuleAnalysis(showDemoMode);
-
-        setRuleAnalysis(mockRuleAnalysis);
+        // Rule analysis now comes from real extraction results only
+        // Initial empty state - will be populated by loadAnalysisResults
+        setRuleAnalysis([]);
 
         // Mock documents based on job
         const mockDocuments: DocumentData[] = [
@@ -239,15 +229,31 @@ export default function JobDetailPage() {
     if (jobId) {
       fetchJobData();
     }
-  }, [jobId, showDemoMode]);
+  }, [jobId]);
 
-  // Update rule analysis when demo mode changes
+  // Load existing analysis results on mount
   useEffect(() => {
-    if (createRuleAnalysisFunction) {
-      const updatedRuleAnalysis = createRuleAnalysisFunction(showDemoMode);
-      setRuleAnalysis(updatedRuleAnalysis);
+    const loadAnalysisResults = async () => {
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/analyze`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.uiData) {
+            setAnalysisResults(data.uiData);
+            console.log('✅ Loaded existing analysis results:', data.uiData);
+          }
+        }
+      } catch (error) {
+        console.log('No existing analysis results found:', error);
+      }
+    };
+
+    if (jobId) {
+      loadAnalysisResults();
     }
-  }, [showDemoMode, createRuleAnalysisFunction]);
+  }, [jobId]);
+
+  // Manual analysis function removed - analysis now automatic after document extraction
 
   // Map database job status to our interface
   const mapJobStatus = (dbStatus: string): JobData['status'] => {
@@ -255,7 +261,7 @@ export default function JobDetailPage() {
       UPLOADED: 'uploading',
       TEXT_EXTRACTED: 'extracting',
       ANALYZING: 'analyzing',
-      REVIEW: 'reviewing',
+      REVIEWING: 'reviewing',
       COMPLETED: 'complete',
     };
     return statusMap[dbStatus] || 'extracting';
@@ -285,13 +291,7 @@ export default function JobDetailPage() {
     );
   };
 
-  const handlePreviousRule = () => {
-    setCurrentRuleIndex(prev => Math.max(0, prev - 1));
-  };
-
-  const handleNextRule = () => {
-    setCurrentRuleIndex(prev => Math.min(ruleAnalysis.length - 1, prev + 1));
-  };
+  // Rule navigation removed - now showing actual analysis results only
 
   const handleStartReview = () => {
     setIsReviewMode(true);
@@ -307,17 +307,53 @@ export default function JobDetailPage() {
 
     switch (rule.ruleName) {
       case 'ridge_cap':
+        // Use real analysis results or show processing state
+        let ridgeCapData;
+
+        if (analysisResults?.ridgeCap) {
+          // Analysis complete: use real data
+          ridgeCapData = analysisResults.ridgeCap;
+        } else {
+          // Analysis in progress or pending: show processing state
+          ridgeCapData = {
+            estimateQuantity: 'Processing...',
+            estimateUnitPrice: 'Analyzing...',
+            estimateTotal: 'Analyzing...',
+            requiredQuantity: 'Processing...',
+            ridgeLength: 0,
+            hipLength: 0,
+            variance: 'Analysis in progress',
+            varianceAmount: 0,
+            costImpact: 0,
+            confidence: 0,
+            roofType: 'Analyzing document data...',
+            ridgeCapType: 'Analyzing compliance...',
+            complianceStatus: 'compliant' as const,
+            lineItemCode: 'PROCESSING',
+            lineItemDescription:
+              'Automatic analysis in progress - extracting data from documents',
+            complianceText:
+              'Analyzing compliance against ASTM standards with Claude AI',
+            documentationNote:
+              "Automatic analysis is processing this job's documents. Results will appear shortly as the system analyzes document data and applies business rules.",
+          };
+        }
+
         return (
-          <HipRidgeCapCard
+          <SimplifiedRidgeCapAnalysis
             key={rule.ruleName}
-            ruleAnalysis={rule}
-            onDecision={onDecision}
+            ridgeCapData={ridgeCapData}
+            onAddToSupplement={data => {
+              onDecision('accepted', data.notes);
+            }}
+            onSkip={() => {
+              onDecision('rejected', 'Skipped by user');
+            }}
             onJumpToEvidence={(location, type) => {
               // Handle evidence navigation
               // In real implementation, this would scroll to or highlight the evidence
               console.warn('Jump to evidence:', location, type);
             }}
-            showHighlighting={!showDemoMode} // Show highlighting in Live Data mode
           />
         );
       case 'starter_strip':
@@ -349,7 +385,7 @@ export default function JobDetailPage() {
     }
   };
 
-  const getSupplementTotal = () => {
+  const _getSupplementTotal = () => {
     return ruleAnalysis
       .filter(rule => rule.userDecision === 'accepted')
       .reduce((total, rule) => total + rule.costImpact, 0);
@@ -493,6 +529,8 @@ export default function JobDetailPage() {
                     <Share className='h-3.5 w-3.5 mr-1.5' />
                     Share
                   </Button>
+                  {/* Manual analysis removed - now automatic after document extraction */}
+                  {/* Analysis progress removed - now handled automatically */}
                   <Button
                     size='sm'
                     className='h-8 px-3 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900'
@@ -560,18 +598,7 @@ export default function JobDetailPage() {
               <Badge className='bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800'>
                 Review Mode
               </Badge>
-              <Button
-                variant={showDemoMode ? 'default' : 'outline'}
-                size='sm'
-                className={`h-7 text-xs ml-4 ${
-                  showDemoMode
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-                    : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800'
-                }`}
-                onClick={() => setShowDemoMode(!showDemoMode)}
-              >
-                {showDemoMode ? '🟢 Demo Mode' : '🔴 Live Data'}
-              </Button>
+              {/* Demo mode toggle removed - now using real extracted data only */}
             </div>
 
             <div className='flex items-center gap-3'>
@@ -629,56 +656,17 @@ export default function JobDetailPage() {
         </div>
       </header>
 
-      {/* Main Content - Split Screen */}
+      {/* Main Content - Split Screen with 1/3 - 2/3 layout */}
       <main className='h-[calc(100vh-8rem)] flex bg-zinc-50 dark:bg-zinc-950'>
-        {/* Left Panel - Business Rules */}
-        <div className='w-1/2 bg-white border-r border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
+        {/* Left Panel - Business Rules (1/3 width) */}
+        <div className='w-1/3 bg-white border-r border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
           <div className='h-full overflow-auto'>
-            <div className='p-8 pb-24'>
+            <div className='p-6 pb-24'>
               {/* Show enhanced business rule cards for all rules */}
               {ruleAnalysis.length > 0 ? (
-                <div className='space-y-6'>
-                  {/* Measurement Comparison for Ridge Cap */}
-                  {ruleAnalysis[currentRuleIndex]?.ruleName === 'ridge_cap' && (
-                    <div className='px-6 py-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-950/20 dark:border-red-800'>
-                      <div className='flex items-center gap-2 mb-3'>
-                        <Calculator className='h-4 w-4 text-red-600 dark:text-red-400' />
-                        <h4 className='text-sm font-medium text-red-900 dark:text-red-100'>
-                          Measurement Comparison
-                        </h4>
-                      </div>
-                      <div className='grid grid-cols-2 gap-4 text-xs'>
-                        <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
-                          <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
-                            From Estimate:
-                          </div>
-                          <div className='space-y-1 text-red-700 dark:text-red-300'>
-                            <div>• Ridge cap: 6.00 LF</div>
-                            <div>• Type: Standard profile ✓</div>
-                            <div>• Rate: $42.90/LF</div>
-                          </div>
-                        </div>
-                        <div className='p-3 bg-white border border-red-200 rounded dark:bg-red-900/20 dark:border-red-800'>
-                          <div className='font-medium text-red-900 dark:text-red-100 mb-2'>
-                            From EagleView:
-                          </div>
-                          <div className='space-y-1 text-red-700 dark:text-red-300'>
-                            <div>• Total: 119 ft</div>
-                            <div>• Ridges: 26 ft, Hips: 93 ft</div>
-                            <div>• Shortage: 113 LF (95% short)</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className='mt-3 p-2 bg-red-200 border border-red-300 rounded text-center dark:bg-red-800 dark:border-red-700'>
-                        <span className='text-sm font-semibold text-red-900 dark:text-red-100'>
-                          💰 Supplement Impact: 113 LF × $4.50 = $508.50
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enhanced Business Rule Card */}
-                  {renderRuleCard(ruleAnalysis[currentRuleIndex])}
+                <div className='space-y-4'>
+                  {/* Render the current rule card */}
+                  {renderRuleCard(ruleAnalysis[0])}
                 </div>
               ) : (
                 <div className='text-center py-12'>
@@ -689,12 +677,12 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {/* Right Panel - Document Viewer (PDF / Extracted with fullscreen) */}
-        <div className='w-1/2 bg-zinc-50 dark:bg-zinc-950 flex'>
-          <div className='flex-1 p-8 pb-8 flex flex-col min-h-0'>
+        {/* Right Panel - Document Viewer (2/3 width) */}
+        <div className='w-2/3 bg-zinc-50 dark:bg-zinc-950 flex'>
+          <div className='flex-1 p-6 pb-6 flex flex-col min-h-0'>
             <EnhancedDocumentViewer
               jobId={jobId}
-              selectedRule={ruleAnalysis[currentRuleIndex]?.ruleName || null}
+              selectedRule={ruleAnalysis[0]?.ruleName || null}
               reloadVersion={reloadVersion}
               busy={isReprocessing}
             />
@@ -702,18 +690,7 @@ export default function JobDetailPage() {
         </div>
       </main>
 
-      {/* Sticky Footer */}
-      <StickyFooter
-        currentRule={currentRuleIndex}
-        totalRules={ruleAnalysis.length}
-        ruleAnalysis={ruleAnalysis}
-        onPrevious={handlePreviousRule}
-        onNext={handleNextRule}
-        onRuleSelect={index => setCurrentRuleIndex(index)}
-        mode='review'
-        supplementTotal={getSupplementTotal()}
-        originalTotal={jobData?.totalEstimateValue || 0}
-      />
+      {/* Rule navigation footer removed - now showing analysis results directly */}
     </div>
   );
 }

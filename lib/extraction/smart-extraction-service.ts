@@ -1,8 +1,12 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import path from 'path';
 
+import { AnalysisWorker } from '../analysis/analysis-worker';
 import { prisma } from '../database/client';
 import { wsManager } from '../websocket/socket-handler';
+
+import { claudeLineItemExtractor } from './claude-line-item-extractor';
+import { claudeMeasurementExtractor } from './claude-measurement-extractor';
 
 // Mistral SDK not currently used - using direct OCR API calls for better control
 
@@ -135,6 +139,9 @@ export class SmartExtractionService {
           `📖 Processing document ${index + 1}/${filePaths.length}: ${filePath}`
         );
 
+        // Identify document type first
+        const docType = await this.identifyDocumentType(filePath);
+
         // Extract all pages (text + embedded image base64s)
         const fullText = await this.extractAllPagesOCR(filePath);
 
@@ -173,24 +180,31 @@ export class SmartExtractionService {
           pageImagePaths
         );
 
-        // Extract structured data using regex + simple parsing (no AI)
-        const structuredData = this.extractStructuredDataFromText(
-          fullText.fullText
+        // Phase 2a & 2b: Claude-based structured extraction
+        // Fix: Use the correct property 'content' from Mistral OCR pages
+        const structuredData = await this.extractStructuredDataWithClaude(
+          fullText.fullText,
+          fullText.pages.map(p => p.content || ''),
+          docType,
+          jobId,
+          coreInfo
         );
 
         return {
           filePath,
           fullText,
           structuredData,
+          docType,
         };
       });
 
       const results = await Promise.all(extractionPromises);
 
-      // Merge all structured data
-      const mergedData = this.mergeStructuredData(
-        results.map(r => r.structuredData)
-      );
+      // Merge all structured data from Claude extractors
+      const mergedData = this.mergeClaudeExtractionData(results);
+
+      // Save comprehensive extraction to MistralExtraction table
+      await this.saveMistralExtractionRecord(jobId, mergedData, results);
 
       // Update job with detailed data
       await this.updateJobWithDetailedData(jobId, mergedData);
@@ -224,6 +238,84 @@ export class SmartExtractionService {
           documentsProcessed: results.length,
         },
       });
+
+      // PHASE 3: Automatic business rule analysis (no manual trigger needed)
+      console.log(
+        `🔄 PHASE 3: Starting automatic business rule analysis for job ${jobId}`
+      );
+      try {
+        const analysisWorker = new AnalysisWorker({
+          jobId,
+          onProgress: progress => {
+            console.log(
+              `📊 ${progress.ruleName}: ${progress.status} (${progress.progress}%) - ${progress.message}`
+            );
+            // Emit real-time analysis progress
+            wsManager.emitJobProgress({
+              jobId,
+              status: 'ANALYZING',
+              stage: progress.ruleName,
+              progress: 80 + progress.progress * 0.2, // Scale progress from 80-100%
+              message: `Analyzing ${progress.ruleName}: ${progress.message}`,
+              timestamp: Date.now(),
+            });
+          },
+          enableRealTimeUpdates: true,
+        });
+
+        // Run all business rule analyses
+        const analysisResults = await analysisWorker.runAllBusinessRules();
+
+        // Update job status to REVIEWING
+        await prisma.job.update({
+          where: { id: jobId },
+          data: {
+            status: 'REVIEWING',
+            updatedAt: new Date(),
+          },
+        });
+
+        // Emit completion event
+        wsManager.emitJobProgress({
+          jobId,
+          status: 'REVIEWING',
+          stage: 'analysis_complete',
+          progress: 100,
+          message: 'Business rule analysis complete - ready for review',
+          timestamp: Date.now(),
+          extractedSummary: {
+            hasRoofData: !!mergedData.roofingData,
+            pageCount: results.reduce(
+              (sum, r) => sum + r.fullText.pages.length,
+              0
+            ),
+            documentsProcessed: results.length,
+            rulesAnalyzed: Object.values(analysisResults).filter(
+              r => r !== null
+            ).length,
+            supplementsNeeded: Object.values(analysisResults).filter(
+              r => r && r.status === 'SUPPLEMENT_NEEDED'
+            ).length,
+          },
+        });
+
+        console.log(
+          `✅ PHASE 3 completed: Business rule analysis finished for job ${jobId}`
+        );
+      } catch (analysisError) {
+        console.error(`❌ PHASE 3 failed for job ${jobId}:`, analysisError);
+
+        // Don't fail the entire extraction if analysis fails
+        // Just log the error and emit a warning
+        wsManager.emitJobProgress({
+          jobId,
+          status: 'ANALYSIS_READY',
+          stage: 'analysis_warning',
+          progress: 85,
+          message: `Analysis failed: ${analysisError instanceof Error ? analysisError.message : 'Unknown error'}. Manual analysis may be needed.`,
+          timestamp: Date.now(),
+        });
+      }
     } catch (error) {
       console.error(`❌ PHASE 2 failed for job ${jobId}:`, error);
 
@@ -594,7 +686,452 @@ export class SmartExtractionService {
   }
 
   /**
-   * Extract structured data from full text (roof measurements, etc.)
+   * Extract customer-related information from text
+   * Used for validation against Phase 1 extraction
+   */
+  private extractCustomerInfoFromText(text: string): {
+    customerName?: string;
+    propertyAddress?: string;
+  } {
+    const customerInfo: { customerName?: string; propertyAddress?: string } =
+      {};
+
+    try {
+      // Customer name patterns (similar to extractCoreInfoFromText but can have variations)
+      const namePatterns = [
+        /(?:customer|insured|property owner|name):\s*([^\n\r]{2,50})/i,
+        /^([A-Z][a-z]+ [A-Z][a-z]+)\s*$/m,
+        /insured:\s*([^\n\r]{2,50})/i,
+        /property owner:\s*([^\n\r]{2,50})/i,
+      ];
+
+      for (const pattern of namePatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length > 2) {
+          customerInfo.customerName = match[1].trim();
+          break;
+        }
+      }
+
+      // Property address patterns
+      const addressPatterns = [
+        /(?:property address|address|location):\s*([^\n\r]{10,100})/i,
+        /(?:job site|site address):\s*([^\n\r]{10,100})/i,
+        /property:\s*([^\n\r]{10,100})/i,
+      ];
+
+      for (const pattern of addressPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length > 10) {
+          customerInfo.propertyAddress = match[1].trim();
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Customer info extraction error:', error);
+    }
+
+    return customerInfo;
+  }
+
+  /**
+   * Extract claim-related information from text
+   * Used for validation against Phase 1 extraction
+   */
+  private extractClaimInfoFromText(text: string): {
+    insuranceCarrier?: string;
+    claimNumber?: string;
+    policyNumber?: string;
+    dateOfLoss?: string;
+    adjusterName?: string;
+    originalEstimate?: number;
+  } {
+    const claimInfo: {
+      insuranceCarrier?: string;
+      claimNumber?: string;
+      policyNumber?: string;
+      dateOfLoss?: string;
+      adjusterName?: string;
+      originalEstimate?: number;
+    } = {};
+
+    try {
+      // Claim number patterns
+      const claimPatterns = [
+        /(?:claim|claim number|claim #):\s*([A-Z0-9\-]{6,20})/i,
+        /claim\s*#?\s*([A-Z0-9\-]{6,20})/i,
+      ];
+
+      for (const pattern of claimPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length >= 6) {
+          claimInfo.claimNumber = match[1].trim();
+          break;
+        }
+      }
+
+      // Policy number patterns
+      const policyPatterns = [
+        /(?:policy|policy number|policy #):\s*([A-Z0-9\-]{6,20})/i,
+        /policy\s*#?\s*([A-Z0-9\-]{6,20})/i,
+      ];
+
+      for (const pattern of policyPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length >= 6) {
+          claimInfo.policyNumber = match[1].trim();
+          break;
+        }
+      }
+
+      // Insurance carrier patterns
+      const carrierPatterns = [
+        /(?:carrier|insurance|company):\s*([A-Za-z\s&]{3,40})/i,
+        /insured by:\s*([A-Za-z\s&]{3,40})/i,
+      ];
+
+      for (const pattern of carrierPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length > 3) {
+          claimInfo.insuranceCarrier = match[1].trim();
+          break;
+        }
+      }
+
+      // Date of loss patterns
+      const datePatterns = [
+        /(?:date of loss|loss date|incident date):\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+        /loss:\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i,
+      ];
+
+      for (const pattern of datePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          claimInfo.dateOfLoss = match[1].trim();
+          break;
+        }
+      }
+
+      // Adjuster name patterns
+      const adjusterPatterns = [
+        /(?:adjuster|claim rep|representative):\s*([A-Za-z\s]{2,40})/i,
+        /adjuster:\s*([A-Za-z\s]{2,40})/i,
+      ];
+
+      for (const pattern of adjusterPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1].trim().length > 2) {
+          claimInfo.adjusterName = match[1].trim();
+          break;
+        }
+      }
+
+      // Original estimate patterns
+      const estimatePatterns = [
+        /(?:total|estimate|amount):\s*\$?([\d,]+\.?\d*)/i,
+        /grand total:\s*\$?([\d,]+\.?\d*)/i,
+      ];
+
+      for (const pattern of estimatePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const amount = parseFloat(match[1].replace(/,/g, ''));
+          if (!isNaN(amount) && amount > 100) {
+            claimInfo.originalEstimate = amount;
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Claim info extraction error:', error);
+    }
+
+    return claimInfo;
+  }
+
+  /**
+   * Validate extraction results between Phase 1 and Phase 2
+   * Returns merged data with confidence flags
+   */
+  private validateExtractionResults(
+    phase1CoreInfo: CoreInfo,
+    phase2CustomerInfo: { customerName?: string; propertyAddress?: string },
+    phase2ClaimInfo: {
+      insuranceCarrier?: string;
+      claimNumber?: string;
+      policyNumber?: string;
+      dateOfLoss?: string;
+      adjusterName?: string;
+      originalEstimate?: number;
+    }
+  ): {
+    customerInfo: {
+      customerName?: string;
+      propertyAddress?: string;
+      _confidence?: string;
+    };
+    claimInfo: {
+      insuranceCarrier?: string;
+      claimNumber?: string;
+      policyNumber?: string;
+      dateOfLoss?: string;
+      adjusterName?: string;
+      originalEstimate?: number;
+      _confidence?: string;
+    };
+    validationSummary: {
+      agreements: number;
+      disagreements: number;
+      phase1Only: number;
+      phase2Only: number;
+    };
+  } {
+    const validationSummary = {
+      agreements: 0,
+      disagreements: 0,
+      phase1Only: 0,
+      phase2Only: 0,
+    };
+
+    // Customer Info Validation
+    const customerInfo: any = {};
+
+    // Customer Name
+    if (phase1CoreInfo.customerName && phase2CustomerInfo.customerName) {
+      if (phase1CoreInfo.customerName === phase2CustomerInfo.customerName) {
+        customerInfo.customerName = phase1CoreInfo.customerName;
+        validationSummary.agreements++;
+      } else {
+        customerInfo.customerName = `${phase1CoreInfo.customerName}*`;
+        customerInfo._confidence = `Customer name disagreement: Phase1="${phase1CoreInfo.customerName}" Phase2="${phase2CustomerInfo.customerName}"`;
+        validationSummary.disagreements++;
+      }
+    } else if (phase1CoreInfo.customerName) {
+      customerInfo.customerName = phase1CoreInfo.customerName;
+      validationSummary.phase1Only++;
+    } else if (phase2CustomerInfo.customerName) {
+      customerInfo.customerName = `${phase2CustomerInfo.customerName}*`;
+      customerInfo._confidence =
+        'Customer name found only in Phase 2, needs manual verification';
+      validationSummary.phase2Only++;
+    }
+
+    // Property Address
+    if (phase1CoreInfo.propertyAddress && phase2CustomerInfo.propertyAddress) {
+      if (
+        phase1CoreInfo.propertyAddress === phase2CustomerInfo.propertyAddress
+      ) {
+        customerInfo.propertyAddress = phase1CoreInfo.propertyAddress;
+        validationSummary.agreements++;
+      } else {
+        customerInfo.propertyAddress = `${phase1CoreInfo.propertyAddress}*`;
+        customerInfo._confidence =
+          (customerInfo._confidence || '') +
+          ` Property address disagreement: Phase1="${phase1CoreInfo.propertyAddress}" Phase2="${phase2CustomerInfo.propertyAddress}"`;
+        validationSummary.disagreements++;
+      }
+    } else if (phase1CoreInfo.propertyAddress) {
+      customerInfo.propertyAddress = phase1CoreInfo.propertyAddress;
+      validationSummary.phase1Only++;
+    } else if (phase2CustomerInfo.propertyAddress) {
+      customerInfo.propertyAddress = `${phase2CustomerInfo.propertyAddress}*`;
+      customerInfo._confidence =
+        (customerInfo._confidence || '') +
+        ' Property address found only in Phase 2, needs manual verification';
+      validationSummary.phase2Only++;
+    }
+
+    // Claim Info Validation (similar pattern for all claim fields)
+    const claimInfo: any = {};
+
+    // Helper function to validate field
+    const validateField = (
+      fieldName: string,
+      phase1Value: any,
+      phase2Value: any
+    ) => {
+      if (phase1Value && phase2Value) {
+        if (phase1Value === phase2Value) {
+          claimInfo[fieldName] = phase1Value;
+          validationSummary.agreements++;
+        } else {
+          claimInfo[fieldName] = `${phase1Value}*`;
+          claimInfo._confidence =
+            (claimInfo._confidence || '') +
+            ` ${fieldName} disagreement: Phase1="${phase1Value}" Phase2="${phase2Value}"`;
+          validationSummary.disagreements++;
+        }
+      } else if (phase1Value) {
+        claimInfo[fieldName] = phase1Value;
+        validationSummary.phase1Only++;
+      } else if (phase2Value) {
+        claimInfo[fieldName] = `${phase2Value}*`;
+        claimInfo._confidence =
+          (claimInfo._confidence || '') +
+          ` ${fieldName} found only in Phase 2, needs manual verification`;
+        validationSummary.phase2Only++;
+      }
+    };
+
+    validateField(
+      'insuranceCarrier',
+      phase1CoreInfo.insuranceCarrier,
+      phase2ClaimInfo.insuranceCarrier
+    );
+    validateField(
+      'claimNumber',
+      phase1CoreInfo.claimNumber,
+      phase2ClaimInfo.claimNumber
+    );
+    validateField(
+      'policyNumber',
+      phase1CoreInfo.policyNumber,
+      phase2ClaimInfo.policyNumber
+    );
+    validateField(
+      'dateOfLoss',
+      phase1CoreInfo.dateOfLoss,
+      phase2ClaimInfo.dateOfLoss
+    );
+    validateField(
+      'adjusterName',
+      phase1CoreInfo.adjusterName,
+      phase2ClaimInfo.adjusterName
+    );
+    validateField(
+      'originalEstimate',
+      phase1CoreInfo.originalEstimate,
+      phase2ClaimInfo.originalEstimate
+    );
+
+    return {
+      customerInfo,
+      claimInfo,
+      validationSummary,
+    };
+  }
+
+  /**
+   * Phase 2a & 2b: Extract structured data using Claude extractors
+   */
+  private async extractStructuredDataWithClaude(
+    fullText: string,
+    pageTexts: string[],
+    docType: DocumentTypeResult,
+    jobId: string,
+    phase1CoreInfo: CoreInfo
+  ): Promise<any> {
+    console.log(`🧠 Claude extraction for ${docType.type} (job ${jobId})`);
+
+    try {
+      let lineItems: any[] = [];
+      let roofMeasurements: any = {};
+      let roofType: any = {};
+
+      if (docType.type === 'estimate') {
+        // Phase 2a: Extract line items from estimate
+        console.log('  📋 Extracting line items from estimate...');
+        const lineItemResult = await claudeLineItemExtractor.extractLineItems(
+          fullText,
+          pageTexts,
+          jobId
+        );
+
+        lineItems = lineItemResult.lineItems;
+        roofType = lineItemResult.roofType;
+
+        console.log(
+          `  ✅ Found ${lineItems.length} line items, ${lineItemResult.ridgeCapItems.length} ridge cap items`
+        );
+        console.log(
+          `  🏠 Roof type: ${roofType.roofType} (${Math.round(roofType.confidence * 100)}% confidence)`
+        );
+      }
+
+      if (docType.type === 'roof_report') {
+        // Phase 2b: Extract measurements from roof report
+        console.log('  📏 Extracting measurements from roof report...');
+        const measurementResult =
+          await claudeMeasurementExtractor.extractMeasurements(
+            fullText,
+            pageTexts,
+            jobId
+          );
+
+        roofMeasurements = measurementResult.measurements;
+
+        console.log(
+          `  ✅ Ridge: ${roofMeasurements.ridgeLength || 'N/A'} LF, Hip: ${roofMeasurements.hipLength || 'N/A'} LF`
+        );
+
+        if (measurementResult.warnings.length > 0) {
+          console.warn(
+            '  ⚠️ Measurement warnings:',
+            measurementResult.warnings
+          );
+        }
+      }
+
+      // Return structured data in format expected by the system
+      return {
+        documentType: docType.type,
+        lineItems,
+        roofMeasurements,
+        roofType,
+        // Legacy fields for compatibility
+        classification: {
+          type: docType.type,
+          confidence: docType.confidence,
+          reasoning: docType.reasoning,
+        },
+        roofingData: docType.type === 'roof_report' ? roofMeasurements : null,
+      };
+
+      // Phase 2 Validation: Cross-check extraction results
+      console.log(
+        `🔍 Validating Phase 2 extraction against Phase 1 for job ${jobId}`
+      );
+
+      // Extract customer and claim info from full text for validation
+      const phase2CustomerInfo = this.extractCustomerInfoFromText(fullText);
+      const phase2ClaimInfo = this.extractClaimInfoFromText(fullText);
+
+      // Validate and merge results
+      const validation = this.validateExtractionResults(
+        phase1CoreInfo,
+        phase2CustomerInfo,
+        phase2ClaimInfo
+      );
+
+      // Add validation results to structured data
+      structuredData.customerInfo = validation.customerInfo;
+      structuredData.claimInfo = validation.claimInfo;
+      structuredData.validationSummary = validation.validationSummary;
+
+      // Log validation results
+      const { agreements, disagreements, phase1Only, phase2Only } =
+        validation.validationSummary;
+      console.log(
+        `📊 Validation Summary: ${agreements} agreements, ${disagreements} disagreements, ${phase1Only} Phase1-only, ${phase2Only} Phase2-only`
+      );
+
+      if (disagreements > 0) {
+        console.warn(
+          `⚠️ Found ${disagreements} field disagreements - check asterisked (*) fields for manual verification`
+        );
+      }
+
+      return structuredData;
+    } catch (error) {
+      console.error(`❌ Claude extraction failed for ${docType.type}:`, error);
+
+      // Fall back to simple extraction
+      return this.extractStructuredDataFromText(fullText);
+    }
+  }
+
+  /**
+   * Extract structured data from full text (roof measurements, etc.) - FALLBACK
    */
   private extractStructuredDataFromText(text: string): {
     roofingData?: DetailedRoofingData;
@@ -917,7 +1454,168 @@ export class SmartExtractionService {
   }
 
   /**
-   * Merge structured data from multiple documents
+   * Merge Claude extraction data from multiple documents
+   */
+  private mergeClaudeExtractionData(results: any[]): any {
+    const allLineItems: any[] = [];
+    let roofMeasurements: any = {};
+    let roofType: any = {};
+    let estimateDoc: any = null;
+    let roofReportDoc: any = null;
+
+    // Separate and merge data by document type
+    for (const result of results) {
+      const data = result.structuredData;
+
+      if (data.documentType === 'estimate') {
+        estimateDoc = result;
+        allLineItems.push(...(data.lineItems || []));
+        if (data.roofType) roofType = data.roofType;
+      }
+
+      if (data.documentType === 'roof_report') {
+        roofReportDoc = result;
+        if (data.roofMeasurements) roofMeasurements = data.roofMeasurements;
+      }
+    }
+
+    // Find ridge cap items specifically
+    const ridgeCapItems = allLineItems.filter(item => item.isRidgeCapItem);
+
+    console.log(
+      `🔗 Merged: ${allLineItems.length} total items, ${ridgeCapItems.length} ridge cap items`
+    );
+
+    return {
+      // Core extraction results
+      lineItems: allLineItems,
+      roofMeasurements,
+      roofType,
+      ridgeCapItems,
+
+      // Document metadata
+      estimateDoc: estimateDoc?.docType,
+      roofReportDoc: roofReportDoc?.docType,
+      documentsProcessed: results.length,
+
+      // Legacy compatibility
+      roofingData: roofMeasurements,
+      lineItemCount: allLineItems.length,
+
+      // Merged customer/claim info from first estimate doc
+      customerInfo: estimateDoc?.structuredData?.customerInfo,
+      claimInfo: estimateDoc?.structuredData?.claimInfo,
+    };
+  }
+
+  /**
+   * Save extraction results to MistralExtraction table
+   */
+  private async saveMistralExtractionRecord(
+    jobId: string,
+    mergedData: any,
+    results: any[]
+  ): Promise<void> {
+    try {
+      // Create comprehensive extractedData JSON for database
+      const extractedData = {
+        // Main extraction results (format expected by UI)
+        lineItems: mergedData.lineItems,
+        roofMeasurements: mergedData.roofMeasurements,
+        roofType: mergedData.roofType,
+        ridgeCapItems: mergedData.ridgeCapItems,
+
+        // Metadata
+        extractionMetadata: {
+          documentsProcessed: results.length,
+          extractionMethod: 'claude-hybrid',
+          timestamp: new Date().toISOString(),
+          costs: {
+            totalCost: results.reduce(
+              (sum, r) => sum + (r.structuredData.cost || 0),
+              0
+            ),
+            lineItemExtractionCost: 0, // Will be populated by individual extractors
+            measurementExtractionCost: 0,
+          },
+        },
+
+        // Document details
+        documents: results.map(r => ({
+          filePath: r.filePath,
+          documentType: r.docType?.type,
+          confidence: r.docType?.confidence,
+          pageCount: r.fullText?.pages?.length || 0,
+        })),
+      };
+
+      await prisma.mistralExtraction.create({
+        data: {
+          jobId,
+          extractedData: extractedData as any,
+          extractedAt: new Date(),
+          confidence: this.calculateOverallConfidence(mergedData),
+          documentType: this.getDominantDocumentType(results),
+          pageCount: results.reduce(
+            (sum, r) => sum + (r.fullText?.pages?.length || 0),
+            0
+          ),
+          customerName: mergedData.customerInfo?.name,
+          claimNumber: mergedData.claimInfo?.claimNumber,
+          mistralModel: 'claude-3-5-haiku-hybrid',
+          cost: extractedData.extractionMetadata.costs.totalCost,
+          success: true,
+        },
+      });
+
+      console.log(`💾 Saved MistralExtraction record for job ${jobId}`);
+    } catch (error) {
+      console.error(`❌ Failed to save MistralExtraction record:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate overall confidence from extraction results
+   */
+  private calculateOverallConfidence(mergedData: any): number {
+    const confidences: number[] = [];
+
+    if (mergedData.roofType?.confidence) {
+      confidences.push(mergedData.roofType.confidence);
+    }
+
+    if (mergedData.roofMeasurements?.confidence) {
+      confidences.push(mergedData.roofMeasurements.confidence);
+    }
+
+    if (mergedData.lineItems?.length > 0) {
+      const lineItemConfidence =
+        mergedData.lineItems.reduce(
+          (sum: number, item: any) => sum + (item.confidence || 0.8),
+          0
+        ) / mergedData.lineItems.length;
+      confidences.push(lineItemConfidence);
+    }
+
+    return confidences.length > 0
+      ? confidences.reduce((sum, conf) => sum + conf, 0) / confidences.length
+      : 0.8;
+  }
+
+  /**
+   * Determine dominant document type
+   */
+  private getDominantDocumentType(results: any[]): string | null {
+    const types = results.map(r => r.docType?.type).filter(Boolean);
+
+    if (types.includes('estimate')) return 'estimate';
+    if (types.includes('roof_report')) return 'roof_report';
+    return types[0] || null;
+  }
+
+  /**
+   * Merge structured data from multiple documents (LEGACY - for fallback)
    */
   private mergeStructuredData(dataArray: any[]): any {
     const merged: any = {};

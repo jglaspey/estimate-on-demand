@@ -8,6 +8,8 @@ export async function GET(
 ) {
   try {
     const { jobId } = await params;
+    console.log(`🔍 Fetching job details for: ${jobId}`);
+
     const job = await prisma.job.findUnique({
       where: { id: jobId },
       include: {
@@ -36,14 +38,26 @@ export async function GET(
     });
 
     if (!job) {
+      console.log(`❌ Job not found: ${jobId}`);
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
+    console.log(
+      `✅ Job found: ${job.customerName || 'Unknown'} (${job.documents.length} docs)`
+    );
     return NextResponse.json({ job });
   } catch (error) {
-    console.error('Error fetching job details:', error);
+    console.error('❌ Error fetching job details:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      jobId: (await params).jobId,
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch job details' },
+      {
+        error: 'Failed to fetch job details',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
