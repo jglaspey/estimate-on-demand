@@ -1,12 +1,25 @@
-import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  // WebSocket upgrade is handled by the socket.io server
-  // This route exists for proper WebSocket initialization in Next.js App Router
+import { wsServer } from '@/lib/websocket/server';
 
-  if (request.headers.get('upgrade') !== 'websocket') {
-    return new Response('Expected Upgrade: websocket', { status: 426 });
+export async function GET() {
+  try {
+    // WebSocket server is initialized via the custom server.js
+    // This endpoint provides status and health check for the WebSocket server
+
+    const stats = wsServer.getConnectionStats();
+
+    return NextResponse.json({
+      message: 'WebSocket server status',
+      stats,
+      timestamp: Date.now(),
+      initialized: !!wsServer.getServer(),
+    });
+  } catch (error) {
+    console.error('WebSocket endpoint error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get WebSocket server status' },
+      { status: 500 }
+    );
   }
-
-  return new Response('WebSocket endpoint', { status: 200 });
 }
