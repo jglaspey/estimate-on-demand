@@ -1,6 +1,12 @@
 // Database to UI Data Mapping for Ridge Cap Analysis
 // Maps extraction results from database to RidgeCapData interface expected by UI components
 
+import {
+  safeSubtract,
+  safeMultiply,
+  formatNumber,
+} from './utils/number-precision';
+
 interface DatabaseExtractionResult {
   // Current database job structure
   id: string;
@@ -16,7 +22,7 @@ interface DatabaseExtractionResult {
   status: string;
   uploadedAt: string;
   updatedAt: string;
-  
+
   // Roof measurements from extraction
   roofSquares?: number;
   roofSlope?: string;
@@ -25,7 +31,7 @@ interface DatabaseExtractionResult {
   rakeLength?: number;
   ridgeHipLength?: number;
   valleyLength?: number;
-  
+
   // Extraction results from database
   extractedLineItems?: LineItem[];
   mistralExtractions?: MistralExtraction[];
@@ -125,182 +131,244 @@ export function mapDatabaseToRidgeCapData(
   let ridgeCapLineItem: Record<string, unknown> | undefined;
   let roofTypeData: Record<string, unknown> | null = null;
   let roofMeasurements: Record<string, unknown> | null = null;
-  
+
   if (dbJob.mistralExtractions && dbJob.mistralExtractions.length > 0) {
     const latestExtraction = dbJob.mistralExtractions[0];
-    const extractedData = latestExtraction.extractedData || latestExtraction.extractedFields;
-    
+    const extractedData =
+      latestExtraction.extractedData || latestExtraction.extractedFields;
+
     // Look for Claude-extracted ridge cap items (new format)
-    if (extractedData && extractedData.ridgeCapItems && extractedData.ridgeCapItems.length > 0) {
+    if (
+      extractedData &&
+      extractedData.ridgeCapItems &&
+      extractedData.ridgeCapItems.length > 0
+    ) {
       ridgeCapLineItem = extractedData.ridgeCapItems[0]; // Use primary ridge cap item
     }
-    
+
     // Get roof type from Claude extraction
     if (extractedData && extractedData.roofType) {
       roofTypeData = extractedData.roofType;
     }
-    
+
     // Get roof measurements from Claude extraction
     if (extractedData && extractedData.roofMeasurements) {
       roofMeasurements = extractedData.roofMeasurements;
     }
-    
+
     // Fallback: Look for ridge cap in general line items (legacy format)
     if (!ridgeCapLineItem && extractedData && extractedData.lineItems) {
-      ridgeCapLineItem = extractedData.lineItems.find((item: Record<string, unknown>) => 
-        item.code?.includes('RIDG') || 
-        item.description?.toLowerCase().includes('ridge') ||
-        item.description?.toLowerCase().includes('hip')
+      ridgeCapLineItem = extractedData.lineItems.find(
+        (item: Record<string, unknown>) =>
+          item.code?.includes('RIDG') ||
+          item.description?.toLowerCase().includes('ridge') ||
+          item.description?.toLowerCase().includes('hip')
       );
     }
   }
-  
+
   // Final fallback to manually provided extracted line items
   if (!ridgeCapLineItem) {
-    ridgeCapLineItem = dbJob.extractedLineItems?.find(item => 
-      item.code?.includes('RIDG') || 
-      item.description?.toLowerCase().includes('ridge') ||
-      item.description?.toLowerCase().includes('hip')
+    ridgeCapLineItem = dbJob.extractedLineItems?.find(
+      item =>
+        item.code?.includes('RIDG') ||
+        item.description?.toLowerCase().includes('ridge') ||
+        item.description?.toLowerCase().includes('hip')
     );
   }
 
   // Extract roof measurements from Claude extractions (prioritize new format)
   let ridgeLength = 26; // Default fallback
   let hipLength = 93; // Default fallback
-  
+
   // Priority 1: Claude measurement extraction results
   if (roofMeasurements) {
     ridgeLength = roofMeasurements.ridgeLength || ridgeLength;
     hipLength = roofMeasurements.hipLength || hipLength;
-    
+
     // If we have total but not components, calculate split
-    if (roofMeasurements.totalRidgeHip && (!roofMeasurements.ridgeLength || !roofMeasurements.hipLength)) {
+    if (
+      roofMeasurements.totalRidgeHip &&
+      (!roofMeasurements.ridgeLength || !roofMeasurements.hipLength)
+    ) {
       const totalLength = roofMeasurements.totalRidgeHip;
       ridgeLength = Math.round(totalLength * 0.218); // ~26/119 ratio from mock data
       hipLength = totalLength - ridgeLength;
     }
   }
-  
+
   // Priority 2: Legacy extraction format
   else if (dbJob.mistralExtractions && dbJob.mistralExtractions.length > 0) {
     const latestExtraction = dbJob.mistralExtractions[0];
-    const extractedData = latestExtraction.extractedData || latestExtraction.extractedFields;
+    const extractedData =
+      latestExtraction.extractedData || latestExtraction.extractedFields;
     if (extractedData?.roofMeasurements) {
       ridgeLength = extractedData.roofMeasurements.ridgeLength || ridgeLength;
       hipLength = extractedData.roofMeasurements.hipLength || hipLength;
     }
   }
-  
+
   // Priority 3: Job-level measurements if available
   if (dbJob.ridgeHipLength && !roofMeasurements) {
     const totalLength = dbJob.ridgeHipLength;
     ridgeLength = Math.round(totalLength * 0.218); // ~26/119 ratio
     hipLength = totalLength - ridgeLength;
   }
-  
+
   const totalRequiredLF = ridgeLength + hipLength;
 
   // Extract current estimate quantities (prioritize Claude extraction format)
   let estimateQuantity: string;
   let estimateQtyNumber: number;
   let unitPrice: number;
-  
+
   if (ridgeCapLineItem && ridgeCapLineItem.quantity) {
     // Claude extraction format
-    if (typeof ridgeCapLineItem.quantity === 'object' && ridgeCapLineItem.quantity.value) {
+    if (
+      typeof ridgeCapLineItem.quantity === 'object' &&
+      ridgeCapLineItem.quantity.value
+    ) {
       estimateQtyNumber = ridgeCapLineItem.quantity.value;
       estimateQuantity = `${estimateQtyNumber} ${ridgeCapLineItem.quantity.unit || 'LF'}`;
     } else {
       // Legacy string format
       estimateQuantity = ridgeCapLineItem.quantity.toString();
-      estimateQtyNumber = parseFloat(estimateQuantity.replace(/[^\d.]/g, '') || '6');
+      estimateQtyNumber = parseFloat(
+        estimateQuantity.replace(/[^\d.]/g, '') || '6'
+      );
     }
-    
-    unitPrice = ridgeCapLineItem.unitPrice || parseFloat(ridgeCapLineItem.rate?.replace(/[^\d.]/g, '') || '42.90');
+
+    unitPrice =
+      ridgeCapLineItem.unitPrice ||
+      parseFloat(ridgeCapLineItem.rate?.replace(/[^\d.]/g, '') || '42.90');
   } else {
     // Use rule analysis or defaults
     estimateQuantity = ruleAnalysis?.estimateQuantity || '6 LF';
-    estimateQtyNumber = parseFloat(estimateQuantity.replace(/[^\d.]/g, '') || '6');
-    unitPrice = parseFloat(ruleAnalysis?.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '42.90');
+    estimateQtyNumber = parseFloat(
+      estimateQuantity.replace(/[^\d.]/g, '') || '6'
+    );
+    unitPrice = parseFloat(
+      ruleAnalysis?.currentSpecification?.rate?.replace(/[^\d.]/g, '') ||
+        '42.90'
+    );
   }
-  
-  // Calculate variance
-  const varianceAmount = estimateQtyNumber - totalRequiredLF;
-  const variance = varianceAmount >= 0 ? `+${varianceAmount} LF` : `${varianceAmount} LF`;
+
+  // Calculate variance with precision handling
+  const varianceAmount = safeSubtract(estimateQtyNumber, totalRequiredLF);
+  const variance =
+    varianceAmount >= 0
+      ? `+${formatNumber(varianceAmount)} LF`
+      : `${formatNumber(varianceAmount)} LF`;
 
   // Determine roof type (prioritize Claude extraction)
   let roofType = 'Unknown';
-  
+
   if (roofTypeData && roofTypeData.roofType) {
     // Claude extraction format
-    roofType = roofTypeData.roofType === 'laminated' ? 'Laminated' : 
-               roofTypeData.roofType === '3-tab' ? '3-Tab' : 
-               'Unknown';
+    roofType =
+      roofTypeData.roofType === 'laminated'
+        ? 'Laminated'
+        : roofTypeData.roofType === '3-tab'
+          ? '3-Tab'
+          : 'Unknown';
   } else {
     // Fallback to legacy line item analysis
-    const shingleLineItem = dbJob.extractedLineItems?.find(item => 
-      item.description?.toLowerCase().includes('shingle') ||
-      item.description?.toLowerCase().includes('comp') ||
-      item.description?.toLowerCase().includes('laminate')
+    const shingleLineItem = dbJob.extractedLineItems?.find(
+      item =>
+        item.description?.toLowerCase().includes('shingle') ||
+        item.description?.toLowerCase().includes('comp') ||
+        item.description?.toLowerCase().includes('laminate')
     );
-    
-    roofType = shingleLineItem?.description?.toLowerCase().includes('laminate') ? 'Laminated' : 'Unknown';
+
+    roofType = shingleLineItem?.description?.toLowerCase().includes('laminate')
+      ? 'Laminated'
+      : 'Unknown';
   }
-  
+
   // Determine ridge cap type (prioritize Claude extraction)
   let ridgeCapType = 'Unknown';
-  
+
   if (ridgeCapLineItem) {
     if (ridgeCapLineItem.ridgeCapQuality) {
       // Claude extraction format
-      ridgeCapType = ridgeCapLineItem.ridgeCapQuality === 'purpose-built' ? 'Purpose-built' :
-                     ridgeCapLineItem.ridgeCapQuality === 'high-profile' ? 'High-profile' :
-                     ridgeCapLineItem.ridgeCapQuality === 'cut-from-3tab' ? 'Cut from 3-tab' :
-                     'Unknown';
+      ridgeCapType =
+        ridgeCapLineItem.ridgeCapQuality === 'purpose-built'
+          ? 'Purpose-built'
+          : ridgeCapLineItem.ridgeCapQuality === 'high-profile'
+            ? 'High-profile'
+            : ridgeCapLineItem.ridgeCapQuality === 'cut-from-3tab'
+              ? 'Cut from 3-tab'
+              : 'Unknown';
     } else if (ridgeCapLineItem.description) {
       // Legacy description analysis
       const desc = ridgeCapLineItem.description.toLowerCase();
-      ridgeCapType = desc.includes('standard') ? 'Purpose-built Standard' :
-                     desc.includes('high') ? 'High-profile' :
-                     desc.includes('3-tab') || desc.includes('cut') ? 'Cut from 3-tab' :
-                     'Unknown';
+      ridgeCapType = desc.includes('standard')
+        ? 'Purpose-built Standard'
+        : desc.includes('high')
+          ? 'High-profile'
+          : desc.includes('3-tab') || desc.includes('cut')
+            ? 'Cut from 3-tab'
+            : 'Unknown';
     }
   }
 
   // Determine compliance status
-  const complianceStatus: 'compliant' | 'non-compliant' = 
+  const complianceStatus: 'compliant' | 'non-compliant' =
     ruleAnalysis?.materialStatus === 'compliant' ? 'compliant' : 'compliant'; // Default compliant for standard profile
 
   // Generate documentation note
-  const documentationNote = ruleAnalysis?.reasoning || generateDocumentationNote({
-    estimateQtyNumber,
-    totalRequiredLF,
-    ridgeLength,
-    hipLength,
-    unitPrice,
-    varianceAmount
-  });
+  const documentationNote =
+    ruleAnalysis?.reasoning ||
+    generateDocumentationNote({
+      estimateQtyNumber,
+      totalRequiredLF,
+      ridgeLength,
+      hipLength,
+      unitPrice,
+      varianceAmount,
+    });
 
   return {
     estimateQuantity: estimateQuantity,
-    estimateUnitPrice: ridgeCapLineItem?.rate || ruleAnalysis?.currentSpecification?.rate || `$${unitPrice.toFixed(2)}/LF`,
-    estimateTotal: ridgeCapLineItem?.total || ruleAnalysis?.currentSpecification?.total || `$${(estimateQtyNumber * unitPrice).toFixed(2)}`,
+    estimateUnitPrice:
+      ridgeCapLineItem?.rate ||
+      ruleAnalysis?.currentSpecification?.rate ||
+      `$${unitPrice.toFixed(2)}/LF`,
+    estimateTotal:
+      ridgeCapLineItem?.total ||
+      ruleAnalysis?.currentSpecification?.total ||
+      `$${(estimateQtyNumber * unitPrice).toFixed(2)}`,
     requiredQuantity: `${totalRequiredLF} LF`,
     ridgeLength: ridgeLength,
     hipLength: hipLength,
     variance: variance,
     varianceAmount: varianceAmount,
-    costImpact: ruleAnalysis?.costImpact || Math.max(0, (totalRequiredLF - estimateQtyNumber) * unitPrice),
+    costImpact:
+      ruleAnalysis?.costImpact ||
+      Math.max(
+        0,
+        safeMultiply(
+          safeSubtract(totalRequiredLF, estimateQtyNumber),
+          unitPrice
+        )
+      ),
     confidence: ruleAnalysis?.confidence || 0.95,
     roofType: roofType,
     ridgeCapType: ridgeCapType,
     complianceStatus: complianceStatus,
-    lineItemCode: ridgeCapLineItem?.code || ruleAnalysis?.currentSpecification?.code || 'RFG RIDGC',
-    lineItemDescription: ridgeCapLineItem?.description || ruleAnalysis?.currentSpecification?.description || 'Hip/Ridge cap - Standard profile',
-    complianceText: complianceStatus === 'compliant' ? 
-      'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards' : 
-      'Ridge cap specification does not meet code requirements',
-    documentationNote: documentationNote
+    lineItemCode:
+      ridgeCapLineItem?.code ||
+      ruleAnalysis?.currentSpecification?.code ||
+      'RFG RIDGC',
+    lineItemDescription:
+      ridgeCapLineItem?.description ||
+      ruleAnalysis?.currentSpecification?.description ||
+      'Hip/Ridge cap - Standard profile',
+    complianceText:
+      complianceStatus === 'compliant'
+        ? 'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards'
+        : 'Ridge cap specification does not meet code requirements',
+    documentationNote: documentationNote,
   };
 }
 
@@ -315,17 +383,26 @@ function generateDocumentationNote(params: {
   unitPrice: number;
   varianceAmount: number;
 }): string {
-  const { estimateQtyNumber, totalRequiredLF, ridgeLength, hipLength, unitPrice, varianceAmount } = params;
-  
+  const {
+    estimateQtyNumber,
+    totalRequiredLF,
+    ridgeLength,
+    hipLength,
+    unitPrice,
+    varianceAmount,
+  } = params;
+
   if (varianceAmount >= 0) {
     // Adequate coverage scenario
-    const overagePercent = Math.round((Math.abs(varianceAmount) / totalRequiredLF) * 100);
-    return `Ridge cap coverage verified as adequate. Estimate includes ${estimateQtyNumber} LF while measurements show ${totalRequiredLF} LF required. The ${Math.abs(varianceAmount)} LF overage (${overagePercent}%) provides appropriate waste factor for installation. Material specification (Standard profile) is compliant with ASTM D3161/D7158 wind resistance standards.`;
+    const overagePercent = Math.round(
+      (Math.abs(varianceAmount) / totalRequiredLF) * 100
+    );
+    return `Ridge cap coverage verified as adequate. Estimate includes ${estimateQtyNumber} LF while measurements show ${totalRequiredLF} LF required. The ${formatNumber(Math.abs(varianceAmount))} LF overage (${overagePercent}%) provides appropriate waste factor for installation. Material specification (Standard profile) is compliant with ASTM D3161/D7158 wind resistance standards.`;
   } else {
     // Shortage scenario
-    const additionalLF = Math.abs(varianceAmount);
-    const additionalCost = additionalLF * unitPrice;
-    return `Ridge cap shortage identified. EagleView report documents ${totalRequiredLF} LF total ridge/hip coverage required (Ridges: ${ridgeLength} LF + Hips: ${hipLength} LF). Current estimate includes only ${estimateQtyNumber} LF, creating a shortage of ${additionalLF} LF. Material type (Standard profile) is correctly specified and should be increased to match documented roof geometry. Additional coverage required: ${additionalLF} LF @ $${unitPrice.toFixed(2)}/LF = $${additionalCost.toFixed(2)}.`;
+    const additionalLF = formatNumber(Math.abs(varianceAmount));
+    const additionalCost = safeMultiply(Math.abs(varianceAmount), unitPrice);
+    return `Ridge cap shortage identified. EagleView report documents ${totalRequiredLF} LF total ridge/hip coverage required (Ridges: ${ridgeLength} LF + Hips: ${hipLength} LF). Current estimate includes only ${estimateQtyNumber} LF, creating a shortage of ${additionalLF} LF. Material type (Standard profile) is correctly specified and should be increased to match documented roof geometry. Additional coverage required: ${additionalLF} LF @ $${formatNumber(unitPrice)}/LF = $${formatNumber(additionalCost)}.`;
   }
 }
 
@@ -347,17 +424,21 @@ export function mapMockDataToRidgeCapData(mockData: {
     total: string;
   };
 }): RidgeCapData {
-  const estimateQty = parseFloat(mockData.estimateQuantity?.replace(/[^\d.]/g, '') || '6');
-  const requiredQty = parseFloat(mockData.requiredQuantity?.replace(/[^\d.]/g, '') || '119');
-  const varianceAmount = estimateQty - requiredQty;
-  
+  const estimateQty = parseFloat(
+    mockData.estimateQuantity?.replace(/[^\d.]/g, '') || '6'
+  );
+  const requiredQty = parseFloat(
+    mockData.requiredQuantity?.replace(/[^\d.]/g, '') || '119'
+  );
+  const varianceAmount = safeSubtract(estimateQty, requiredQty);
+
   return {
     estimateQuantity: mockData.estimateQuantity,
     estimateUnitPrice: mockData.currentSpecification?.rate,
     estimateTotal: mockData.currentSpecification?.total,
     requiredQuantity: mockData.requiredQuantity,
     ridgeLength: 26, // Mock values
-    hipLength: 93,   // Mock values
+    hipLength: 93, // Mock values
     variance: mockData.variance,
     varianceAmount: varianceAmount,
     costImpact: mockData.costImpact,
@@ -367,15 +448,18 @@ export function mapMockDataToRidgeCapData(mockData: {
     complianceStatus: 'compliant',
     lineItemCode: mockData.currentSpecification?.code,
     lineItemDescription: mockData.currentSpecification?.description,
-    complianceText: 'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards',
+    complianceText:
+      'Purpose-built ridge caps meet ASTM D3161/D7158 wind resistance standards',
     documentationNote: generateDocumentationNote({
       estimateQtyNumber: estimateQty,
       totalRequiredLF: requiredQty,
       ridgeLength: 26,
       hipLength: 93,
-      unitPrice: parseFloat(mockData.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '42.90'),
-      varianceAmount: varianceAmount
-    })
+      unitPrice: parseFloat(
+        mockData.currentSpecification?.rate?.replace(/[^\d.]/g, '') || '42.90'
+      ),
+      varianceAmount: varianceAmount,
+    }),
   };
 }
 
