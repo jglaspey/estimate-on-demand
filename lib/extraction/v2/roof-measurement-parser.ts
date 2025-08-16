@@ -20,26 +20,32 @@ export function parseRoofMeasurementsFromText(
     return Number.isFinite(v) ? v : undefined;
   };
 
-  const ridgeLength = num(
-    text.match(/ridge\s*(?:length)?\s*[:=]?\s*([0-9,.]+)\s*(?:lf|ft|feet)?/i)
-  );
-  const hipLength = num(
-    text.match(/hip\s*(?:length)?\s*[:=]?\s*([0-9,.]+)\s*(?:lf|ft|feet)?/i)
-  );
-  const eaveLength = num(
-    text.match(/eave\s*(?:length)?\s*[:=]?\s*([0-9,.]+)\s*(?:lf|ft|feet)?/i)
-  );
-  const rakeLength = num(
-    text.match(/rake\s*(?:length)?\s*[:=]?\s*([0-9,.]+)\s*(?:lf|ft|feet)?/i)
-  );
-  const valleyLength = num(
-    text.match(/valley\s*(?:length)?\s*[:=]?\s*([0-9,.]+)\s*(?:lf|ft|feet)?/i)
-  );
+  const ridgeLength =
+    num(text.match(/Ridges?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/ridge\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+  const hipLength =
+    num(text.match(/Hips?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/hip\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+  const eaveLength =
+    num(text.match(/Eaves?(?:\/Starter)?'?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/eave\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+  const rakeLength =
+    num(text.match(/Rakes?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/rake\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+  const valleyLength =
+    num(text.match(/Valleys?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/valley\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
   const squares =
-    num(text.match(/total\s*squares?\s*[:=]?\s*([0-9,.]+)/i)) ||
-    num(text.match(/\b([0-9,.]+)\s*squares?\b/i));
-  const pitchMatch = text.match(/(\d+\s*\/\s*\d+)\s*(?:pitch|slope)?/i);
-  const storiesMatch = text.match(/stories?\s*[:=]?\s*(\d+)/i);
+    num(text.match(/Squares\s*\*\s*\|?\s*([0-9,.]+)/i)) ||
+    num(text.match(/Number\s*of\s*Squares\s*\|\s*([0-9,.]+)/i));
+  const pitchPred =
+    text.match(/Predominant\s+Pitch\s*\$?\s*=\s*(\d+\s*\/\s*\d+)/i) ||
+    text.match(/predominant\s+pitch\s+is\s+(\d+\s*\/\s*\d+)/i);
+  const pitchMatch =
+    pitchPred || text.match(/(\d+\s*\/\s*\d+)\s*(?:pitch|slope)?/i);
+  const storiesMatch =
+    text.match(/Number\s+of\s+Stories\s*<=?\s*(\d+)/i) ||
+    text.match(/stories?\s*[:=]?\s*(\d+)/i);
 
   return {
     ridgeLength,

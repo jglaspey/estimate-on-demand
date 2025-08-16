@@ -5,7 +5,7 @@ import { extractionV2 } from '@/lib/extraction/v2/orchestrator';
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { jobId: string } }
+  ctx: { params: Promise<{ jobId: string }> }
 ) {
   if (process.env.EXTRACTION_V2 !== '1') {
     return NextResponse.json(
@@ -14,6 +14,7 @@ export async function POST(
     );
   }
 
+  const params = await ctx.params;
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
     include: { documents: true },
@@ -48,7 +49,7 @@ export async function POST(
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { jobId: string } }
+  ctx: { params: Promise<{ jobId: string }> }
 ) {
   if (process.env.EXTRACTION_V2 !== '1') {
     return NextResponse.json(
@@ -57,6 +58,7 @@ export async function GET(
     );
   }
 
+  const params = await ctx.params;
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
     include: {
