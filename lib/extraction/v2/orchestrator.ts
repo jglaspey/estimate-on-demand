@@ -4,6 +4,13 @@ import { smartExtractionService } from '@/lib/extraction/smart-extraction-servic
 import { normalizeEstimateTotalsFromPages } from '@/lib/extraction/v2/estimate-normalizer';
 // import { computeRequirements } from '@/lib/extraction/v2/requirements';
 import { verifyExtractionAgainstDocuments } from '@/lib/extraction/v2/verification';
+import {
+  extractStarterItems,
+  extractDripEdgeItems,
+  extractGutterApronItems,
+  extractIceWaterItems,
+} from '@/lib/extraction/v2/line-item-extractors';
+import { parseRoofMeasurementsFromText } from '@/lib/extraction/v2/roof-measurement-parser';
 
 import type { Prisma } from '../../../src/generated/prisma';
 
@@ -50,18 +57,30 @@ export class ExtractionV2Orchestrator {
     });
     this.emit('normalize_complete', 55, 'Normalization complete');
 
-    // Phase 4: Focused line-item extraction – placeholder hooks
+    // Phase 4: Focused line-item extraction
     this.emit(
       'line_items_start',
       60,
       'Extracting targeted line item categories'
     );
-    // TODO: call v2 line-item extractors here
+    const extractorPages = pages;
+    const [starterRes, dripRes, gutterRes, iceRes] = await Promise.all([
+      extractStarterItems(extractorPages),
+      extractDripEdgeItems(extractorPages),
+      extractGutterApronItems(extractorPages),
+      extractIceWaterItems(extractorPages),
+    ]);
+    const lineItems = [
+      ...starterRes.items,
+      ...dripRes.items,
+      ...gutterRes.items,
+      ...iceRes.items,
+    ];
     this.emit('line_items_complete', 75, 'Line item extraction complete');
 
-    // Phase 5: Roof measurements – regex first, optional vision
+    // Phase 5: Roof measurements – regex first, optional vision later
     this.emit('measurements_start', 78, 'Parsing roof measurements');
-    // TODO: call measurement parser, then optional vision when ambiguous
+    const measurements = parseRoofMeasurementsFromText(pages);
     this.emit('measurements_complete', 85, 'Measurements parsed');
 
     // Phase 6: Verification – document-grounded audit
@@ -90,7 +109,12 @@ export class ExtractionV2Orchestrator {
       >;
       const merged = {
         ...base,
-        verification,
+        v2: {
+          totals,
+          lineItems,
+          measurements,
+          verification,
+        },
       } as unknown as Prisma.InputJsonValue;
       await prisma.mistralExtraction.update({
         where: { id: latestExtraction.id },
