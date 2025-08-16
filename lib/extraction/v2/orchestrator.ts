@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/database/client';
 import { wsManager } from '@/lib/websocket/socket-handler';
 import { smartExtractionService } from '@/lib/extraction/smart-extraction-service';
+import { normalizeEstimateTotalsFromPages } from '@/lib/extraction/v2/estimate-normalizer';
+// import { computeRequirements } from '@/lib/extraction/v2/requirements';
+import { verifyExtractionAgainstDocuments } from '@/lib/extraction/v2/verification';
+
+import type { Prisma } from '../../../src/generated/prisma';
 
 export interface OrchestratorOptions {
   useVision?: boolean;
@@ -21,9 +26,28 @@ export class ExtractionV2Orchestrator {
     await smartExtractionService.extractFullDocumentData(filePaths, this.jobId);
     this.emit('ocr_complete', 40, 'OCR complete');
 
-    // Phase 3: Normalization (RCV/ACV etc.) – placeholder, to be implemented in v2 normalizer
+    // Phase 3: Normalization (RCV/ACV etc.)
     this.emit('normalize_start', 45, 'Normalizing totals and headers');
-    // TODO: call v2 normalizer here
+    const doc = await prisma.job.findUnique({
+      where: { id: this.jobId },
+      include: {
+        documents: { include: { pages: { orderBy: { pageNumber: 'asc' } } } },
+        mistralExtractions: { orderBy: { extractedAt: 'desc' }, take: 1 },
+      },
+    });
+    const pages = (doc?.documents?.flatMap(d => d.pages) || []).map(p => ({
+      pageNumber: p.pageNumber,
+      rawText: p.rawText || '',
+    }));
+    const totals = await normalizeEstimateTotalsFromPages(pages);
+
+    await prisma.job.update({
+      where: { id: this.jobId },
+      data: {
+        originalEstimate: totals.rcv,
+        // Optionally add acv/netClaim/priceList/estimateCompletedAt to Job in schema (already planned)
+      },
+    });
     this.emit('normalize_complete', 55, 'Normalization complete');
 
     // Phase 4: Focused line-item extraction – placeholder hooks
@@ -42,7 +66,37 @@ export class ExtractionV2Orchestrator {
 
     // Phase 6: Verification – document-grounded audit
     this.emit('verify_start', 88, 'Verifying extracted fields against source');
-    // TODO: run verification pass and persist to mistral_extractions.extractedData.verification
+    // Gather minimal context for verification
+    const latestExtraction =
+      (doc?.mistralExtractions && doc.mistralExtractions[0]) || null;
+    const verification = await verifyExtractionAgainstDocuments({
+      extracted: {
+        rcv: totals.rcv,
+        acv: totals.acv,
+        netClaim: totals.netClaim,
+        priceList: totals.priceList,
+        estimateCompletedAt: totals.estimateCompletedAt,
+      },
+      pages: (doc?.documents?.flatMap(d => d.pages) || []).map(p => ({
+        pageNumber: p.pageNumber,
+        rawText: p.rawText || '',
+      })),
+    });
+
+    if (latestExtraction) {
+      const base = latestExtraction.extractedData as unknown as Record<
+        string,
+        unknown
+      >;
+      const merged = {
+        ...base,
+        verification,
+      } as unknown as Prisma.InputJsonValue;
+      await prisma.mistralExtraction.update({
+        where: { id: latestExtraction.id },
+        data: { extractedData: merged },
+      });
+    }
     this.emit('verify_complete', 92, 'Verification complete');
 
     // Phase 7: Rule analyses – to be triggered by analysis worker separately
