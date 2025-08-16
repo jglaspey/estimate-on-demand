@@ -86,8 +86,6 @@ export class ExtractionV2Orchestrator {
     // Phase 6: Verification – document-grounded audit
     this.emit('verify_start', 88, 'Verifying extracted fields against source');
     // Gather minimal context for verification
-    const latestExtraction =
-      (doc?.mistralExtractions && doc.mistralExtractions[0]) || null;
     const verification = await verifyExtractionAgainstDocuments({
       extracted: {
         rcv: totals.rcv,
@@ -102,6 +100,11 @@ export class ExtractionV2Orchestrator {
       })),
     });
 
+    // Persist v2 data into the latest extraction record (fresh fetch)
+    const latestExtraction = await prisma.mistralExtraction.findFirst({
+      where: { jobId: this.jobId },
+      orderBy: { extractedAt: 'desc' },
+    });
     if (latestExtraction) {
       const base = latestExtraction.extractedData as unknown as Record<
         string,
@@ -121,6 +124,45 @@ export class ExtractionV2Orchestrator {
         data: { extractedData: merged },
       });
     }
+
+    // Mirror key measurements to Job for quick access in UI/queries
+    const ridgeHip =
+      (typeof (measurements as any).ridgeLength === 'number'
+        ? (measurements as any).ridgeLength
+        : 0) +
+      (typeof (measurements as any).hipLength === 'number'
+        ? (measurements as any).hipLength
+        : 0);
+    await prisma.job.update({
+      where: { id: this.jobId },
+      data: {
+        roofSquares:
+          typeof (measurements as any).squares === 'number'
+            ? (measurements as any).squares
+            : undefined,
+        eaveLength:
+          typeof (measurements as any).eaveLength === 'number'
+            ? (measurements as any).eaveLength
+            : undefined,
+        rakeLength:
+          typeof (measurements as any).rakeLength === 'number'
+            ? (measurements as any).rakeLength
+            : undefined,
+        valleyLength:
+          typeof (measurements as any).valleyLength === 'number'
+            ? (measurements as any).valleyLength
+            : undefined,
+        ridgeHipLength: ridgeHip || undefined,
+        roofSlope:
+          typeof (measurements as any).pitch === 'string'
+            ? ((measurements as any).pitch as string)
+            : undefined,
+        roofStories:
+          typeof (measurements as any).stories === 'number'
+            ? (measurements as any).stories
+            : undefined,
+      },
+    });
     this.emit('verify_complete', 92, 'Verification complete');
 
     // Phase 7: Rule analyses – to be triggered by analysis worker separately
