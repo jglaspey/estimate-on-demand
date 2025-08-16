@@ -227,9 +227,24 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
 
       <section>
         <h2 className='text-xl font-semibold'>Measurements</h2>
-        <pre className='mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto'>
-          {JSON.stringify(data.measurements, null, 2)}
-        </pre>
+        <div className='mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-sm'>
+          {renderKV('Squares', (data.measurements as any)?.squares)}
+          {renderKV('Pitch', (data.measurements as any)?.pitch)}
+          {renderKV('Stories', (data.measurements as any)?.stories)}
+          {renderKV('Ridges', (data.measurements as any)?.ridgeLength)}
+          {renderKV('Hips', (data.measurements as any)?.hipLength)}
+          {renderKV(
+            'Ridges/Hips (total)',
+            (data.measurements as any)?.totalRidgeHip
+          )}
+          {renderKV('Eaves', (data.measurements as any)?.eaveLength)}
+          {renderKV('Rakes', (data.measurements as any)?.rakeLength)}
+          {renderKV(
+            'Drip Edge (total)',
+            (data.measurements as any)?.dripEdgeTotal
+          )}
+          {renderKV('Valleys', (data.measurements as any)?.valleyLength)}
+        </div>
       </section>
 
       <section>
@@ -277,6 +292,15 @@ function fmtQty(q?: { value: number; unit: string }) {
 function pct(n?: number) {
   if (typeof n !== 'number') return '—';
   return `${Math.round(n * 100)}%`;
+}
+
+function renderKV(label: string, value: unknown) {
+  return (
+    <div>
+      <div className='font-medium'>{label}</div>
+      <div>{value === undefined || value === null ? '—' : String(value)}</div>
+    </div>
+  );
 }
 
 function ReRun({ jobId }: { jobId: string }) {

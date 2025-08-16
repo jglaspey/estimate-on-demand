@@ -80,7 +80,22 @@ export class ExtractionV2Orchestrator {
 
     // Phase 5: Roof measurements – regex first, optional vision later
     this.emit('measurements_start', 78, 'Parsing roof measurements');
-    const measurements = parseRoofMeasurementsFromText(pages);
+    const measurements = parseRoofMeasurementsFromText(pages) as Record<
+      string,
+      unknown
+    >;
+    // Derive drip edge total (Eaves + Rakes) for convenient display
+    const eaveNum =
+      typeof measurements.eaveLength === 'number'
+        ? (measurements.eaveLength as number)
+        : undefined;
+    const rakeNum =
+      typeof measurements.rakeLength === 'number'
+        ? (measurements.rakeLength as number)
+        : undefined;
+    if (typeof eaveNum === 'number' && typeof rakeNum === 'number') {
+      (measurements as any).dripEdgeTotal = eaveNum + rakeNum;
+    }
     this.emit('measurements_complete', 85, 'Measurements parsed');
 
     // Phase 6: Verification – document-grounded audit
@@ -127,12 +142,15 @@ export class ExtractionV2Orchestrator {
 
     // Mirror key measurements to Job for quick access in UI/queries
     const ridgeHip =
+      (typeof (measurements as any).totalRidgeHip === 'number'
+        ? (measurements as any).totalRidgeHip
+        : 0) ||
       (typeof (measurements as any).ridgeLength === 'number'
         ? (measurements as any).ridgeLength
         : 0) +
-      (typeof (measurements as any).hipLength === 'number'
-        ? (measurements as any).hipLength
-        : 0);
+        (typeof (measurements as any).hipLength === 'number'
+          ? (measurements as any).hipLength
+          : 0);
     await prisma.job.update({
       where: { id: this.jobId },
       data: {
