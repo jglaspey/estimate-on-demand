@@ -7,6 +7,7 @@ export interface RoofMeasurements {
   squares?: number;
   pitch?: string; // e.g., 6/12
   stories?: number;
+  totalRidgeHip?: number;
 }
 
 export function parseRoofMeasurementsFromText(
@@ -23,9 +24,14 @@ export function parseRoofMeasurementsFromText(
   const ridgeLength =
     num(text.match(/Ridges?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
     num(text.match(/ridge\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+  // Capture combined total before hips to avoid mis-assigning it
+  const totalRidgeHip =
+    num(text.match(/Total\s+Ridges\s*\/\s*Hips\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/Ridges\s*\/\s*Hips\s*\$?\s*=\s*([0-9,.]+)/i));
+  // Only match standalone "Hips = <num>", not the combined label "Ridges/Hips = <num>"
   const hipLength =
-    num(text.match(/Hips?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
-    num(text.match(/hip\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
+    num(text.match(/(?<!Ridges\s*\/\s*)Hips?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
+    num(text.match(/\bhip\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
   const eaveLength =
     num(text.match(/Eaves?(?:\/Starter)?'?\s*\$?\s*=\s*([0-9,.]+)/i)) ||
     num(text.match(/eave\s*(?:length)?\s*[:=]?\s*([0-9,.]+)/i));
@@ -56,5 +62,6 @@ export function parseRoofMeasurementsFromText(
     squares,
     pitch: pitchMatch ? pitchMatch[1].replace(/\s+/g, '') : undefined,
     stories: storiesMatch ? parseInt(storiesMatch[1], 10) : undefined,
+    totalRidgeHip,
   };
 }
