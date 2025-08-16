@@ -41,6 +41,7 @@ type ApiResponse = {
 
 export default function V2Viewer({ jobId }: { jobId: string }) {
   const [data, setData] = useState<V2Data | null>(null);
+  const [jobMeta, setJobMeta] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +56,10 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
         });
         const json: ApiResponse = await res.json();
         if (!res.ok) throw new Error(json?.error || 'Failed to fetch');
-        if (mounted) setData(json.v2 || null);
+        if (mounted) {
+          setData(json.v2 || null);
+          setJobMeta(json.job || null);
+        }
       } catch (e) {
         if (mounted) setError((e as Error).message);
       } finally {
@@ -72,20 +76,87 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
   if (error) return <div className='text-red-600'>Error: {error}</div>;
   if (!data) return <div>No v2 data yet.</div>;
 
-  // derive missing fields
+  // derive missing fields – totals, measurements, and category coverage
   const missing: string[] = [];
-  if (!data.totals?.rcv) missing.push('RCV');
-  if (!data.totals?.acv) missing.push('ACV');
-  if (!data.totals?.netClaim) missing.push('Net Claim');
-  if (!data.totals?.priceList) missing.push('Price List');
-  if (!data.totals?.estimateCompletedAt) missing.push('Date Est. Completed');
-  if (!data.measurements) missing.push('Measurements');
+  const totals = data.totals || {};
+  if (totals.rcv == null) missing.push('RCV');
+  if (totals.acv == null) missing.push('ACV');
+  if (totals.netClaim == null) missing.push('Net Claim');
+  if (!totals.priceList) missing.push('Price List');
+  if (!totals.estimateCompletedAt) missing.push('Date Est. Completed');
+
+  const meas = (data.measurements || {}) as Record<string, unknown>;
+  const requiredMeas = [
+    ['ridgeLength', 'Ridge LF'],
+    ['hipLength', 'Hip LF'],
+    ['eaveLength', 'Eave LF'],
+    ['rakeLength', 'Rake LF'],
+    ['valleyLength', 'Valley LF'],
+    ['squares', 'Squares'],
+    ['pitch', 'Pitch'],
+    ['stories', 'Stories'],
+  ] as const;
+  for (const [key, label] of requiredMeas) {
+    const v = meas[key as string];
+    if (
+      v == null ||
+      v === '' ||
+      (typeof v === 'number' && !Number.isFinite(v as number))
+    ) {
+      missing.push(label);
+    }
+  }
+
+  const items = data.lineItems || [];
+  const hasCat = (
+    name: 'starter' | 'drip_edge' | 'gutter_apron' | 'ice_water'
+  ) =>
+    items.some(
+      li =>
+        (li.category && li.category.toLowerCase() === name) ||
+        (li.description &&
+          ((name === 'starter' && /starter/i.test(li.description)) ||
+            (name === 'drip_edge' && /drip\s*edge/i.test(li.description)) ||
+            (name === 'gutter_apron' &&
+              /(gutter\s*apron|eave\s*flashing)/i.test(li.description)) ||
+            (name === 'ice_water' &&
+              /(ice\s*&?\s*water|I&W)/i.test(li.description))))
+    );
+  if (!hasCat('starter')) missing.push('Starter line items');
+  if (!hasCat('drip_edge')) missing.push('Drip Edge line items');
+  if (!hasCat('gutter_apron')) missing.push('Gutter Apron line items');
+  if (!hasCat('ice_water')) missing.push('Ice & Water line items');
+
+  // include job mirrors if present
+  if (jobMeta) {
+    const jm = jobMeta as Record<string, unknown>;
+    const checkNull = (k: string, label: string) => {
+      const v = jm[k];
+      if (v == null || v === '') missing.push(label);
+    };
+    checkNull('eaveLength', 'Job.eaveLength');
+    checkNull('rakeLength', 'Job.rakeLength');
+    checkNull('ridgeHipLength', 'Job.ridgeHipLength');
+    checkNull('valleyLength', 'Job.valleyLength');
+    checkNull('roofStories', 'Job.roofStories');
+    checkNull('roofSlope', 'Job.roofSlope');
+    checkNull('roofMaterial', 'Job.roofMaterial');
+  }
 
   return (
     <div className='space-y-6'>
-      {missing.length > 0 && (
+      {missing.length > 0 ? (
         <div className='p-3 rounded bg-yellow-50 text-yellow-900 text-sm'>
-          Missing fields: {missing.join(', ')}
+          <div className='font-medium mb-1'>Missing fields</div>
+          <ul className='list-disc pl-5'>
+            {Array.from(new Set(missing)).map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className='p-3 rounded bg-green-50 text-green-900 text-sm'>
+          All required fields present.
         </div>
       )}
       <section>
