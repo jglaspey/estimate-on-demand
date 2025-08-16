@@ -33,6 +33,12 @@ type V2Data = {
   };
 };
 
+type ApiResponse = {
+  jobId: string;
+  v2: V2Data | null;
+  job?: Record<string, unknown>;
+};
+
 export default function V2Viewer({ jobId }: { jobId: string }) {
   const [data, setData] = useState<V2Data | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +53,7 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
         const res = await fetch(`/api/jobs/${jobId}/extract-v2`, {
           cache: 'no-store',
         });
-        const json = await res.json();
+        const json: ApiResponse = await res.json();
         if (!res.ok) throw new Error(json?.error || 'Failed to fetch');
         if (mounted) setData(json.v2 || null);
       } catch (e) {
@@ -66,8 +72,22 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
   if (error) return <div className='text-red-600'>Error: {error}</div>;
   if (!data) return <div>No v2 data yet.</div>;
 
+  // derive missing fields
+  const missing: string[] = [];
+  if (!data.totals?.rcv) missing.push('RCV');
+  if (!data.totals?.acv) missing.push('ACV');
+  if (!data.totals?.netClaim) missing.push('Net Claim');
+  if (!data.totals?.priceList) missing.push('Price List');
+  if (!data.totals?.estimateCompletedAt) missing.push('Date Est. Completed');
+  if (!data.measurements) missing.push('Measurements');
+
   return (
     <div className='space-y-6'>
+      {missing.length > 0 && (
+        <div className='p-3 rounded bg-yellow-50 text-yellow-900 text-sm'>
+          Missing fields: {missing.join(', ')}
+        </div>
+      )}
       <section>
         <h2 className='text-xl font-semibold'>Totals</h2>
         <div className='mt-2 grid grid-cols-2 gap-2 text-sm'>
@@ -161,6 +181,10 @@ export default function V2Viewer({ jobId }: { jobId: string }) {
           <div className='text-sm'>No discrepancies found.</div>
         )}
       </section>
+
+      <section>
+        <ReRun jobId={jobId} />
+      </section>
     </div>
   );
 }
@@ -182,4 +206,40 @@ function fmtQty(q?: { value: number; unit: string }) {
 function pct(n?: number) {
   if (typeof n !== 'number') return '—';
   return `${Math.round(n * 100)}%`;
+}
+
+function ReRun({ jobId }: { jobId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const onClick = async () => {
+    setBusy(true);
+    setError(null);
+    setOk(null);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/extract-v2`, {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Failed');
+      setOk('Re-run started. Refresh in a bit to see new results.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className='flex items-center gap-3'>
+      <button
+        onClick={onClick}
+        disabled={busy}
+        className='px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50'
+      >
+        {busy ? 'Re-running…' : 'Re-run v2 extraction'}
+      </button>
+      {ok && <span className='text-green-700 text-sm'>{ok}</span>}
+      {error && <span className='text-red-700 text-sm'>Error: {error}</span>}
+    </div>
+  );
 }

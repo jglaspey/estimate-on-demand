@@ -78,5 +78,15 @@ export async function GET(
 
   const data = latest.extractedData as Record<string, unknown>;
   const v2 = (data as any)?.v2 ?? null;
-  return NextResponse.json({ jobId: job.id, v2 });
+  const jobSummary = {
+    roofSquares: job.roofSquares,
+    roofStories: job.roofStories,
+    rakeLength: job.rakeLength,
+    eaveLength: job.eaveLength,
+    ridgeHipLength: job.ridgeHipLength,
+    valleyLength: job.valleyLength,
+    roofSlope: job.roofSlope,
+    roofMaterial: job.roofMaterial,
+  };
+  return NextResponse.json({ jobId: job.id, v2, job: jobSummary });
 }
