@@ -110,7 +110,7 @@ export async function extractGutterApronItems(
 ): Promise<ExtractorResult> {
   const relevant = selectRelevantPages(
     pages,
-    /(gutter\s*apron|gutter\s*flashing|eave\s*flashing|RFG\s*GUTTER\s*APRON)/i
+    /(gutter\s*apron|gutter\s*flashing|eave\s*flashing|apron\s*flashing|counter\s*flashing\s*-?\s*apron|RFG\s*GUTTER\s*APRON)/i
   );
   return callClaude(
     'gutter_apron',

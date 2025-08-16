@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json, sys; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(2 if any(p in path for p in ['.env', 'package-lock.json', '.git/']) else 0)\""
+          }
+        ]
+      }
+    ],
+    "PostConversationTurn": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff",
+            "description": "Play alert sound when Claude finishes responding"
+          }
+        ]
+      }
+    ],
+    "PreUserInput": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "afplay /System/Library/Sounds/Tink.aiff",
+            "description": "Play alert sound when waiting for user input"
+          }
+        ]
+      }
+    ]
+  }
+}

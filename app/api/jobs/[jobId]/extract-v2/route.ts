@@ -62,7 +62,7 @@ export async function GET(
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
     include: {
-      mistralExtractions: { orderBy: { extractedAt: 'desc' }, take: 1 },
+      mistralExtractions: { orderBy: { extractedAt: 'desc' }, take: 5 },
     },
   });
 
@@ -78,7 +78,18 @@ export async function GET(
     );
   }
 
-  const data = latest.extractedData as Record<string, unknown>;
+  // Prefer the most recent extraction that actually contains v2
+  const withV2 =
+    job.mistralExtractions.find(e => {
+      try {
+        const d = e.extractedData as Record<string, unknown>;
+        return d && Object.prototype.hasOwnProperty.call(d, 'v2');
+      } catch {
+        return false;
+      }
+    }) || latest;
+
+  const data = withV2.extractedData as Record<string, unknown>;
   const v2 = (data as any)?.v2 ?? null;
   const jobSummary = {
     roofSquares: job.roofSquares,

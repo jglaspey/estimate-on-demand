@@ -1,13 +1,18 @@
 /**
  * Analysis Worker
- * 
+ *
  * Coordinates business rule processing with real-time progress updates.
- * Runs all business rules (Ridge Cap, Starter Strip, Drip Edge, Ice & Water) 
+ * Runs all business rules (Ridge Cap, Starter Strip, Drip Edge, Ice & Water)
  * and provides progress updates via WebSocket/callback mechanism.
  */
 
-import { ridgeCapAnalyzer, RidgeCapAnalysisInput, RidgeCapAnalysisResult } from './ridge-cap-analyzer';
 import { prisma } from '../database/client';
+
+import {
+  ridgeCapAnalyzer,
+  RidgeCapAnalysisInput,
+  RidgeCapAnalysisResult,
+} from './ridge-cap-analyzer';
 
 // Progress update interface
 export interface AnalysisProgress {
@@ -52,82 +57,157 @@ export class AnalysisWorker {
    */
   async runAllBusinessRules(): Promise<BusinessRuleResults> {
     console.warn(`🔄 Starting business rule analysis for job ${this.jobId}`);
-    
+
     const results: BusinessRuleResults = {
       ridgeCap: null,
       starterStrip: null,
       dripEdge: null,
-      iceAndWater: null
+      iceAndWater: null,
     };
 
     try {
       // Step 1: Load job data with extractions
-      this.updateProgress('data_loading', 'running', 10, 'Loading job data and extractions...');
-      
+      this.updateProgress(
+        'data_loading',
+        'running',
+        10,
+        'Loading job data and extractions...'
+      );
+
       const jobData = await this.loadJobWithExtractions();
       if (!jobData) {
         throw new Error('Job data not found or incomplete');
       }
 
-      this.updateProgress('data_loading', 'completed', 20, 'Job data loaded successfully');
+      this.updateProgress(
+        'data_loading',
+        'completed',
+        20,
+        'Job data loaded successfully'
+      );
 
       // Step 2: Run Ridge Cap Analysis
-      this.updateProgress('ridge_cap', 'running', 30, 'Analyzing ridge cap compliance...');
-      
+      this.updateProgress(
+        'ridge_cap',
+        'running',
+        30,
+        'Analyzing ridge cap compliance...'
+      );
+
       try {
         results.ridgeCap = await this.runRidgeCapAnalysis(jobData);
-        
+
         // Save ridge cap analysis to database
         await this.saveRuleAnalysis('HIP_RIDGE_CAP', results.ridgeCap);
-        
-        this.updateProgress('ridge_cap', 'completed', 50, 
-          `Ridge cap analysis: ${results.ridgeCap.status} - ${results.ridgeCap.costImpact > 0 ? `$${results.ridgeCap.costImpact.toFixed(2)} supplement` : 'compliant'}`);
+
+        this.updateProgress(
+          'ridge_cap',
+          'completed',
+          50,
+          `Ridge cap analysis: ${results.ridgeCap.status} - ${results.ridgeCap.costImpact > 0 ? `$${results.ridgeCap.costImpact.toFixed(2)} supplement` : 'compliant'}`
+        );
       } catch (error) {
-        this.updateProgress('ridge_cap', 'failed', 50, 'Ridge cap analysis failed', error);
+        this.updateProgress(
+          'ridge_cap',
+          'failed',
+          50,
+          'Ridge cap analysis failed',
+          error
+        );
         results.ridgeCap = null;
       }
 
       // Step 3: Run Starter Strip Analysis (placeholder)
-      this.updateProgress('starter_strip', 'running', 60, 'Analyzing starter strip coverage...');
-      
+      this.updateProgress(
+        'starter_strip',
+        'running',
+        60,
+        'Analyzing starter strip coverage...'
+      );
+
       try {
         // Future implementation
         results.starterStrip = await this.runStarterStripAnalysis(jobData);
-        this.updateProgress('starter_strip', 'completed', 70, 'Starter strip analysis completed');
+        this.updateProgress(
+          'starter_strip',
+          'completed',
+          70,
+          'Starter strip analysis completed'
+        );
       } catch (error) {
-        this.updateProgress('starter_strip', 'failed', 70, 'Starter strip analysis failed', error);
+        this.updateProgress(
+          'starter_strip',
+          'failed',
+          70,
+          'Starter strip analysis failed',
+          error
+        );
         results.starterStrip = null;
       }
 
       // Step 4: Run Drip Edge Analysis (placeholder)
-      this.updateProgress('drip_edge', 'running', 80, 'Analyzing drip edge coverage...');
-      
+      this.updateProgress(
+        'drip_edge',
+        'running',
+        80,
+        'Analyzing drip edge coverage...'
+      );
+
       try {
         // Future implementation
         results.dripEdge = await this.runDripEdgeAnalysis(jobData);
-        this.updateProgress('drip_edge', 'completed', 90, 'Drip edge analysis completed');
+        this.updateProgress(
+          'drip_edge',
+          'completed',
+          90,
+          'Drip edge analysis completed'
+        );
       } catch (error) {
-        this.updateProgress('drip_edge', 'failed', 90, 'Drip edge analysis failed', error);
+        this.updateProgress(
+          'drip_edge',
+          'failed',
+          90,
+          'Drip edge analysis failed',
+          error
+        );
         results.dripEdge = null;
       }
 
       // Step 5: Run Ice & Water Analysis (placeholder)
-      this.updateProgress('ice_water', 'running', 95, 'Analyzing ice & water barrier coverage...');
-      
+      this.updateProgress(
+        'ice_water',
+        'running',
+        95,
+        'Analyzing ice & water barrier coverage...'
+      );
+
       try {
         // Future implementation
         results.iceAndWater = await this.runIceAndWaterAnalysis(jobData);
-        this.updateProgress('ice_water', 'completed', 100, 'All business rule analyses completed');
+        this.updateProgress(
+          'ice_water',
+          'completed',
+          100,
+          'All business rule analyses completed'
+        );
       } catch (error) {
-        this.updateProgress('ice_water', 'failed', 100, 'Ice & water analysis failed', error);
+        this.updateProgress(
+          'ice_water',
+          'failed',
+          100,
+          'Ice & water analysis failed',
+          error
+        );
         results.iceAndWater = null;
       }
 
       console.warn(`✅ Business rule analysis completed for job ${this.jobId}`);
       return results;
-
     } catch (error) {
-      console.error(`❌ Business rule analysis failed for job ${this.jobId}:`, error);
+      console.error(
+        `❌ Business rule analysis failed for job ${this.jobId}:`,
+        error
+      );
       this.updateProgress('analysis', 'failed', 0, 'Analysis failed', error);
       throw error;
     }
@@ -136,7 +216,9 @@ export class AnalysisWorker {
   /**
    * Run Ridge Cap analysis specifically
    */
-  async runRidgeCapAnalysis(_jobData: Record<string, unknown>): Promise<RidgeCapAnalysisResult> {
+  async runRidgeCapAnalysis(
+    jobData: Record<string, unknown>
+  ): Promise<RidgeCapAnalysisResult> {
     const extraction = jobData.mistralExtractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
@@ -150,15 +232,15 @@ export class AnalysisWorker {
         totalRidgeHip: null,
         confidence: 0.5,
         sourcePages: [],
-        extractedFrom: 'other' as const
+        extractedFrom: 'other' as const,
       },
       roofType: extractedData.roofType || {
         roofType: 'laminated' as const,
         confidence: 0.5,
         reasoning: 'Default assumption',
-        evidence: []
+        evidence: [],
       },
-      jobId: this.jobId
+      jobId: this.jobId,
     };
 
     return await ridgeCapAnalyzer.analyzeRidgeCapCompliance(analysisInput);
@@ -167,42 +249,48 @@ export class AnalysisWorker {
   /**
    * Run Starter Strip analysis (placeholder for future implementation)
    */
-  async runStarterStripAnalysis(_jobData: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async runStarterStripAnalysis(
+    _jobData: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     // Simulate analysis time
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return {
       status: 'COMPLIANT',
       reasoning: 'Starter strip analysis not yet implemented',
-      costImpact: 0
+      costImpact: 0,
     };
   }
 
   /**
    * Run Drip Edge analysis (placeholder for future implementation)
    */
-  async runDripEdgeAnalysis(_jobData: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async runDripEdgeAnalysis(
+    _jobData: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     // Simulate analysis time
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return {
       status: 'COMPLIANT',
       reasoning: 'Drip edge analysis not yet implemented',
-      costImpact: 0
+      costImpact: 0,
     };
   }
 
   /**
    * Run Ice & Water analysis (placeholder for future implementation)
    */
-  async runIceAndWaterAnalysis(_jobData: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async runIceAndWaterAnalysis(
+    _jobData: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     // Simulate analysis time
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return {
       status: 'COMPLIANT',
       reasoning: 'Ice & water analysis not yet implemented',
-      costImpact: 0
+      costImpact: 0,
     };
   }
 
@@ -215,17 +303,17 @@ export class AnalysisWorker {
       include: {
         documents: {
           include: {
-            pages: { orderBy: { pageNumber: 'asc' } }
-          }
+            pages: { orderBy: { pageNumber: 'asc' } },
+          },
         },
         mistralExtractions: {
           orderBy: { extractedAt: 'desc' },
-          take: 1
+          take: 1,
         },
         ruleAnalyses: {
-          orderBy: { analyzedAt: 'desc' }
-        }
-      }
+          orderBy: { analyzedAt: 'desc' },
+        },
+      },
     });
 
     if (!job || !job.mistralExtractions[0]) {
@@ -238,7 +326,10 @@ export class AnalysisWorker {
   /**
    * Save rule analysis result to database
    */
-  private async saveRuleAnalysis(ruleType: string, result: Record<string, unknown>) {
+  private async saveRuleAnalysis(
+    ruleType: string,
+    result: Record<string, unknown>
+  ) {
     try {
       await prisma.ruleAnalysis.create({
         data: {
@@ -247,11 +338,9 @@ export class AnalysisWorker {
           status: result.status,
           confidence: result.confidence,
           reasoning: result.reasoning,
-          costImpact: result.costImpact,
-          findings: result as any, // Required field for legacy compatibility
-          analysisData: result as any,
-          analyzedAt: new Date()
-        }
+          findings: result as any, // Contains costImpact and all analysis data
+          analyzedAt: new Date(),
+        },
       });
       console.warn(`💾 Saved ${ruleType} analysis to database`);
     } catch (error) {
@@ -263,7 +352,7 @@ export class AnalysisWorker {
    * Update progress and notify listeners
    */
   private updateProgress(
-    ruleName: string, 
+    ruleName: string,
     status: 'pending' | 'running' | 'completed' | 'failed',
     progress: number,
     message: string,
@@ -276,7 +365,7 @@ export class AnalysisWorker {
       progress,
       message,
       error: error?.message,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     console.warn(`📊 ${ruleName}: ${status} (${progress}%) - ${message}`);
@@ -298,15 +387,15 @@ export class AnalysisWorker {
   static async getAnalysisProgress(jobId: string) {
     const analyses = await prisma.ruleAnalysis.findMany({
       where: { jobId },
-      orderBy: { analyzedAt: 'desc' }
+      orderBy: { analyzedAt: 'desc' },
     });
 
     return analyses.map(analysis => ({
       ruleName: analysis.ruleType,
       status: analysis.status,
       confidence: analysis.confidence,
-      costImpact: analysis.costImpact,
-      analyzedAt: analysis.analyzedAt
+      costImpact: (analysis.findings as any)?.costImpact || 0,
+      analyzedAt: analysis.analyzedAt,
     }));
   }
 
@@ -315,7 +404,7 @@ export class AnalysisWorker {
    */
   static async isAnalysisComplete(jobId: string): Promise<boolean> {
     const analyses = await prisma.ruleAnalysis.findMany({
-      where: { jobId }
+      where: { jobId },
     });
 
     // For now, we only check ridge cap analysis
@@ -325,7 +414,9 @@ export class AnalysisWorker {
 }
 
 // Factory function for easy instantiation
-export function createAnalysisWorker(config: AnalysisWorkerConfig): AnalysisWorker {
+export function createAnalysisWorker(
+  config: AnalysisWorkerConfig
+): AnalysisWorker {
   return new AnalysisWorker(config);
 }
 

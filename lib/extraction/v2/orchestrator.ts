@@ -11,6 +11,7 @@ import {
   extractIceWaterItems,
 } from '@/lib/extraction/v2/line-item-extractors';
 import { parseRoofMeasurementsFromText } from '@/lib/extraction/v2/roof-measurement-parser';
+import { extractRoofMaterialFromPages } from '@/lib/extraction/v2/roof-material';
 
 import type { Prisma } from '../../../src/generated/prisma';
 
@@ -84,6 +85,11 @@ export class ExtractionV2Orchestrator {
       string,
       unknown
     >;
+    // Roof material (heuristic)
+    const materialInfo = extractRoofMaterialFromPages(pages);
+    if (materialInfo.material) {
+      (measurements as any).material = materialInfo.material;
+    }
     // Derive drip edge total (Eaves + Rakes) for convenient display
     const eaveNum =
       typeof measurements.eaveLength === 'number'
@@ -178,6 +184,10 @@ export class ExtractionV2Orchestrator {
         roofStories:
           typeof (measurements as any).stories === 'number'
             ? (measurements as any).stories
+            : undefined,
+        roofMaterial:
+          typeof (measurements as any).material === 'string'
+            ? ((measurements as any).material as string)
             : undefined,
       },
     });
