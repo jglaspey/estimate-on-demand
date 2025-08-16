@@ -45,3 +45,38 @@ export async function POST(
     files: filePaths.length,
   });
 }
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { jobId: string } }
+) {
+  if (process.env.EXTRACTION_V2 !== '1') {
+    return NextResponse.json(
+      { error: 'EXTRACTION_V2 disabled' },
+      { status: 403 }
+    );
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: params.jobId },
+    include: {
+      mistralExtractions: { orderBy: { extractedAt: 'desc' }, take: 1 },
+    },
+  });
+
+  if (!job) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+  }
+
+  const latest = job.mistralExtractions[0];
+  if (!latest) {
+    return NextResponse.json(
+      { error: 'No extraction found for job' },
+      { status: 404 }
+    );
+  }
+
+  const data = latest.extractedData as Record<string, unknown>;
+  const v2 = (data as any)?.v2 ?? null;
+  return NextResponse.json({ jobId: job.id, v2 });
+}
