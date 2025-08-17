@@ -15,7 +15,8 @@ import {
   FileText,
   Calculator
 } from 'lucide-react';
-import { RuleAnalysisResult, LineItem } from '../lib/mockData';
+import { RuleAnalysisResult } from '@/types';
+import { LineItem } from '@/lib/types/document-extraction';
 
 interface BusinessRuleCardProps {
   ruleAnalysis: RuleAnalysisResult;
@@ -119,9 +120,6 @@ export function BusinessRuleCard({ ruleAnalysis, onDecision }: BusinessRuleCardP
             <Badge className={statusConfig.color}>
               {ruleAnalysis.status.replace('_', ' ')}
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              {Math.round(ruleAnalysis.confidence * 100)}% confidence
-            </span>
           </div>
         </div>
       </CardHeader>
@@ -146,47 +144,41 @@ export function BusinessRuleCard({ ruleAnalysis, onDecision }: BusinessRuleCardP
             <Button variant="outline" className="w-full justify-between">
               <span className="flex items-center gap-2">
                 <Eye className="h-4 w-4" />
-                View Evidence ({ruleAnalysis.evidence.length} items)
+                View Evidence (XXX items)
               </span>
               <ChevronDown className={`h-4 w-4 transition-transform ${showEvidence ? 'rotate-180' : ''}`} />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-3 mt-3">
-            {ruleAnalysis.evidence.map((evidence, index) => {
-              const EvidenceIcon = getEvidenceIcon(evidence.type);
-              return (
-                <div key={index} className="p-3 border rounded-lg bg-background">
-                  <div className="flex items-start gap-3">
-                    <EvidenceIcon className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm">{evidence.content}</p>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{evidence.source}</span>
-                        <span>{Math.round(evidence.confidence * 100)}% confidence</span>
-                      </div>
-                    </div>
+            <div className="p-3 border rounded-lg bg-background">
+              <div className="flex items-start gap-3">
+                <FileText className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm">Evidence content will appear here when analysis is complete</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Source: XXX</span>
+                    <span>XXX% confidence</span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </CollapsibleContent>
         </Collapsible>
 
         {/* Current Items & Recommendations */}
-        {(ruleAnalysis.currentItems.length > 0 || ruleAnalysis.recommendations.length > 0) && (
-          <Collapsible open={showRecommendations} onOpenChange={setShowRecommendations}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span>View Line Items & Recommendations</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showRecommendations ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-3">
-              <LineItemTable items={ruleAnalysis.currentItems} title="Current Items" />
-              <LineItemTable items={ruleAnalysis.recommendations} title="Recommended Items" />
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+        <Collapsible open={showRecommendations} onOpenChange={setShowRecommendations}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span>View Line Items & Recommendations</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showRecommendations ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-3">
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">Line items and recommendations will appear here when analysis is complete</p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* User Decision Area */}
         {ruleAnalysis.status !== 'COMPLIANT' && (

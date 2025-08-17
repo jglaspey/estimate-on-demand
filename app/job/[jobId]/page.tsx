@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { OverviewPage } from '@/components/OverviewPage';
-import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/lib/mockData';
+import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/types';
 
 interface Job {
   id: string;
@@ -243,7 +243,7 @@ export default function JobPage() {
       jobData={jobData}
       roofMeasurements={roofMeasurements}
       ruleAnalysis={ruleAnalysis}
-      onFieldUpdate={handleFieldUpdate}
+      _onFieldUpdate={handleFieldUpdate}
       onStartReview={handleStartReview}
     />
   );

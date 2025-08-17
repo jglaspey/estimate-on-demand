@@ -128,12 +128,12 @@ IMPORTANT:
                   },
                   {
                     type: 'image_url',
-                    image_url: `data:image/png;base64,${base64Image}`,
+                    imageUrl: `data:image/png;base64,${base64Image}`,
                   },
                 ],
               },
             ],
-            max_tokens: 2000,
+            maxTokens: 2000,
             temperature: 0.1,
           });
 
@@ -143,7 +143,7 @@ IMPORTANT:
           }
 
           // Parse JSON response
-          const extractedData = this.parseExtractionResult(content);
+          const extractedData = this.parseExtractionResult(typeof content === 'string' ? content : JSON.stringify(content));
           allResults.push(extractedData);
 
           // Keep the result with the most findings
@@ -361,15 +361,16 @@ IMPORTANT:
               },
               {
                 type: 'image_url',
-                image_url: `data:image/png;base64,${imageBase64}`,
+                imageUrl: `data:image/png;base64,${imageBase64}`,
               },
             ],
           },
         ],
-        max_tokens: 1000,
+        maxTokens: 1000,
       });
 
-      return response.choices?.[0]?.message?.content || 'No content returned';
+      const content = response.choices?.[0]?.message?.content;
+      return typeof content === 'string' ? content : 'No content returned';
     } catch (error) {
       throw new Error(
         `OCR test failed: ${error instanceof Error ? error.message : 'Unknown error'}`

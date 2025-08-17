@@ -38,7 +38,7 @@ export async function GET(
       ? 'application/pdf'
       : 'application/octet-stream';
 
-    return new NextResponse(data, {
+    return new NextResponse(new Uint8Array(data), {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',

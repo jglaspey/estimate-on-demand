@@ -12,7 +12,7 @@ import {
   Plus,
   Calculator
 } from 'lucide-react';
-import { RuleAnalysisResult } from '../../lib/mockData';
+import { RuleAnalysisResult } from '../../types';
 
 interface IceWaterBarrierCardProps {
   ruleAnalysis: RuleAnalysisResult;
@@ -97,7 +97,7 @@ export function IceWaterBarrierCard({ ruleAnalysis, onDecision }: IceWaterBarrie
               Ice & Water Barrier Analysis
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Supplement needed • {Math.round(ruleAnalysis.confidence * 100)}% confidence
+              Supplement needed
             </p>
           </div>
         </div>

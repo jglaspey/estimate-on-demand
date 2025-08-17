@@ -105,7 +105,7 @@ export async function GET(
         fileType: 'roof_report',
         filePath: null, // No actual PDF, just extracted text
         pageCount: 12,
-        status: 'TEXT_EXTRACTED',
+        status: 'COMPLETED',
         pages: [
           {
             pageNumber: 1,
@@ -118,6 +118,7 @@ export async function GET(
             wordCount: 45,
             confidence: 0.98,
             dimensions: { width: 612, height: 792 },
+            images: [],
           },
           {
             pageNumber: 2,
@@ -127,6 +128,7 @@ export async function GET(
             wordCount: 78,
             confidence: 0.96,
             dimensions: { width: 612, height: 792 },
+            images: [],
           },
         ],
       });

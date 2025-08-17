@@ -37,6 +37,7 @@ type ApiResponse = {
   jobId: string;
   v2: V2Data | null;
   job?: Record<string, unknown>;
+  error?: string;
 };
 
 export default function V2Viewer({ jobId }: { jobId: string }) {

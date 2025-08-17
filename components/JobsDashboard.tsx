@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { JobSummary } from '@/lib/mockData';
+import { JobSummary } from '@/types';
 import {
   DropdownMenu,
   DropdownMenuContent,

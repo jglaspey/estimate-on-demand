@@ -25,7 +25,7 @@ export async function GET(
     }
 
     // Queue status would go here when processing queue is working
-    const queueStatus = null;
+    const queueStatus: { attempts: number; lastError: string | null } | null = null;
 
     // Determine processing stage and progress
     let stage = 'uploaded';
@@ -99,8 +99,8 @@ export async function GET(
       lastError: job.error || null,
       queueInfo: queueStatus
         ? {
-            attempts: queueStatus.attempts,
-            lastError: queueStatus.lastError,
+            attempts: (queueStatus as { attempts: number; lastError: string | null }).attempts,
+            lastError: (queueStatus as { attempts: number; lastError: string | null }).lastError,
           }
         : null,
       extractedSummary,

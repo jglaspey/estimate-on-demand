@@ -455,7 +455,6 @@ export function RidgeCapAnalysis({
                       isPlaceholder={
                         !hasLiveData(ridgeCapData?.estimateQuantity)
                       }
-                      className='text-xs'
                     >
                       {estimateQty}
                     </ConditionalHighlight>
@@ -464,14 +463,12 @@ export function RidgeCapAnalysis({
                       isPlaceholder={
                         !hasLiveData(ridgeCapData?.estimateUnitPrice)
                       }
-                      className='text-xs'
                     >
                       {unitPrice}
                     </ConditionalHighlight>
                     {' = '}
                     <ConditionalHighlight
                       isPlaceholder={!hasLiveData(ridgeCapData?.estimateTotal)}
-                      className='text-xs'
                     >
                       {ridgeCapData?.estimateTotal || '$XXX.XX'}
                     </ConditionalHighlight>
@@ -567,7 +564,6 @@ export function RidgeCapAnalysis({
           Add to Supplement (
           <ConditionalHighlight
             isPlaceholder={!hasLiveData(ridgeCapData?.costImpact)}
-            className='ml-1 text-white'
           >
             {costImpact > 0
               ? `+$${costImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

@@ -586,7 +586,7 @@ Important: Return null for any section where you cannot find reliable data. Be c
         updateData.estimator =
           typeof data.claimInfo.estimator === 'string'
             ? data.claimInfo.estimator
-            : data.claimInfo.estimator.value ||
+            : (data.claimInfo.estimator as any).value ||
               JSON.stringify(data.claimInfo.estimator);
       }
       if (data.claimInfo.originalEstimate)
@@ -605,9 +605,9 @@ Important: Return null for any section where you cannot find reliable data. Be c
         // Handle complex ridgeHip object or simple number
         updateData.ridgeHipLength =
           typeof data.roofingData.ridgeHip === 'object' &&
-          data.roofingData.ridgeHip?.ridge
-            ? data.roofingData.ridgeHip.ridge +
-              (data.roofingData.ridgeHip.hip || 0)
+          (data.roofingData.ridgeHip as any)?.ridge
+            ? (data.roofingData.ridgeHip as any).ridge +
+              ((data.roofingData.ridgeHip as any).hip || 0)
             : typeof data.roofingData.ridgeHip === 'number'
               ? data.roofingData.ridgeHip
               : parseFloat(String(data.roofingData.ridgeHip)) || 0;
@@ -618,8 +618,8 @@ Important: Return null for any section where you cannot find reliable data. Be c
         // Handle complex slope object or simple string
         updateData.roofSlope =
           typeof data.roofingData.slope === 'object' &&
-          data.roofingData.slope?.predominantPitch
-            ? data.roofingData.slope.predominantPitch
+          (data.roofingData.slope as any)?.predominantPitch
+            ? (data.roofingData.slope as any).predominantPitch
             : typeof data.roofingData.slope === 'string'
               ? data.roofingData.slope
               : String(data.roofingData.slope);

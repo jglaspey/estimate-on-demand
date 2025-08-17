@@ -207,7 +207,7 @@ export default function Upload() {
           >
             {isUploading ? 'Uploading...' : 'Start Analysis'}
           </Button>
-          <Button outline disabled={isUploading}>
+          <Button variant="outline" disabled={isUploading}>
             Save as Draft
           </Button>
         </div>

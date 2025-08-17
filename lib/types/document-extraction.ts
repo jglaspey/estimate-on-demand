@@ -29,6 +29,7 @@ export interface PriorityFields {
 }
 
 export interface LineItem {
+  code?: string;
   description: string;
   quantity: number;
   unit: string;

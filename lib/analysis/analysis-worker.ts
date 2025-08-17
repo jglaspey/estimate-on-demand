@@ -6,7 +6,7 @@
  * and provides progress updates via WebSocket/callback mechanism.
  */
 
-import { prisma } from '../database/client';
+import { prisma, RuleType, RuleStatus } from '../database/client';
 
 import {
   ridgeCapAnalyzer,
@@ -98,7 +98,7 @@ export class AnalysisWorker {
         results.ridgeCap = await this.runRidgeCapAnalysis(jobData);
 
         // Save ridge cap analysis to database
-        await this.saveRuleAnalysis('HIP_RIDGE_CAP', results.ridgeCap);
+        await this.saveRuleAnalysis('HIP_RIDGE_CAP', results.ridgeCap as unknown as Record<string, unknown>);
 
         this.updateProgress(
           'ridge_cap',
@@ -112,7 +112,7 @@ export class AnalysisWorker {
           'failed',
           50,
           'Ridge cap analysis failed',
-          error
+          error as Error
         );
         results.ridgeCap = null;
       }
@@ -140,7 +140,7 @@ export class AnalysisWorker {
           'failed',
           70,
           'Starter strip analysis failed',
-          error
+          error as Error
         );
         results.starterStrip = null;
       }
@@ -168,7 +168,7 @@ export class AnalysisWorker {
           'failed',
           90,
           'Drip edge analysis failed',
-          error
+          error as Error
         );
         results.dripEdge = null;
       }
@@ -196,7 +196,7 @@ export class AnalysisWorker {
           'failed',
           100,
           'Ice & water analysis failed',
-          error
+          error as Error
         );
         results.iceAndWater = null;
       }
@@ -208,7 +208,7 @@ export class AnalysisWorker {
         `❌ Business rule analysis failed for job ${this.jobId}:`,
         error
       );
-      this.updateProgress('analysis', 'failed', 0, 'Analysis failed', error);
+      this.updateProgress('analysis', 'failed', 0, 'Analysis failed', error as Error);
       throw error;
     }
   }
@@ -219,22 +219,48 @@ export class AnalysisWorker {
   async runRidgeCapAnalysis(
     jobData: Record<string, unknown>
   ): Promise<RidgeCapAnalysisResult> {
-    const extraction = jobData.mistralExtractions[0];
+    const extractions = jobData.mistralExtractions as any[];
+    if (!extractions || !Array.isArray(extractions) || extractions.length === 0) {
+      throw new Error('No mistral extractions found in job data');
+    }
+    
+    const extraction = extractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
-    // Prepare analysis input
+    // Prepare analysis input with proper type casting
     const analysisInput: RidgeCapAnalysisInput = {
-      lineItems: extractedData.lineItems || [],
-      ridgeCapItems: extractedData.ridgeCapItems || [],
-      roofMeasurements: extractedData.roofMeasurements || {
+      lineItems: (extractedData.lineItems as any[]) || [],
+      ridgeCapItems: (extractedData.ridgeCapItems as any[]) || [],
+      roofMeasurements: (extractedData.roofMeasurements as any) || {
         ridgeLength: null,
         hipLength: null,
         totalRidgeHip: null,
         confidence: 0.5,
         sourcePages: [],
         extractedFrom: 'other' as const,
+        // Add required fields from RoofMeasurements interface
+        totalArea: 0,
+        totalSquares: 0,
+        pitch: 'Unknown',
+        stories: 1,
+        eavesLength: 0,
+        rakesLength: 0,
+        ridgesLength: 0,
+        valleysLength: 0,
+        roofArea: 0,
+        hipsLength: 0,
+        soffitDepth: 'Unknown',
+        wallThickness: 'Unknown',
+        totalRoofArea: 0,
+        numberOfSquares: 0,
+        predominantPitch: 'Unknown',
+        numberOfStories: 1,
+        totalEaves: 0,
+        totalRakes: 0,
+        totalRidges: 0,
+        totalValleys: 0,
       },
-      roofType: extractedData.roofType || {
+      roofType: (extractedData.roofType as any) || {
         roofType: 'laminated' as const,
         confidence: 0.5,
         reasoning: 'Default assumption',
@@ -334,10 +360,10 @@ export class AnalysisWorker {
       await prisma.ruleAnalysis.create({
         data: {
           jobId: this.jobId,
-          ruleType,
-          status: result.status,
-          confidence: result.confidence,
-          reasoning: result.reasoning,
+          ruleType: ruleType as RuleType,
+          status: (result.status as RuleStatus) || undefined,
+          confidence: (result.confidence as number) || null,
+          reasoning: (result.reasoning as string) || null,
           findings: result as any, // Contains costImpact and all analysis data
           analyzedAt: new Date(),
         },
@@ -364,7 +390,7 @@ export class AnalysisWorker {
       status,
       progress,
       message,
-      error: error?.message,
+      error: typeof error === 'string' ? error : error?.message,
       timestamp: new Date(),
     };
 

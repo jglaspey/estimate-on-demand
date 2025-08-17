@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { AnalysisWorker } from '../../../../../lib/analysis/analysis-worker';
-import { mapDatabaseToRidgeCapData } from '../../../../../lib/ridge-cap-data-mapper';
 import { prisma } from '../../../../../lib/database/client';
 
 /**
@@ -94,10 +93,8 @@ export async function POST(
         currentSpecification: results.ridgeCap.currentSpecification,
       };
 
-      ridgeCapUiData = mapDatabaseToRidgeCapData(
-        updatedJob as any,
-        ruleAnalysisResult as any
-      );
+      // V2: UI data mapping is now handled by the frontend
+      ridgeCapUiData = ruleAnalysisResult;
     }
 
     console.log(`✅ Business rule analysis completed for job ${jobId}`);
@@ -203,10 +200,8 @@ export async function GET(
         currentSpecification: findings?.currentSpecification || {},
       };
 
-      ridgeCapUiData = mapDatabaseToRidgeCapData(
-        job as any,
-        ruleAnalysisResult as any
-      );
+      // V2: UI data mapping is now handled by the frontend
+      ridgeCapUiData = ruleAnalysisResult;
     }
 
     return NextResponse.json({

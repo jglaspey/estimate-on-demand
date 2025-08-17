@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { JobsDashboard } from '@/components/JobsDashboard';
-import { JobSummary } from '@/lib/mockData';
+import { JobSummary } from '@/types';
 
 interface DatabaseJob {
   id: string;

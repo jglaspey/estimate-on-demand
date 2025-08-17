@@ -27,3 +27,4 @@ WORKSPACE_START-HERE.md
 !README.md
 !CLAUDE.md
 nixpacks.toml
+app/demo/

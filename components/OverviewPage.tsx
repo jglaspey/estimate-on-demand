@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChatBox } from '@/components/ChatBox';
-import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/lib/mockData';
+import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/types';
 
 interface OverviewPageProps {
   jobData: JobData;
@@ -103,7 +103,7 @@ export function OverviewPage({
                   Claim Rep:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.claimRep || 'N/A'}
+                  XXX
                 </span>
               </div>
               <div className='flex justify-between'>
@@ -111,7 +111,7 @@ export function OverviewPage({
                   Estimator:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.estimator || 'N/A'}
+                  XXX
                 </span>
               </div>
               <div className='flex justify-between'>
@@ -328,14 +328,6 @@ export function OverviewPage({
                       </div>
 
                       <div className='flex items-center gap-3'>
-                        <div className='text-center'>
-                          <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                            Confidence
-                          </div>
-                          <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                            {Math.round(rule.confidence * 100)}%
-                          </div>
-                        </div>
                         <ChevronRight className='h-5 w-5 text-zinc-400' />
                       </div>
                     </div>

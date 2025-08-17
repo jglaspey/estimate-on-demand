@@ -34,7 +34,9 @@ if (typeof process !== 'undefined') {
 export type {
   Job,
   Document,
-  Extraction,
+  DocumentPage,
+  MistralExtraction,
+  SonnetAnalysis,
   RuleAnalysis,
   JobStatus,
   DocumentStatus,

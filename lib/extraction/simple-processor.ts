@@ -247,9 +247,8 @@ export class SimpleDocumentProcessor {
         documentId: document.id,
         jobId,
         pageNumber: 1,
-        markdownText: pdfData.text,
-        extractedAt: new Date(),
-        confidence: 0.8,
+        rawText: pdfData.text,
+        extractedContent: {},
         extractionMethod: 'pdf-parse',
         wordCount: pdfData.text.split(' ').length
       }

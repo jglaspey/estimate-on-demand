@@ -11,7 +11,7 @@ import {
   ExternalLink,
   Plus
 } from 'lucide-react';
-import { RuleAnalysisResult } from '../../lib/mockData';
+import { RuleAnalysisResult } from '../../types';
 
 interface StarterStripCardProps {
   ruleAnalysis: RuleAnalysisResult;
@@ -85,7 +85,7 @@ export function StarterStripCard({ ruleAnalysis, onDecision }: StarterStripCardP
               Starter Strip Analysis
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Supplement needed • {Math.round(ruleAnalysis.confidence * 100)}% confidence
+              Supplement needed
             </p>
           </div>
         </div>

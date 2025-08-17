@@ -5,7 +5,7 @@
  * Provides high-level business logic for job lifecycle management
  */
 
-import { prisma, type Job, type JobStatus, type Extraction, type RuleAnalysis, type RuleType } from './client';
+import { prisma, type Job, type JobStatus, type MistralExtraction, type RuleAnalysis, type RuleType } from './client';
 import type { ExtractionResult, ExtractionMetrics } from '../extraction/haiku-extraction-engine';
 
 export interface CreateJobData {
@@ -18,7 +18,7 @@ export interface CreateJobData {
 
 export interface JobWithDetails extends Job {
   documents: any[];
-  extractions: Extraction[];
+  extractions: MistralExtraction[];
   ruleAnalyses: RuleAnalysis[];
 }
 
@@ -43,14 +43,22 @@ export class JobService {
    * Get job by ID with all related data
    */
   static async getJobWithDetails(jobId: string): Promise<JobWithDetails | null> {
-    return await prisma.job.findUnique({
+    const job = await prisma.job.findUnique({
       where: { id: jobId },
       include: {
         documents: true,
-        extractions: true,
+        mistralExtractions: true,
         ruleAnalyses: true,
       },
     });
+    
+    if (!job) return null;
+    
+    // Map mistralExtractions to extractions for backwards compatibility
+    return {
+      ...job,
+      extractions: job.mistralExtractions
+    };
   }
 
   /**
@@ -59,7 +67,7 @@ export class JobService {
   static async updateJobStatus(jobId: string, status: JobStatus, error?: string): Promise<Job> {
     const updateData: any = { status };
     
-    if (status === 'EXTRACTING' && !error) {
+    if (status === 'PROCESSING' && !error) {
       updateData.processedAt = new Date();
     } else if (status === 'COMPLETED' && !error) {
       updateData.completedAt = new Date();
@@ -81,7 +89,7 @@ export class JobService {
     extractionResult: ExtractionResult,
     metrics: ExtractionMetrics,
     engineUsed: string = 'haiku-3.5'
-  ): Promise<Extraction> {
+  ): Promise<MistralExtraction> {
     // Calculate validation metrics
     const fields = [
       extractionResult.hipRidgeCap,
@@ -99,28 +107,28 @@ export class JobService {
       extractionResult.gutterApron.location
     );
 
-    return await prisma.extraction.create({
+    return await prisma.mistralExtraction.create({
       data: {
         jobId,
-        engineUsed,
+        mistralModel: engineUsed,
         processingTime: metrics.processingTime,
         tokenUsage: metrics.tokenUsage,
         cost: metrics.cost,
         success: metrics.success,
         error: metrics.error,
-        
-        // Store extraction results as JSON
-        hipRidgeCap: extractionResult.hipRidgeCap,
-        starterStrip: extractionResult.starterStrip,
-        dripEdge: extractionResult.dripEdge,
-        gutterApron: extractionResult.gutterApron,
-        iceWaterBarrier: extractionResult.iceWaterBarrier,
-        
-        // Validation metrics
-        completionScore,
-        fieldsFound,
-        hasGutterApron,
-        hasLocationData,
+        extractedData: {
+          hipRidgeCap: extractionResult.hipRidgeCap,
+          starterStrip: extractionResult.starterStrip,
+          dripEdge: extractionResult.dripEdge,
+          gutterApron: extractionResult.gutterApron,
+          iceWaterBarrier: extractionResult.iceWaterBarrier,
+          metrics: {
+            completionScore,
+            fieldsFound,
+            hasGutterApron,
+            hasLocationData,
+          }
+        }
       },
     });
   }
@@ -157,8 +165,8 @@ export class JobService {
   /**
    * Get the latest extraction for a job
    */
-  static async getLatestExtraction(jobId: string): Promise<Extraction | null> {
-    return await prisma.extraction.findFirst({
+  static async getLatestExtraction(jobId: string): Promise<MistralExtraction | null> {
+    return await prisma.mistralExtraction.findFirst({
       where: { jobId },
       orderBy: { extractedAt: 'desc' },
     });
@@ -175,7 +183,7 @@ export class JobService {
       include: {
         _count: {
           select: {
-            extractions: true,
+            mistralExtractions: true,
             ruleAnalyses: true,
           },
         },
@@ -218,10 +226,10 @@ export class JobService {
       prisma.job.count({ 
         where: { 
           ...where, 
-          status: { in: ['EXTRACTING', 'ANALYZING', 'REVIEWING', 'GENERATING'] } 
+          status: { in: ['PROCESSING', 'ANALYZING', 'REVIEWING', 'GENERATING'] } 
         } 
       }),
-      prisma.extraction.aggregate({
+      prisma.mistralExtraction.aggregate({
         where: userId ? { job: { userId } } : undefined,
         _avg: { processingTime: true },
         _sum: { cost: true },
