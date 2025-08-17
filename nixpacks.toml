@@ -1,8 +1,11 @@
-[providers.node]
-version = "22"
+[variables]
+NODE_VERSION = "22"
+
+[[providers]]
+name = "node"
 
 [phases.setup]
-nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
+nixPkgs = ["nodejs_22", "npm", "openssl"]
 
 [phases.install]
 cmd = "npm ci"
