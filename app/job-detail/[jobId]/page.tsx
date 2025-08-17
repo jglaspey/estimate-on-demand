@@ -839,11 +839,11 @@ export default function JobDetailPage() {
       </header>
 
       {/* Main Content - Split Screen with 1/3 - 2/3 layout */}
-      <main className='h-[calc(100vh-8rem)] flex bg-zinc-50 dark:bg-zinc-950'>
+      <main className='h-[calc(100vh-4rem)] flex bg-zinc-50 dark:bg-zinc-950'>
         {/* Left Panel - Business Rules (1/3 width) */}
         <div className='w-1/3 bg-white border-r border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'>
           <div className='h-full overflow-auto'>
-            <div className='p-6 pb-24'>
+            <div className='p-6'>
               <div className='space-y-4'>
                 {/* Always show ridge cap analysis - either from real data or default state */}
                 {renderRuleCard({
@@ -869,7 +869,7 @@ export default function JobDetailPage() {
 
         {/* Right Panel - Document Viewer (2/3 width) */}
         <div className='w-2/3 bg-zinc-50 dark:bg-zinc-950 flex'>
-          <div className='flex-1 p-6 pb-6 flex flex-col min-h-0'>
+          <div className='flex-1 p-6 pb-0 flex flex-col min-h-0'>
             <EnhancedDocumentViewer
               jobId={jobId}
               selectedRule={ruleAnalysis[0]?.ruleName || null}

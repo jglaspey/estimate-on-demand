@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ZoomIn,
   ZoomOut,
@@ -11,10 +12,12 @@ import {
   FileText,
   Image as ImageIcon,
   Highlighter,
+  X,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -73,11 +76,19 @@ export function EnhancedDocumentViewer({
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
+    null
+  );
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<string>('');
   const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('extracted');
   const [_showHighlights] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [imageOverlay, setImageOverlay] = useState<{
+    isOpen: boolean;
+    images: string[];
+    currentIndex: number;
+  }>({ isOpen: false, images: [], currentIndex: 0 });
   // Track which rule we already auto-navigated for, so we don't keep forcing the page/tab
   const [lastAutoRule, setLastAutoRule] = useState<string | null>(null);
   // Ensure we only set initial doc/page once per mount
@@ -273,6 +284,139 @@ export function EnhancedDocumentViewer({
 
   const highlights = getHighlights(selectedRule);
 
+  // Get all images from all pages of active document for global navigation
+  const getAllImagesFromDocument = (document: DocumentData) => {
+    const allImages: string[] = [];
+    document.pages.forEach(page => {
+      if (page.images) {
+        allImages.push(...page.images);
+      }
+    });
+    return allImages;
+  };
+
+  // Image overlay functions
+  const openImageOverlay = (clickedImage: string, document: DocumentData) => {
+    const allImages = getAllImagesFromDocument(document);
+    const startIndex = allImages.indexOf(clickedImage);
+    setImageOverlay({
+      isOpen: true,
+      images: allImages,
+      currentIndex: startIndex >= 0 ? startIndex : 0,
+    });
+  };
+
+  const closeImageOverlay = useCallback(() => {
+    setImageOverlay({ isOpen: false, images: [], currentIndex: 0 });
+  }, []);
+
+  const nextImage = useCallback(() => {
+    setImageOverlay(prev => ({
+      ...prev,
+      currentIndex: (prev.currentIndex + 1) % prev.images.length,
+    }));
+  }, []);
+
+  const prevImage = useCallback(() => {
+    setImageOverlay(prev => ({
+      ...prev,
+      currentIndex:
+        prev.currentIndex === 0
+          ? prev.images.length - 1
+          : prev.currentIndex - 1,
+    }));
+  }, []);
+
+  const downloadCurrentImage = () => {
+    if (imageOverlay.images.length > 0) {
+      const link = document.createElement('a');
+      link.href = imageOverlay.images[imageOverlay.currentIndex];
+      link.download = `image-${imageOverlay.currentIndex + 1}.jpeg`;
+      link.click();
+    }
+  };
+
+  // Keyboard navigation for image overlay
+  useEffect(() => {
+    if (!imageOverlay.isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (imageOverlay.images.length > 1) prevImage();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (imageOverlay.images.length > 1) nextImage();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          closeImageOverlay();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [
+    imageOverlay.isOpen,
+    imageOverlay.images.length,
+    prevImage,
+    nextImage,
+    closeImageOverlay,
+  ]);
+
+  // Auto-update current page based on scroll position
+  useEffect(() => {
+    if (!scrollContainer || viewMode !== 'extracted') return;
+
+    const handleScroll = () => {
+      // Find all page elements
+      const pageElements =
+        scrollContainer.querySelectorAll('[data-page-number]');
+
+      // Find which page is most visible
+      let mostVisiblePage = 1;
+      let maxVisibleHeight = 0;
+
+      pageElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+
+        // Calculate how much of this page is visible
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+        if (visibleHeight > maxVisibleHeight) {
+          maxVisibleHeight = visibleHeight;
+          mostVisiblePage = parseInt(
+            element.getAttribute('data-page-number') || '1'
+          );
+        }
+      });
+
+      setCurrentPage(mostVisiblePage);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [scrollContainer, viewMode]);
+
+  // Jump to page when navigation buttons are clicked
+  const scrollToPage = (pageNumber: number) => {
+    if (!scrollContainer) return;
+
+    const pageElement = scrollContainer.querySelector(
+      `[data-page-number="${pageNumber}"]`
+    );
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setCurrentPage(pageNumber);
+  };
+
   // Auto-jump once when a rule changes, but never override user tab/page thereafter
   useEffect(() => {
     // Only run once per new rule and only after documents are loaded
@@ -318,8 +462,52 @@ export function EnhancedDocumentViewer({
     }
   };
 
+  // Render all pages in a stacked scrollable layout
+  const renderAllPagesStacked = (document: DocumentData) => {
+    return (
+      <div className='space-y-0'>
+        {document.pages.map((page, pageIndex) => (
+          <div
+            key={page.pageNumber}
+            className='relative'
+            data-page-number={page.pageNumber}
+          >
+            {/* Page divider with floating page number (skip for first page) */}
+            {pageIndex > 0 && (
+              <div className='relative my-8'>
+                <div className='absolute inset-0 flex items-center'>
+                  <div className='w-full border-t border-gray-200 dark:border-gray-700'></div>
+                </div>
+                <div className='relative flex justify-center'>
+                  <div className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium bg-gray-50 dark:bg-zinc-900'>
+                    Page {page.pageNumber}
+                    {highlights.filter(h => h.page === page.pageNumber).length >
+                      0 && (
+                      <Badge variant='secondary' className='text-xs ml-2'>
+                        <Highlighter className='h-3 w-3 mr-1' />
+                        {
+                          highlights.filter(h => h.page === page.pageNumber)
+                            .length
+                        }
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Page content */}
+            <div className='bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8 overflow-hidden'>
+              {renderExtractedText(page, document)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Render extracted text with optional markdown and highlights
-  const renderExtractedText = (page: DocumentPage) => {
+  const renderExtractedText = (page: DocumentPage, document?: DocumentData) => {
     // Normalize escape sequences that sometimes arrive as literal characters
     let text = page.rawText || '';
     // Turn literal "\n" into real newlines, and "\t" into spaces
@@ -504,7 +692,7 @@ export function EnhancedDocumentViewer({
 
       return (
         <div
-          className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 ${
+          className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 prose-img:max-w-full prose-img:h-auto overflow-x-hidden ${
             isRoofReport
               ? 'prose-headings:text-emerald-700 dark:prose-headings:text-emerald-400'
               : ''
@@ -560,6 +748,35 @@ export function EnhancedDocumentViewer({
                   {children}
                 </td>
               ),
+              // Custom image rendering with click-to-expand
+              img: ({ src, alt, ...props }) => {
+                if (!src) return null;
+                const isPageImage = page.images?.includes(src);
+                if (!isPageImage) {
+                  return (
+                    <img
+                      src={src}
+                      alt={alt}
+                      {...props}
+                      className='max-w-full h-auto'
+                    />
+                  );
+                }
+                return (
+                  <img
+                    src={src}
+                    alt={alt}
+                    {...props}
+                    className='max-w-full h-auto cursor-pointer rounded-lg border hover:shadow-lg transition-shadow duration-200 my-4'
+                    onClick={() => {
+                      if (src && document) {
+                        openImageOverlay(src, document);
+                      }
+                    }}
+                    title='Click to expand'
+                  />
+                );
+              },
             }}
           >
             {cleanedMarkdown}
@@ -871,7 +1088,7 @@ export function EnhancedDocumentViewer({
 
   return (
     <>
-      <Card className='h-full flex flex-col'>
+      <Card className='h-full flex flex-col overflow-hidden mb-0 rounded-b-none'>
         <CardHeader className='pb-4 flex-shrink-0'>
           <div className='flex items-center justify-between'>
             <CardTitle className='flex items-center gap-3'>
@@ -928,7 +1145,7 @@ export function EnhancedDocumentViewer({
           </div>
         </CardHeader>
 
-        <CardContent className='p-0 flex-1 flex flex-col min-h-0'>
+        <CardContent className='p-0 flex-1 flex flex-col min-h-0 overflow-hidden'>
           {documents.length === 0 ? (
             <div className='flex items-center justify-center h-full'>
               <p className='text-zinc-500 dark:text-zinc-400'>
@@ -939,7 +1156,7 @@ export function EnhancedDocumentViewer({
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
-              className='flex-1 flex flex-col'
+              className='flex-1 flex flex-col overflow-hidden'
             >
               {/* Document Tabs */}
               <div className='px-6 pb-4'>
@@ -976,7 +1193,7 @@ export function EnhancedDocumentViewer({
                 <TabsContent
                   key={doc.id}
                   value={doc.id}
-                  className='flex-1 flex flex-col mt-0 min-h-0'
+                  className='flex-1 flex flex-col mt-0 min-h-0 overflow-hidden'
                 >
                   {/* Controls */}
                   <div className='flex items-center justify-between px-6 py-3 border-b bg-zinc-50 dark:bg-zinc-800/50 flex-shrink-0'>
@@ -985,7 +1202,7 @@ export function EnhancedDocumentViewer({
                         variant='outline'
                         size='sm'
                         onClick={() =>
-                          setCurrentPage(Math.max(1, currentPage - 1))
+                          scrollToPage(Math.max(1, currentPage - 1))
                         }
                         disabled={currentPage === 1}
                         className='h-8'
@@ -999,9 +1216,7 @@ export function EnhancedDocumentViewer({
                         variant='outline'
                         size='sm'
                         onClick={() =>
-                          setCurrentPage(
-                            Math.min(doc.pageCount, currentPage + 1)
-                          )
+                          scrollToPage(Math.min(doc.pageCount, currentPage + 1))
                         }
                         disabled={currentPage === doc.pageCount}
                         className='h-8'
@@ -1075,120 +1290,55 @@ export function EnhancedDocumentViewer({
                     </div>
                   </div>
 
-                  {/* Content Viewer */}
+                  {/* Content Viewer - Stacked Pages */}
                   <div className='flex-1 overflow-auto bg-gray-50 dark:bg-zinc-900/50 min-h-0'>
                     {viewMode === 'extracted' ? (
-                      <div className='h-full overflow-auto p-6'>
-                        {activePage ? (
-                          <div className='max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
-                            {activePage.images &&
-                            activePage.images.length > 0 ? (
-                              <div className='bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-800 border-b'>
-                                <div className='p-4 border-b bg-zinc-100 dark:bg-zinc-800'>
-                                  <div className='flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                                    <ImageIcon className='h-4 w-4' />
-                                    <span className='font-medium'>
-                                      Extracted Images (
-                                      {activePage.images.length})
-                                    </span>
-                                    <Badge
-                                      variant='secondary'
-                                      className='text-xs'
-                                    >
-                                      Page {activePage.pageNumber}
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4'>
-                                  {activePage.images.map((src, idx) => (
-                                    <div
-                                      key={idx}
-                                      className='group relative bg-white dark:bg-zinc-900 rounded-lg border shadow-sm overflow-hidden'
-                                    >
-                                      <div className='aspect-[4/3] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
-                                        <img
-                                          alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
-                                          src={src}
-                                          className='w-full h-full object-contain transition-transform duration-200 group-hover:scale-105'
-                                          onError={e => {
-                                            console.error(
-                                              'Image failed to load:',
-                                              src
-                                            );
-                                            (
-                                              e.target as HTMLImageElement
-                                            ).style.display = 'none';
-                                          }}
-                                        />
-                                        <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200' />
-                                      </div>
-                                      <div className='p-2 bg-zinc-50 dark:bg-zinc-900 border-t'>
-                                        <div className='flex items-center justify-between'>
-                                          <span className='text-xs text-zinc-500 dark:text-zinc-400 font-medium'>
-                                            Image {idx + 1}
-                                          </span>
-                                          <div className='flex gap-1'>
-                                            <Button
-                                              variant='ghost'
-                                              size='sm'
-                                              className='h-6 w-6 p-0'
-                                              onClick={() =>
-                                                window.open(src, '_blank')
-                                              }
-                                              title='Open in new tab'
-                                            >
-                                              <Eye className='h-3 w-3' />
-                                            </Button>
-                                            <Button
-                                              variant='ghost'
-                                              size='sm'
-                                              className='h-6 w-6 p-0'
-                                              onClick={() => {
-                                                const link =
-                                                  document.createElement('a');
-                                                link.href = src;
-                                                link.download = `page-${activePage.pageNumber}-image-${idx + 1}.jpeg`;
-                                                link.click();
-                                              }}
-                                              title='Download image'
-                                            >
-                                              <Download className='h-3 w-3' />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                            <div className='p-8'>
-                              {renderExtractedText(activePage)}
-                              {/* Hidden debug container to retrieve raw OCR text via the console */}
-                              <pre data-doc-debug className='hidden'>
-                                {activePage.rawText || ''}
-                              </pre>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className='flex items-center justify-center h-full'>
-                            <p className='text-zinc-500 dark:text-zinc-400'>
-                              No content available for this page
-                            </p>
-                          </div>
-                        )}
+                      <div
+                        className='h-full overflow-auto p-6'
+                        ref={setScrollContainer}
+                      >
+                        <div className='max-w-4xl mx-auto overflow-x-hidden'>
+                          {renderAllPagesStacked(doc)}
+                          {/* Hidden debug container for all pages */}
+                          <pre data-doc-debug className='hidden'>
+                            {doc.pages
+                              .map(p => p.rawText || '')
+                              .join('\n\n--- PAGE BREAK ---\n\n')}
+                          </pre>
+                        </div>
                       </div>
                     ) : (
                       <div className='h-full overflow-auto p-6'>
-                        <div
-                          className='mx-auto'
-                          style={{
-                            maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
-                            transform: `scale(${zoom / 100})`,
-                            transformOrigin: 'top center',
-                          }}
-                        >
-                          {renderPDFView(doc, currentPage)}
+                        <div className='max-w-4xl mx-auto space-y-0'>
+                          {/* Render all PDF pages stacked */}
+                          {doc.pages.map((page, pageIndex) => (
+                            <div key={page.pageNumber} className='relative'>
+                              {/* Page divider with floating page number (skip for first page) */}
+                              {pageIndex > 0 && (
+                                <div className='relative my-8'>
+                                  <div className='absolute inset-0 flex items-center'>
+                                    <div className='w-full border-t border-gray-200 dark:border-gray-700'></div>
+                                  </div>
+                                  <div className='relative flex justify-center'>
+                                    <div className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium bg-gray-50 dark:bg-zinc-900'>
+                                      Page {page.pageNumber}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div
+                                className='mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border overflow-hidden'
+                                style={{
+                                  maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
+                                  transform: `scale(${zoom / 100})`,
+                                  transformOrigin: 'top center',
+                                }}
+                              >
+                                {renderPDFView(doc, page.pageNumber)}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -1209,88 +1359,8 @@ export function EnhancedDocumentViewer({
               (viewMode === 'extracted' ? (
                 <ScrollArea className='h-full p-6'>
                   {activePage ? (
-                    <div className='max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
-                      {activePage.images && activePage.images.length > 0 ? (
-                        <div className='bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-800 border-b'>
-                          <div className='p-4 border-b bg-zinc-100 dark:bg-zinc-800'>
-                            <div className='flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                              <ImageIcon className='h-4 w-4' />
-                              <span className='font-medium'>
-                                Extracted Images ({activePage.images.length})
-                              </span>
-                              <Badge variant='secondary' className='text-xs'>
-                                Page {activePage.pageNumber}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6'>
-                            {activePage.images.map((src, idx) => (
-                              <div
-                                key={idx}
-                                className='group relative bg-white dark:bg-zinc-900 rounded-lg border shadow-sm overflow-hidden'
-                              >
-                                <div className='aspect-[4/3] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
-                                  <img
-                                    alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
-                                    src={src}
-                                    className='w-full h-full object-contain transition-transform duration-200 group-hover:scale-105 cursor-pointer'
-                                    onClick={() => window.open(src, '_blank')}
-                                    onError={e => {
-                                      console.error(
-                                        'Image failed to load:',
-                                        src
-                                      );
-                                      (
-                                        e.target as HTMLImageElement
-                                      ).style.display = 'none';
-                                    }}
-                                  />
-                                  <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200' />
-                                  <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
-                                    <Button
-                                      variant='secondary'
-                                      size='sm'
-                                      className='h-8 w-8 p-0 bg-white/90 hover:bg-white'
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        window.open(src, '_blank');
-                                      }}
-                                      title='Open in new tab'
-                                    >
-                                      <Eye className='h-4 w-4' />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className='p-2 bg-zinc-50 dark:bg-zinc-900 border-t'>
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-xs text-zinc-500 dark:text-zinc-400 font-medium'>
-                                      Image {idx + 1}
-                                    </span>
-                                    <Button
-                                      variant='ghost'
-                                      size='sm'
-                                      className='h-6 w-6 p-0'
-                                      onClick={() => {
-                                        const link =
-                                          document.createElement('a');
-                                        link.href = src;
-                                        link.download = `page-${activePage.pageNumber}-image-${idx + 1}.jpeg`;
-                                        link.click();
-                                      }}
-                                      title='Download image'
-                                    >
-                                      <Download className='h-3 w-3' />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className='p-8'>
-                        {renderExtractedText(activePage)}
-                      </div>
+                    <div className='max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8'>
+                      {renderExtractedText(activePage)}
                     </div>
                   ) : (
                     <div className='flex items-center justify-center h-full'>
@@ -1308,6 +1378,90 @@ export function EnhancedDocumentViewer({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Overlay Modal - Portal to document.body */}
+      {imageOverlay.isOpen &&
+        typeof window !== 'undefined' &&
+        createPortal(
+          <div className='fixed inset-0 z-[9999] flex items-center justify-center'>
+            {/* Backdrop with blur */}
+            <div
+              className='absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200'
+              onClick={closeImageOverlay}
+            />
+
+            {/* Close button */}
+            <Button
+              variant='ghost'
+              size='sm'
+              className='absolute top-4 right-4 z-10 h-10 w-10 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+              onClick={closeImageOverlay}
+            >
+              <X className='h-4 w-4' />
+            </Button>
+
+            {/* Image counter */}
+            {imageOverlay.images.length > 1 && (
+              <div className='absolute top-4 left-4 z-10 bg-black/40 text-white px-3 py-1.5 rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm'>
+                {imageOverlay.currentIndex + 1} of {imageOverlay.images.length}
+              </div>
+            )}
+
+            {/* Download button */}
+            <Button
+              variant='ghost'
+              size='sm'
+              className='absolute top-4 right-16 z-10 h-10 w-10 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+              onClick={downloadCurrentImage}
+              title='Download image'
+            >
+              <Download className='h-4 w-4' />
+            </Button>
+
+            {/* Previous button */}
+            {imageOverlay.images.length > 1 && (
+              <Button
+                variant='ghost'
+                size='lg'
+                className='absolute left-4 top-1/2 -translate-y-1/2 z-10 h-14 w-14 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+                onClick={prevImage}
+                title='Previous image (←)'
+              >
+                <ChevronLeft className='h-6 w-6' />
+              </Button>
+            )}
+
+            {/* Next button */}
+            {imageOverlay.images.length > 1 && (
+              <Button
+                variant='ghost'
+                size='lg'
+                className='absolute right-4 top-1/2 -translate-y-1/2 z-10 h-14 w-14 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+                onClick={nextImage}
+                title='Next image (→)'
+              >
+                <ChevronRight className='h-6 w-6' />
+              </Button>
+            )}
+
+            {/* Main image container with fly-in animation */}
+            {imageOverlay.images.length > 0 && (
+              <div className='relative z-5 flex items-center justify-center w-full h-full p-8 animate-in fade-in zoom-in-95 duration-200'>
+                <img
+                  src={imageOverlay.images[imageOverlay.currentIndex]}
+                  alt={`Image ${imageOverlay.currentIndex + 1}`}
+                  className='max-w-full max-h-full object-contain rounded-lg shadow-2xl'
+                  style={{
+                    maxWidth: 'calc(100vw - 8rem)',
+                    maxHeight: 'calc(100vh - 8rem)',
+                    filter: 'drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5))',
+                  }}
+                />
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
