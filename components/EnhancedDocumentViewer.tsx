@@ -324,24 +324,168 @@ export function EnhancedDocumentViewer({
     let text = page.rawText || '';
     // Turn literal "\n" into real newlines, and "\t" into spaces
     text = text.replace(/\\n/g, '\n').replace(/\\t/g, '  ');
-    // Remove escaped dollars so currency renders cleanly
-    text = text.replace(/\\\$/g, '$');
+    // Fix currency formatting issues
+    text = text.replace(/\\\$/g, '$'); // Remove escaped dollars
+    text = text.replace(/\$\s*\$/g, '$'); // Fix duplicate $$
+    text = text.replace(/\$\s+\(/g, '$-('); // Fix negative currency
+    text = text.replace(/\(\s*\$\s*/g, '($'); // Normalize negative currency formatting
 
     // Determine highlights for this page up-front
     const _pageHighlights = highlights.filter(h => h.page === page.pageNumber);
 
-    // Check if the text is already properly formatted markdown
-    // (has markdown tables, headers, or other markdown formatting)
+    // Check if the text is already properly formatted markdown OR looks like structured document content
+    // (has markdown tables, headers, or other markdown formatting, or structured report content)
     const isAlreadyMarkdown =
       /^\|.*\|.*\|$/m.test(text) || // Has markdown tables
       /^#{1,6}\s+/m.test(text) || // Has markdown headers
       /^\s*[-*+]\s+/m.test(text) || // Has markdown lists
-      /\[.*?\]\(.*?\)/.test(text); // Has markdown links
+      /\[.*?\]\(.*?\)/.test(text) || // Has markdown links
+      /^(Precise Aerial Measurement Report|AGR Roofing|Summary For Coverage|REPLACEMENT COST|LORI HOUSER)/im.test(
+        text
+      ); // Structured documents
 
-    // If it's already markdown, apply minimal processing
+    // If it's already markdown, apply smart processing
     if (isAlreadyMarkdown) {
-      // Just clean up excessive whitespace and render
-      const cleanedMarkdown = text
+      // Process the markdown to fix common OCR issues
+      let processedMarkdown = text
+        .split('\n')
+        .map((line, index, lines) => {
+          // Check if this looks like a false table (e.g., simple key-value pairs)
+          if (line.includes('|')) {
+            const parts = line.split('|').filter(p => p.trim());
+
+            // If it's only 2 parts and looks like a label:value pair, convert it
+            if (parts.length === 2) {
+              const [label, value] = parts.map(p => p.trim());
+
+              // Check if this is likely a header/value pair, not a table
+              const isLikelyPair =
+                // Common document headers and labels
+                /^(Customer Name|Property Address|Insured|Property|Claim Rep|Estimator|Insurance Company|Carrier|Policy Number)/i.test(
+                  label
+                ) ||
+                /^(LORI HOUSER|Claim Number|Date of Loss|CLAIM NUMBER|Date of Loss|Summary For|REPLACEMENT COST|LESS RECOVERABLE|ACTUAL CASH VALUE)/i.test(
+                  label
+                ) ||
+                // Date patterns at the top of documents
+                /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}$/i.test(
+                  label
+                ) ||
+                // Value patterns that indicate key-value pairs
+                /^\d{10,}$/.test(value) || // Claim numbers
+                /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value) || // Dates
+                /^\$[\d,]+\.?\d*$/.test(value) || // Currency
+                /^[A-Z][a-z]+,\s+[A-Z]{2}\s+\d{5}/.test(value) || // Addresses
+                // Single address or name lines
+                /^\d+\s+[A-Z]/.test(label) || // Street addresses
+                parts.some(p =>
+                  p.match(
+                    /^(Omaha|Lincoln|Bennington|Elkhorn|Papillion|Bellevue|Council Bluffs),\s+[A-Z]{2}/i
+                  )
+                );
+
+              if (isLikelyPair) {
+                // Convert to bold label with value
+                return `**${label}:** ${value}`;
+              }
+            }
+
+            // Check if this is a false table header (single row that shouldn't be a table)
+            const nextLine = lines[index + 1];
+            const prevLine = lines[index - 1];
+            const nextNextLine = lines[index + 2];
+
+            // Better table detection - look for separator lines or multiple data rows
+            const hasTableSeparator =
+              (nextLine && /^\s*\|?\s*[-:]+\s*\|/.test(nextLine)) ||
+              (prevLine && /^\s*\|?\s*[-:]+\s*\|/.test(prevLine));
+
+            const hasMultipleTableRows =
+              (nextLine && nextLine.includes('|') && parts.length >= 3) ||
+              (nextNextLine && nextNextLine.includes('|') && parts.length >= 3);
+
+            const looksLikeTableHeader =
+              parts.length >= 3 &&
+              parts.some(p =>
+                /^(DESCRIPTION|QTY|QUANTITY|UNIT|PRICE|TAX|RCV|ACV|DEPREC|TOTAL)/i.test(
+                  p.trim()
+                )
+              );
+
+            // If it's not a table context and only has 2 parts or less, convert it
+            if (
+              !hasTableSeparator &&
+              !hasMultipleTableRows &&
+              !looksLikeTableHeader &&
+              parts.length <= 2
+            ) {
+              // This is likely not meant to be a table
+              return parts.join(' - ').trim();
+            }
+          }
+
+          // Detect and preserve bold formatting for important text
+          // Look for patterns that should be bold
+          if (!line.includes('**')) {
+            // Make section headers bold
+            line = line.replace(
+              /(Summary For Coverage [A-Z][\s\-\w]*)/g,
+              '**$1**'
+            );
+
+            // Make totals and important financial lines bold
+            line = line.replace(
+              /(Total [A-Z\s]+Settlement|Total Outstanding|Net Claim|Line Item Total|Material Sales Tax|Grand Total)/gi,
+              '**$1**'
+            );
+
+            // Make important labels bold
+            line = line.replace(
+              /^(Replacement Cost Value|Less Deductible|Actual Cash Value \(ACV\)|Less Recoverable|Less Non Recoverable)(\s|:|\||$)/gim,
+              '**$1**$2'
+            );
+
+            // Make coverage types bold
+            line = line.replace(
+              /^(Coverage:\s*Dwelling|Coverage:\s*Other Structures|Dwelling|Other Structures|Personal Property)/gim,
+              '**$1**'
+            );
+
+            // Make document headers bold
+            line = line.replace(
+              /^(ESTIMATE|ROOF REPORT|EAGLEVIEW|HOVER|Source -|Precise Aerial Measurement Report|AGR Roofing and Construction)/gim,
+              '**$1**'
+            );
+
+            // Bold company names and contact info labels
+            line = line.replace(/^(tel\.|email:|www\.)/gim, '**$1**');
+
+            // Bold important roof measurements
+            line = line.replace(
+              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares):/gi,
+              '**$1**:'
+            );
+
+            // Bold addresses and property info
+            line = line.replace(
+              /^(\d+\s+[A-Z][a-z]+.*(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Boulevard|Blvd).*)/gim,
+              '**$1**'
+            );
+          }
+
+          return line;
+        })
+        .join('\n');
+
+      // Additional cleanup for currency and formatting
+      processedMarkdown = processedMarkdown
+        .replace(/\$\s*\$/g, '$') // Fix duplicate $$
+        .replace(/\(\s*\$\s*([0-9,]+\.?\d*)\s*\)/g, '($$$1)') // Fix negative currency
+        .replace(/\$\s+([0-9])/g, '$$$1') // Remove space between $ and number
+        .replace(/([0-9])\s*\$/g, '$1'); // Move $ to correct position
+
+      // Clean up excessive whitespace
+      const cleanedMarkdown = processedMarkdown
         .replace(/\n{4,}/g, '\n\n\n') // Limit to max 3 newlines
         .replace(/^\s+$/gm, '') // Remove whitespace-only lines
         .trim();
@@ -844,16 +988,6 @@ export function EnhancedDocumentViewer({
                                 .length
                             }{' '}
                             on this page
-                          </Badge>
-                        </>
-                      )}
-
-                      {activePage && activePage.confidence && (
-                        <>
-                          <Separator orientation='vertical' className='h-4' />
-                          <Badge variant='outline' className='text-xs'>
-                            {Math.round(activePage.confidence * 100)}%
-                            confidence
                           </Badge>
                         </>
                       )}
