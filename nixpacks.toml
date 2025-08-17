@@ -1,0 +1,14 @@
+[providers.node]
+version = "22"
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm-9_x", "openssl"]
+
+[phases.install]
+cmd = "npm ci"
+
+[phases.build]
+cmd = "echo 'Starting build phase...' && rm -rf node_modules/.cache && npm ci --production=false && echo 'Dependencies installed' && npx prisma generate && echo 'Prisma generated' && npm run build && echo 'Build completed successfully'"
+
+[start]
+cmd = "npx prisma migrate deploy && npm start"
