@@ -35,11 +35,30 @@ export interface ExtractorResult {
 
 function selectRelevantPages(
   pages: ExtractorInputPage[],
-  keywords: RegExp
+  primary: RegExp,
+  secondary?: RegExp,
+  maxPages: number = 6
 ): ExtractorInputPage[] {
-  const matches = pages.filter(p => keywords.test(p.rawText || ''));
-  if (matches.length > 0) return matches.slice(0, 5);
-  return pages.slice(0, 3); // small default context
+  const uniqByPage = (arr: ExtractorInputPage[]) => {
+    const seen = new Set<number>();
+    const result: ExtractorInputPage[] = [];
+    for (const p of arr) {
+      if (!seen.has(p.pageNumber)) {
+        seen.add(p.pageNumber);
+        result.push(p);
+      }
+    }
+    return result;
+  };
+
+  const prim = pages.filter(p => primary.test(p.rawText || ''));
+  if (prim.length > 0) return prim.slice(0, maxPages);
+  if (secondary) {
+    const sec = pages.filter(p => secondary.test(p.rawText || ''));
+    if (sec.length > 0) return uniqByPage(sec).slice(0, maxPages);
+  }
+  // Fallback: take a few more pages to improve recall when keywords differ
+  return pages.slice(0, Math.min(maxPages, 8));
 }
 
 async function callClaude(
@@ -58,7 +77,7 @@ async function callClaude(
 
   const sys = `Extract only ${category} line items from the estimate text. Return strict JSON array 'items'. Each item: {category, code?, description, quantity{value,unit}?, unitPrice?, totalPrice?, sourcePages[], confidence}. ${promptHint}`;
   const resp = await anthropic.messages.create({
-    model: 'claude-3-5-haiku-20241022',
+    model: process.env.ANTHROPIC_MODEL_EXTRACTOR || 'claude-3-5-haiku-20241022',
     max_tokens: 500,
     temperature: 0,
     messages: [{ role: 'user', content: `${sys}\n\n${textBlocks}` }],
@@ -96,7 +115,8 @@ export async function extractDripEdgeItems(
 ): Promise<ExtractorResult> {
   const relevant = selectRelevantPages(
     pages,
-    /(drip\s*edge|DRIP\s*EDGE|RFG\s*DRIP)/i
+    /(\bdrip\s*edge\b|RFG\s*DRIP)/i,
+    /(drip\s*metal|eave\s*drip|drip\s*cap)/i
   );
   return callClaude(
     'drip_edge',
@@ -110,12 +130,14 @@ export async function extractGutterApronItems(
 ): Promise<ExtractorResult> {
   const relevant = selectRelevantPages(
     pages,
-    /(gutter\s*apron|gutter\s*flashing|eave\s*flashing|apron\s*flashing|counter\s*flashing\s*-?\s*apron|RFG\s*GUTTER\s*APRON)/i
+    /(gutter\s*apron|gutter\s*flashing|eave\s*flashing|apron\s*flashing|counter\s*flashing\s*[\-–—]?\s*apron|counter\s*flashing[^\n]{0,40}?apron|apron[^\n]{0,40}?counter\s*flashing|RFG\s*GUTTER\s*APRON)/i,
+    /(\beave\s*(metal|trim|apron|flashing)\b|starter\s*metal|eaves?\s*apron|apron\b)/i,
+    8
   );
   return callClaude(
     'gutter_apron',
     relevant,
-    'Include only eaves location; do not confuse with gutter guards.'
+    'Include only eaves location (gutter apron/eave flashing). Do not include drip edge (rakes), gutter guards, or valley/step flashing.'
   );
 }
 
@@ -124,11 +146,13 @@ export async function extractIceWaterItems(
 ): Promise<ExtractorResult> {
   const relevant = selectRelevantPages(
     pages,
-    /(ice\s*&?\s*water|I&W|self\s*-?\s*adhering|RFG\s*IWS|ice\s*and\s*water)/i
+    /(ice\s*&?\s*water|ice\s*and\s*water|ice\s*-?\s*and\s*-?\s*water\s*shield|ice\s*&\s*water\s*shield|RFG\s*IWS|IWS\b|I&W|ice\s*&?\s*water\s*barrier)/i,
+    /(self\s*-?\s*adher(?:ed|ing)|self\s*-?\s*sealing|underlayment\s*(membrane)?|waterproof(?:ing)?\s*membrane)/i,
+    8
   );
   return callClaude(
     'ice_water',
     relevant,
-    'Report coverage if shown; include page evidence.'
+    'Identify ice & water barrier/shield (self-adhered membrane). Report SF and page evidence. Exclude felt/roofing paper and synthetic underlayment.'
   );
 }
