@@ -330,7 +330,69 @@ export function EnhancedDocumentViewer({
     // Determine highlights for this page up-front
     const _pageHighlights = highlights.filter(h => h.page === page.pageNumber);
 
-    // Heuristic formatter pipeline to produce more readable Markdown from raw OCR text
+    // Check if the text is already properly formatted markdown
+    // (has markdown tables, headers, or other markdown formatting)
+    const isAlreadyMarkdown =
+      /^\|.*\|.*\|$/m.test(text) || // Has markdown tables
+      /^#{1,6}\s+/m.test(text) || // Has markdown headers
+      /^\s*[-*+]\s+/m.test(text) || // Has markdown lists
+      /\[.*?\]\(.*?\)/.test(text); // Has markdown links
+
+    // If it's already markdown, apply minimal processing
+    if (isAlreadyMarkdown) {
+      // Just clean up excessive whitespace and render
+      const cleanedMarkdown = text
+        .replace(/\n{4,}/g, '\n\n\n') // Limit to max 3 newlines
+        .replace(/^\s+$/gm, '') // Remove whitespace-only lines
+        .trim();
+
+      return (
+        <div className='prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2'>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+            components={{
+              // Custom table rendering for better display
+              table: ({ children }) => (
+                <div className='overflow-x-auto my-4'>
+                  <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className='bg-gray-50 dark:bg-gray-800'>
+                  {children}
+                </thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className='bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700'>
+                  {children}
+                </tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className='hover:bg-gray-50 dark:hover:bg-gray-800'>
+                  {children}
+                </tr>
+              ),
+              th: ({ children }) => (
+                <th className='px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider'>
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className='px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap'>
+                  {children}
+                </td>
+              ),
+            }}
+          >
+            {cleanedMarkdown}
+          </ReactMarkdown>
+        </div>
+      );
+    }
+
+    // Otherwise, apply the heuristic formatter pipeline to produce more readable Markdown from raw OCR text
     // 1) Promote probable section headings (ALL CAPS lines, or Title Case lines with no trailing colon) to H2/H3
     // 2) Bold label-value pairs like "Claim Number: 123" → **Claim Number**: 123
     // 3) Convert enumerated items like "3a. Remove Flashing" to bullet list items
