@@ -1662,7 +1662,7 @@
         "id": 22,
         "title": "Fix Extraction Service Data Pipeline Bug",
         "description": "Fix the critical data pipeline bug in the extraction service where Claude extractors receive metadata JSON instead of actual document text, causing extraction failures. Also address the blank left panel issue by fixing the data flow between analysisResults and ruleAnalysis array.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           21,
           18
@@ -1675,7 +1675,7 @@
             "id": 1,
             "title": "Modify Data Pipeline Code in smart-extraction-service.ts",
             "description": "Fix the core issue where Claude extractors receive metadata JSON instead of actual document text by updating the text extraction logic in smart-extraction-service.ts.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "1. Locate line 184 in smart-extraction-service.ts where the issue occurs\n2. Replace `fullText.pages.map(p => p.markdownText)` with `fullText.pages.map(p => p.rawText || p.markdownText || '')`\n3. Add comments explaining the fallback logic: '// Prioritize rawText if available, fall back to markdownText, or use empty string if both are missing'\n4. Ensure the change is properly integrated with the surrounding code context\n5. Verify the modified code compiles without errors",
             "testStrategy": "Create a unit test with mock fullText objects containing: 1) only rawText, 2) only markdownText, 3) both properties, and 4) neither property. Verify the function returns the expected text in each scenario."
@@ -1684,7 +1684,7 @@
             "id": 2,
             "title": "Implement Input Validation and Error Handling",
             "description": "Add robust validation and error handling to prevent sending invalid data to Claude extractors and improve troubleshooting capabilities.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1
             ],
@@ -1695,7 +1695,7 @@
             "id": 3,
             "title": "Verify Text Format Compatibility with Claude Extractors",
             "description": "Ensure the extracted text format (rawText vs markdownText) is compatible with Claude extractors and implement any necessary preprocessing.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2
@@ -1707,7 +1707,7 @@
             "id": 4,
             "title": "Update Unit Tests for New Fallback Logic",
             "description": "Modify existing tests and create new ones to verify the fixed extraction pipeline works correctly with different text content scenarios.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -1720,7 +1720,7 @@
             "id": 5,
             "title": "Document the Fix and Update Knowledge Base",
             "description": "Create comprehensive documentation about the bug, its solution, and update relevant documentation to prevent similar issues in the future.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -1734,7 +1734,7 @@
             "id": 6,
             "title": "Implement Dual-Extraction Validation System",
             "description": "Set up a validation system that compares results from different extraction methods to improve accuracy and reliability.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -1747,7 +1747,7 @@
             "id": 7,
             "title": "Fix NextJS 15 Params Issues",
             "description": "Address compatibility issues with NextJS 15 parameter handling that may be affecting the extraction service.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "1. Identify specific NextJS 15 params issues affecting the extraction service\n2. Update route handlers to use the correct parameter format for NextJS 15\n3. Modify any affected API endpoints to ensure compatibility\n4. Test all routes to verify parameters are correctly passed and received\n5. Document the changes for future NextJS upgrades",
             "testStrategy": "Test all affected routes with various parameter combinations. Verify that parameters are correctly passed to and from the API. Test edge cases like special characters and empty values."
@@ -1756,7 +1756,7 @@
             "id": 8,
             "title": "Fix Prisma Enum Handling",
             "description": "Resolve issues with Prisma enum handling that may be affecting data storage and retrieval in the extraction pipeline.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "1. Identify specific Prisma enum issues in the codebase\n2. Update Prisma schema definitions to ensure proper enum handling\n3. Modify any affected database queries to use the correct enum values\n4. Run migrations if necessary to update the database schema\n5. Test database operations to verify enums are correctly stored and retrieved",
             "testStrategy": "Test database operations with all possible enum values. Verify that enums are correctly stored in the database and retrieved with the expected values. Test edge cases like enum value changes and migrations."
@@ -1765,7 +1765,7 @@
             "id": 9,
             "title": "Fix Blank Left Panel Data Flow Issue",
             "description": "Address the root cause of the blank left panel by fixing the data flow between analysisResults and ruleAnalysis array.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "1. Analyze the data flow between analysisResults and ruleAnalysis array components\n2. Identify where the connection is breaking in the current implementation\n3. Modify the code to properly connect real analysisResults data to the ruleAnalysis UI\n4. Remove any mock data being used and replace with actual data from the extraction pipeline\n5. Add logging to track data flow for future debugging\n6. Implement error handling for cases where data might be missing or malformed",
             "testStrategy": "Test the left panel with various analysis results to verify data is correctly displayed. Test edge cases like empty results, partial results, and large result sets. Verify that the UI updates correctly when new data is received."
@@ -1788,7 +1788,7 @@
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-15T06:47:56.496Z",
+      "updated": "2025-08-15T20:00:13.699Z",
       "description": "Tasks for master context"
     }
   }

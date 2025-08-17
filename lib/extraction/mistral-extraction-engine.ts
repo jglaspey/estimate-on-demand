@@ -1,6 +1,6 @@
 /**
  * Mistral Vision Extraction Engine
- * 
+ *
  * Uses Mistral's vision models for OCR and document analysis
  * Specializes in document transcription and structured data extraction
  */
@@ -9,12 +9,14 @@ import { Mistral } from '@mistralai/mistralai';
 
 import { convertPDFBufferToBase64Images } from '../utils/pdf-to-images';
 
-import type { ExtractionResult, ExtractionMetrics } from './haiku-extraction-engine';
+// Deprecated v1 engine. Kept only for type compatibility in legacy tests.
+export type ExtractionResult = Record<string, unknown>;
+export type ExtractionMetrics = Record<string, unknown>;
 
 export class MistralExtractionEngine {
   private mistral: Mistral;
   private model: string;
-  
+
   constructor(apiKey: string, model: string = 'pixtral-12b-2409') {
     this.mistral = new Mistral({ apiKey });
     this.model = model;
@@ -80,22 +82,26 @@ IMPORTANT:
    * Extract data from PDF using Mistral vision models
    */
   async extractFromPDF(
-    pdfBuffer: Buffer, 
+    pdfBuffer: Buffer,
     jobId?: string
   ): Promise<{ data: ExtractionResult; metrics: ExtractionMetrics }> {
     const startTime = Date.now();
-    
+
     try {
-      console.log(`🚀 [${jobId || 'unknown'}] Starting Mistral vision extraction with ${this.model}...`);
-      
+      console.log(
+        `🚀 [${jobId || 'unknown'}] Starting Mistral vision extraction with ${this.model}...`
+      );
+
       // Convert PDF to images
       const conversionResult = await convertPDFBufferToBase64Images(pdfBuffer);
-      
+
       if (!conversionResult.success) {
         throw new Error(`PDF conversion failed: ${conversionResult.error}`);
       }
 
-      console.log(`📄 Converted PDF to ${conversionResult.base64Images.length} images`);
+      console.log(
+        `📄 Converted PDF to ${conversionResult.base64Images.length} images`
+      );
 
       // Process all pages (limit to first 3 for cost control)
       const imagesToProcess = conversionResult.base64Images.slice(0, 3);
@@ -104,25 +110,29 @@ IMPORTANT:
 
       for (let i = 0; i < imagesToProcess.length; i++) {
         const base64Image = imagesToProcess[i];
-        
+
         try {
-          console.log(`🔍 Processing page ${i + 1}/${imagesToProcess.length}...`);
-          
+          console.log(
+            `🔍 Processing page ${i + 1}/${imagesToProcess.length}...`
+          );
+
           const response = await this.mistral.chat.complete({
             model: this.model,
-            messages: [{
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: this.EXTRACTION_PROMPT
-                },
-                {
-                  type: 'image_url',
-                  image_url: `data:image/png;base64,${base64Image}`
-                }
-              ]
-            }],
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: this.EXTRACTION_PROMPT,
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: `data:image/png;base64,${base64Image}`,
+                  },
+                ],
+              },
+            ],
             max_tokens: 2000,
             temperature: 0.1,
           });
@@ -137,10 +147,12 @@ IMPORTANT:
           allResults.push(extractedData);
 
           // Keep the result with the most findings
-          if (!bestResult || this.countFindings(extractedData) > this.countFindings(bestResult)) {
+          if (
+            !bestResult ||
+            this.countFindings(extractedData) > this.countFindings(bestResult)
+          ) {
             bestResult = extractedData;
           }
-
         } catch (pageError) {
           console.error(`Failed to process page ${i + 1}:`, pageError);
         }
@@ -151,33 +163,42 @@ IMPORTANT:
       }
 
       const processingTime = Date.now() - startTime;
-      
+
       // Estimate tokens and cost (Mistral pricing varies by model)
       const estimatedInputTokens = imagesToProcess.length * 1000; // Rough estimate
       const estimatedOutputTokens = 200;
-      const estimatedCost = this.calculateCost(estimatedInputTokens, estimatedOutputTokens);
+      const estimatedCost = this.calculateCost(
+        estimatedInputTokens,
+        estimatedOutputTokens
+      );
 
-      console.log(`✅ [${jobId || 'unknown'}] Mistral extraction complete: ${processingTime}ms, ~$${estimatedCost.toFixed(4)}`);
-      console.log(`📊 Processed ${allResults.length} pages, found ${this.countFindings(bestResult)} fields`);
-      
+      console.log(
+        `✅ [${jobId || 'unknown'}] Mistral extraction complete: ${processingTime}ms, ~$${estimatedCost.toFixed(4)}`
+      );
+      console.log(
+        `📊 Processed ${allResults.length} pages, found ${this.countFindings(bestResult)} fields`
+      );
+
       return {
         data: bestResult,
         metrics: {
           processingTime,
           tokenUsage: {
             input: estimatedInputTokens,
-            output: estimatedOutputTokens
+            output: estimatedOutputTokens,
           },
           cost: estimatedCost,
-          success: true
-        }
+          success: true,
+        },
       };
-
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      
-      console.error(`❌ [${jobId || 'unknown'}] Mistral extraction failed:`, error);
-      
+
+      console.error(
+        `❌ [${jobId || 'unknown'}] Mistral extraction failed:`,
+        error
+      );
+
       return {
         data: this.getEmptyResult(),
         metrics: {
@@ -185,8 +206,8 @@ IMPORTANT:
           tokenUsage: { input: 0, output: 0 },
           cost: 0,
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
       };
     }
   }
@@ -195,7 +216,7 @@ IMPORTANT:
    * Extract data from PDF file path
    */
   async extractFromFile(
-    pdfPath: string, 
+    pdfPath: string,
     jobId?: string
   ): Promise<{ data: ExtractionResult; metrics: ExtractionMetrics }> {
     const fs = await import('fs');
@@ -223,8 +244,8 @@ IMPORTANT:
 
     try {
       return JSON.parse(jsonText);
-    } catch (error) {
-      console.error('Failed to parse JSON from Mistral response:', jsonText);
+    } catch {
+      // v1 engine deprecated; keep silent to avoid noisy logs in CI
       throw new Error('Invalid JSON response from Mistral');
     }
   }
@@ -234,14 +255,13 @@ IMPORTANT:
    */
   private countFindings(result: ExtractionResult): number {
     const fields = [
-      result.hipRidgeCap,
-      result.starterStrip,
-      result.dripEdge,
-      result.gutterApron,
-      result.iceWaterBarrier
+      (result as any).hipRidgeCap,
+      (result as any).starterStrip,
+      (result as any).dripEdge,
+      (result as any).gutterApron,
+      (result as any).iceWaterBarrier,
     ];
-    
-    return fields.filter(field => field.found).length;
+    return fields.filter((field: any) => field && field.found).length;
   }
 
   /**
@@ -251,12 +271,13 @@ IMPORTANT:
     // Mistral pricing (approximate, varies by model)
     const rates = {
       'pixtral-12b-2409': { input: 0.15, output: 0.15 }, // per 1M tokens
-      'pixtral-large-2411': { input: 0.30, output: 0.30 },
+      'pixtral-large-2411': { input: 0.3, output: 0.3 },
       'mistral-medium-2505': { input: 2.7, output: 8.1 },
-      'mistral-small-2503': { input: 1.0, output: 3.0 }
+      'mistral-small-2503': { input: 1.0, output: 3.0 },
     };
 
-    const rate = rates[this.model as keyof typeof rates] || rates['pixtral-12b-2409'];
+    const rate =
+      rates[this.model as keyof typeof rates] || rates['pixtral-12b-2409'];
     return (inputTokens * rate.input + outputTokens * rate.output) / 1000000;
   }
 
@@ -265,11 +286,36 @@ IMPORTANT:
    */
   private getEmptyResult(): ExtractionResult {
     return {
-      hipRidgeCap: { found: false, quantity: null, description: null, quality: null },
-      starterStrip: { found: false, quantity: null, description: null, type: null },
-      dripEdge: { found: false, quantity: null, description: null, location: null },
-      gutterApron: { found: false, quantity: null, description: null, location: null },
-      iceWaterBarrier: { found: false, coverage: null, description: null, calculation: null }
+      hipRidgeCap: {
+        found: false,
+        quantity: null,
+        description: null,
+        quality: null,
+      },
+      starterStrip: {
+        found: false,
+        quantity: null,
+        description: null,
+        type: null,
+      },
+      dripEdge: {
+        found: false,
+        quantity: null,
+        description: null,
+        location: null,
+      },
+      gutterApron: {
+        found: false,
+        quantity: null,
+        description: null,
+        location: null,
+      },
+      iceWaterBarrier: {
+        found: false,
+        coverage: null,
+        description: null,
+        calculation: null,
+      },
     };
   }
 
@@ -286,15 +332,15 @@ IMPORTANT:
         'Multi-page document processing',
         'Chart and image analysis',
         'Structured data extraction',
-        'Vision-based field identification'
+        'Vision-based field identification',
       ],
       performance: {
         averageProcessingTime: '~15 seconds per page',
         costPer1000Pages: '~$150-300 (varies by model)',
         imageSupport: 'PNG, JPEG, WEBP, GIF',
         maxImageSize: '10MB',
-        maxImagesPerRequest: 8
-      }
+        maxImagesPerRequest: 8,
+      },
     };
   }
 
@@ -305,31 +351,38 @@ IMPORTANT:
     try {
       const response = await this.mistral.chat.complete({
         model: this.model,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Please transcribe all text you can see in this image. Be thorough and accurate.'
-            },
-            {
-              type: 'image_url',
-              image_url: `data:image/png;base64,${imageBase64}`
-            }
-          ]
-        }],
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Please transcribe all text you can see in this image. Be thorough and accurate.',
+              },
+              {
+                type: 'image_url',
+                image_url: `data:image/png;base64,${imageBase64}`,
+              },
+            ],
+          },
+        ],
         max_tokens: 1000,
       });
 
       return response.choices?.[0]?.message?.content || 'No content returned';
     } catch (error) {
-      throw new Error(`OCR test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `OCR test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }
 
 // Export factory functions
-export function createMistralEngine(apiKey?: string, model?: string): MistralExtractionEngine {
+export function createMistralEngine(
+  apiKey?: string,
+  model?: string
+): MistralExtractionEngine {
   const key = apiKey || process.env.MISTRAL_API_KEY;
   if (!key || key === 'your_mistral_key_here') {
     throw new Error('Mistral API key required for vision extraction engine');
@@ -337,6 +390,8 @@ export function createMistralEngine(apiKey?: string, model?: string): MistralExt
   return new MistralExtractionEngine(key, model);
 }
 
-export function getDefaultMistralEngine(model?: string): MistralExtractionEngine {
+export function getDefaultMistralEngine(
+  model?: string
+): MistralExtractionEngine {
   return createMistralEngine(undefined, model);
 }

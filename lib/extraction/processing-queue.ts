@@ -3,9 +3,9 @@ import {
   wsManager,
   type JobProgressEvent,
 } from '@/lib/websocket/socket-handler';
+import { extractionV2 } from '@/lib/extraction/v2/orchestrator';
 
-// import { mistralService } from './mistral-service'; // Not currently used in dual-phase workflow
-import { smartExtractionService } from './smart-extraction-service';
+// v1 full-document path removed in favor of v2 orchestrator
 import { executeUploadExtraction } from './upload-integration';
 
 export interface ProcessingJob {
@@ -30,7 +30,7 @@ export class DocumentProcessingQueue {
   async addToQueue(jobId: string, filePaths: string | string[]): Promise<void> {
     // Handle both single file and multiple files
     const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
-    console.log(
+    console.warn(
       `Adding job ${jobId} to processing queue with ${paths.length} file(s)`
     );
 
@@ -74,7 +74,7 @@ export class DocumentProcessingQueue {
     if (this.isProcessing) return;
 
     this.isProcessing = true;
-    console.log('Starting document processing queue...');
+    console.warn('Starting document processing queue...');
 
     try {
       while (this.processingQueue.size > 0) {
@@ -91,7 +91,7 @@ export class DocumentProcessingQueue {
       console.error('Queue processing error:', error);
     } finally {
       this.isProcessing = false;
-      console.log('Document processing queue stopped');
+      console.warn('Document processing queue stopped');
     }
   }
 
@@ -99,7 +99,7 @@ export class DocumentProcessingQueue {
    * Process a single job using NEW dual-phase approach
    */
   private async processJob(job: ProcessingJob): Promise<void> {
-    console.log(
+    console.warn(
       `🚀 Starting dual-phase processing for job ${job.jobId}, attempt ${job.attempts + 1}`
     );
 
@@ -125,26 +125,26 @@ export class DocumentProcessingQueue {
       );
 
       // ⚡ PHASE 1: Lightning-fast core info extraction using Claude direct PDF (5-10 seconds)
-      console.log(`⚡ PHASE 1: Fast core extraction for job ${job.jobId}`);
-      
+      console.warn(`⚡ PHASE 1: Fast core extraction for job ${job.jobId}`);
+
       // Use first file for primary extraction (usually estimate)
       const primaryFilePath = job.filePaths[0];
       const fileName = primaryFilePath.split('/').pop() || 'document';
-      
+
       const phase1Result = await executeUploadExtraction({
         jobId: job.jobId,
         filePath: primaryFilePath,
         fileName,
         websocket: undefined, // We'll use our own progress events
         fallbackToOCR: false,
-        skipExtraction: false
+        skipExtraction: false,
       });
 
-      console.log(`✅ PHASE 1 complete for job ${job.jobId}:`, phase1Result);
-      
+      console.warn(`✅ PHASE 1 complete for job ${job.jobId}:`, phase1Result);
+
       // Update database with Phase 1 fields
       await this.updateJobWithPhase1Fields(job.jobId, phase1Result);
-      
+
       // Emit progress with extracted fields
       this.emitJobProgress(
         job.jobId,
@@ -156,32 +156,30 @@ export class DocumentProcessingQueue {
           fieldsFound: phase1Result.metadata.fieldsFound,
           extractionRate: phase1Result.metadata.extractionRate,
           confidence: phase1Result.metadata.confidence,
-          fields: phase1Result.fields
+          fields: phase1Result.fields,
         }
       );
 
       // 🔄 PHASE 2: Full document extraction (parallel, in background)
-      // This runs in parallel and doesn't block the user
-      console.log(
-        `🔄 PHASE 2: Starting background full extraction for job ${job.jobId}`
+      // Always run the v2 orchestrator (v1 deprecated)
+      console.warn(
+        `🔄 PHASE 2: Starting background full extraction (v2) for job ${job.jobId}`
       );
 
-      // Don't await this - let it run in background
-      smartExtractionService
-        .extractFullDocumentData(job.filePaths, job.jobId)
+      extractionV2
+        .run(job.jobId, job.filePaths)
         .then(() => {
-          console.log(`✅ PHASE 2 complete for job ${job.jobId}`);
-          // Phase 2 emits its own progress events and updates job status
+          console.warn(`✅ PHASE 2 (v2) complete for job ${job.jobId}`);
         })
         .catch(error => {
-          console.error(`❌ PHASE 2 failed for job ${job.jobId}:`, error);
+          console.error(`❌ PHASE 2 (v2) failed for job ${job.jobId}:`, error);
         });
 
       // Mark phase 1 as completed - user can see data immediately
       job.status = 'completed';
       this.processingQueue.delete(job.jobId);
 
-      console.log(
+      console.warn(
         `✅ Job ${job.jobId} ready for user review (Phase 2 continuing in background)`
       );
     } catch (error) {
@@ -192,7 +190,7 @@ export class DocumentProcessingQueue {
       // Retry logic - up to 3 attempts
       if (job.attempts < 3) {
         job.status = 'pending';
-        console.log(`Retrying job ${job.jobId} (attempt ${job.attempts}/3)`);
+        console.warn(`Retrying job ${job.jobId} (attempt ${job.attempts}/3)`);
 
         // Wait before retry (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, job.attempts * 2000));
@@ -226,19 +224,17 @@ export class DocumentProcessingQueue {
    */
   private async triggerBusinessRuleAnalysis(
     jobId: string,
-    extractedData: any
+    extractedData: Record<string, unknown>
   ): Promise<void> {
     try {
-      console.log(`Starting business rule analysis for job ${jobId}`);
+      console.warn(`Starting business rule analysis for job ${jobId}`);
 
       // This will be implemented later - for now just log
-      console.log(`Business rule analysis queued for job ${jobId}`);
-      console.log('Extracted data summary:', {
-        docType: extractedData.classification.type,
-        hasCustomer: !!extractedData.customerInfo,
-        hasClaim: !!extractedData.claimInfo,
-        hasRoofing: !!extractedData.roofingData,
-        lineItemCount: extractedData.lineItems.length,
+      console.warn(`Business rule analysis queued for job ${jobId}`);
+      console.warn('Extracted data summary:', {
+        docType: (extractedData as Record<string, unknown>)['classification']
+          ? (extractedData as Record<string, unknown>)['classification']
+          : 'unknown',
       });
     } catch (error) {
       console.error(`Business rule analysis failed for job ${jobId}:`, error);
@@ -267,10 +263,16 @@ export class DocumentProcessingQueue {
   /**
    * Update job record with Phase 1 extracted fields
    */
-  private async updateJobWithPhase1Fields(jobId: string, phase1Result: any): Promise<void> {
+  private async updateJobWithPhase1Fields(
+    jobId: string,
+    phase1Result: Record<string, any>
+  ): Promise<void> {
     try {
-      const { fields, metadata } = phase1Result;
-      
+      const { fields, metadata } = phase1Result as {
+        fields: Record<string, any>;
+        metadata: Record<string, any>;
+      };
+
       await prisma.job.update({
         where: { id: jobId },
         data: {
@@ -289,10 +291,15 @@ export class DocumentProcessingQueue {
           updatedAt: new Date(),
         },
       });
-      
-      console.log(`Updated job ${jobId} with Phase 1 fields (${metadata.fieldsFound}/8 fields)`);
+
+      console.warn(
+        `Updated job ${jobId} with Phase 1 fields (${metadata.fieldsFound}/8 fields)`
+      );
     } catch (error) {
-      console.error(`Failed to update job ${jobId} with Phase 1 fields:`, error);
+      console.error(
+        `Failed to update job ${jobId} with Phase 1 fields:`,
+        error
+      );
       throw error;
     }
   }
@@ -306,7 +313,7 @@ export class DocumentProcessingQueue {
     stage: string,
     progress: number,
     message: string,
-    extractedSummary?: any
+    extractedSummary?: unknown
   ) {
     const event: JobProgressEvent = {
       jobId,

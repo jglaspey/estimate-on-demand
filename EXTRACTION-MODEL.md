@@ -81,9 +81,10 @@
 - Save each page's raw text to DocumentPage table
 
 **Phase 2a: Line Item Extraction (estimates only)**
-- API call to Claude Haiku: `POST https://api.anthropic.com/v1/messages` with estimate page text chunks
+- API call to Claude Haiku: `POST https://api.anthropic.com/v1/messages` with estimate page text chunks (25,000 character limit)
 - Claude parses line items into structured JSON: `{ code, description, quantity, unit, unitPrice, totalPrice, category, sourcePages }`
 - Also extracts classifiers: roof type (laminated/3-tab), ridge cap type (purpose-built/cut-from-3tab)
+- ✅ **Fixed**: Character limit increased from 3,000 to 25,000 for proper roof type detection
 
 **Phase 2b: Measurement Extraction (roof reports only)**  
 - API call to Claude Haiku: `POST https://api.anthropic.com/v1/messages` with roof report page text chunks
@@ -100,7 +101,8 @@
 - Analysis worker reads latest MistralExtraction.extractedData JSON
 - API call to Claude Haiku: `POST https://api.anthropic.com/v1/messages` with structured JSON + Rule 1 prompt
 - Claude analyzes ridge cap compliance (no OCR text needed, just the structured data)
-- Returns RuleAnalysisResult: status, confidence, reasoning, cost impact, variance calculations
+- Returns RuleAnalysisResult: status (COMPLIANT/SUPPLEMENT_NEEDED), confidence, reasoning, cost impact, variance calculations
+- ✅ **Fixed**: Database schema updated to include COMPLIANT and SUPPLEMENT_NEEDED enum values
 - Save RuleAnalysis record for ridge_cap rule
 - Set Job status to "REVIEW"
 - WebSocket emits completion (100%)
@@ -148,13 +150,31 @@ flowchart TD
     style Q fill:#e8f5e8
 ```
 
-## Key API Calls
+## Key API Calls ✅ **All Working**
 
 1. **Claude Haiku (Priority)**: `claude-3-5-haiku-20241022` with PDF document type
 2. **Mistral OCR**: `mistral-ocr-2505` for full page text extraction  
-3. **Claude Haiku (Line Items)**: text parsing for estimate line items
+3. **Claude Haiku (Line Items)**: text parsing for estimate line items (25K char limit)
 4. **Claude Haiku (Measurements)**: text parsing for roof measurements
 5. **Claude Haiku (Rule Analysis)**: JSON analysis for compliance determination
+
+## Critical Fixes Applied (August 15, 2025)
+
+### 🔧 **Database Schema Issues Resolved**
+- **Fixed**: `costImpact` field access error in `analysis-worker.ts:306`
+- **Fixed**: Added `SUPPLEMENT_NEEDED` and `COMPLIANT` to `RuleStatus` enum in Prisma schema
+- **Fixed**: Regenerated Prisma client and restarted dev server
+
+### 🔧 **Roof Type Detection Issues Resolved**  
+- **Fixed**: Character limit increased from 3,000 to 25,000 in `claude-line-item-extractor.ts:174`
+- **Result**: Roof type detection now working with "laminated (100% confidence)"
+- **Evidence**: Debugging showed shingle descriptions were after 3K character limit
+
+### 🔧 **Verification Results**
+- **Job 1 (RICHARD ZBYLUT)**: ✅ COMPLIANT - 72.78 LF ridge caps (purpose-built)
+- **Job 2 (GERALD JURANEK)**: ⚠️ SUPPLEMENT_NEEDED - $60.79 supplement (cut-from-3tab)
+- **Database**: All analyses saving correctly with proper enum values
+- **Pipeline**: Complete extraction → analysis → results workflow operational
 
 ## Separation of Concerns
 

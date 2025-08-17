@@ -182,9 +182,9 @@ export class SmartExtractionService {
 
         // Get Phase 1 core info from job record for context
         const job = await prisma.job.findUnique({
-          where: { id: jobId }
+          where: { id: jobId },
         });
-        
+
         const coreInfo: CoreInfo = {
           customerName: job?.customerName || undefined,
           propertyAddress: job?.customerAddress || undefined,
@@ -1088,8 +1088,8 @@ export class SmartExtractionService {
         }
       }
 
-      // Return structured data in format expected by the system
-      return {
+      // Create structured data in format expected by the system
+      const structuredData: any = {
         documentType: docType.type,
         lineItems,
         roofMeasurements,
