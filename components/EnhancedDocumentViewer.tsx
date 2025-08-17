@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ZoomIn,
   ZoomOut,
@@ -11,10 +12,12 @@ import {
   FileText,
   Image as ImageIcon,
   Highlighter,
+  X,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -73,11 +76,19 @@ export function EnhancedDocumentViewer({
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(
+    null
+  );
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<string>('');
   const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('extracted');
   const [_showHighlights] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [imageOverlay, setImageOverlay] = useState<{
+    isOpen: boolean;
+    images: string[];
+    currentIndex: number;
+  }>({ isOpen: false, images: [], currentIndex: 0 });
   // Track which rule we already auto-navigated for, so we don't keep forcing the page/tab
   const [lastAutoRule, setLastAutoRule] = useState<string | null>(null);
   // Ensure we only set initial doc/page once per mount
@@ -273,6 +284,139 @@ export function EnhancedDocumentViewer({
 
   const highlights = getHighlights(selectedRule);
 
+  // Get all images from all pages of active document for global navigation
+  const getAllImagesFromDocument = (document: DocumentData) => {
+    const allImages: string[] = [];
+    document.pages.forEach(page => {
+      if (page.images) {
+        allImages.push(...page.images);
+      }
+    });
+    return allImages;
+  };
+
+  // Image overlay functions
+  const openImageOverlay = (clickedImage: string, document: DocumentData) => {
+    const allImages = getAllImagesFromDocument(document);
+    const startIndex = allImages.indexOf(clickedImage);
+    setImageOverlay({
+      isOpen: true,
+      images: allImages,
+      currentIndex: startIndex >= 0 ? startIndex : 0,
+    });
+  };
+
+  const closeImageOverlay = useCallback(() => {
+    setImageOverlay({ isOpen: false, images: [], currentIndex: 0 });
+  }, []);
+
+  const nextImage = useCallback(() => {
+    setImageOverlay(prev => ({
+      ...prev,
+      currentIndex: (prev.currentIndex + 1) % prev.images.length,
+    }));
+  }, []);
+
+  const prevImage = useCallback(() => {
+    setImageOverlay(prev => ({
+      ...prev,
+      currentIndex:
+        prev.currentIndex === 0
+          ? prev.images.length - 1
+          : prev.currentIndex - 1,
+    }));
+  }, []);
+
+  const downloadCurrentImage = () => {
+    if (imageOverlay.images.length > 0) {
+      const link = document.createElement('a');
+      link.href = imageOverlay.images[imageOverlay.currentIndex];
+      link.download = `image-${imageOverlay.currentIndex + 1}.jpeg`;
+      link.click();
+    }
+  };
+
+  // Keyboard navigation for image overlay
+  useEffect(() => {
+    if (!imageOverlay.isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (imageOverlay.images.length > 1) prevImage();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (imageOverlay.images.length > 1) nextImage();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          closeImageOverlay();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [
+    imageOverlay.isOpen,
+    imageOverlay.images.length,
+    prevImage,
+    nextImage,
+    closeImageOverlay,
+  ]);
+
+  // Auto-update current page based on scroll position
+  useEffect(() => {
+    if (!scrollContainer || viewMode !== 'extracted') return;
+
+    const handleScroll = () => {
+      // Find all page elements
+      const pageElements =
+        scrollContainer.querySelectorAll('[data-page-number]');
+
+      // Find which page is most visible
+      let mostVisiblePage = 1;
+      let maxVisibleHeight = 0;
+
+      pageElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+
+        // Calculate how much of this page is visible
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+        if (visibleHeight > maxVisibleHeight) {
+          maxVisibleHeight = visibleHeight;
+          mostVisiblePage = parseInt(
+            element.getAttribute('data-page-number') || '1'
+          );
+        }
+      });
+
+      setCurrentPage(mostVisiblePage);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [scrollContainer, viewMode]);
+
+  // Jump to page when navigation buttons are clicked
+  const scrollToPage = (pageNumber: number) => {
+    if (!scrollContainer) return;
+
+    const pageElement = scrollContainer.querySelector(
+      `[data-page-number="${pageNumber}"]`
+    );
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setCurrentPage(pageNumber);
+  };
+
   // Auto-jump once when a rule changes, but never override user tab/page thereafter
   useEffect(() => {
     // Only run once per new rule and only after documents are loaded
@@ -318,19 +462,330 @@ export function EnhancedDocumentViewer({
     }
   };
 
+  // Render all pages in a stacked scrollable layout
+  const renderAllPagesStacked = (document: DocumentData) => {
+    return (
+      <div className='space-y-0'>
+        {document.pages.map((page, pageIndex) => (
+          <div
+            key={page.pageNumber}
+            className='relative'
+            data-page-number={page.pageNumber}
+          >
+            {/* Page divider with floating page number (skip for first page) */}
+            {pageIndex > 0 && (
+              <div className='relative my-8'>
+                <div className='absolute inset-0 flex items-center'>
+                  <div className='w-full border-t border-gray-200 dark:border-gray-700'></div>
+                </div>
+                <div className='relative flex justify-center'>
+                  <div className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium bg-gray-50 dark:bg-zinc-900'>
+                    Page {page.pageNumber}
+                    {highlights.filter(h => h.page === page.pageNumber).length >
+                      0 && (
+                      <Badge variant='secondary' className='text-xs ml-2'>
+                        <Highlighter className='h-3 w-3 mr-1' />
+                        {
+                          highlights.filter(h => h.page === page.pageNumber)
+                            .length
+                        }
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Page content */}
+            <div className='bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8 overflow-hidden'>
+              {renderExtractedText(page, document)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Render extracted text with optional markdown and highlights
-  const renderExtractedText = (page: DocumentPage) => {
+  const renderExtractedText = (page: DocumentPage, document?: DocumentData) => {
     // Normalize escape sequences that sometimes arrive as literal characters
     let text = page.rawText || '';
     // Turn literal "\n" into real newlines, and "\t" into spaces
     text = text.replace(/\\n/g, '\n').replace(/\\t/g, '  ');
-    // Remove escaped dollars so currency renders cleanly
-    text = text.replace(/\\\$/g, '$');
+    // Fix currency formatting issues
+    text = text.replace(/\\\$/g, '$'); // Remove escaped dollars
+    text = text.replace(/\$\s*\$/g, '$'); // Fix duplicate $$
+    text = text.replace(/\$\s+\(/g, '$-('); // Fix negative currency
+    text = text.replace(/\(\s*\$\s*/g, '($'); // Normalize negative currency formatting
 
     // Determine highlights for this page up-front
     const _pageHighlights = highlights.filter(h => h.page === page.pageNumber);
 
-    // Heuristic formatter pipeline to produce more readable Markdown from raw OCR text
+    // Check if the text is already properly formatted markdown OR looks like structured document content
+    // (has markdown tables, headers, or other markdown formatting, or structured report content)
+    const isAlreadyMarkdown =
+      /^\|.*\|.*\|$/m.test(text) || // Has markdown tables
+      /^#{1,6}\s+/m.test(text) || // Has markdown headers
+      /^\s*[-*+]\s+/m.test(text) || // Has markdown lists
+      /\[.*?\]\(.*?\)/.test(text) || // Has markdown links
+      /^(Precise Aerial Measurement Report|AGR Roofing|Summary For Coverage|REPLACEMENT COST|LORI HOUSER|ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView)/im.test(
+        text
+      ); // Structured documents
+
+    // Determine if this is a roof report page for special formatting
+    const isRoofReport =
+      /^(ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView|Precise Aerial Measurement|Property Address.*\d{5}|Ridge Length|Hip Length|Total Squares|Predominant Pitch)/im.test(
+        text
+      );
+
+    // If it's already markdown, apply smart processing
+    if (isAlreadyMarkdown) {
+      // Process the markdown to fix common OCR issues
+      let processedMarkdown = text
+        .split('\n')
+        .map((line, index, lines) => {
+          // Check if this looks like a false table (e.g., simple key-value pairs)
+          if (line.includes('|')) {
+            const parts = line.split('|').filter(p => p.trim());
+
+            // If it's only 2 parts and looks like a label:value pair, convert it
+            if (parts.length === 2) {
+              const [label, value] = parts.map(p => p.trim());
+
+              // Check if this is likely a header/value pair, not a table
+              const isLikelyPair =
+                // Common document headers and labels
+                /^(Customer Name|Property Address|Insured|Property|Claim Rep|Estimator|Insurance Company|Carrier|Policy Number)/i.test(
+                  label
+                ) ||
+                /^(LORI HOUSER|Claim Number|Date of Loss|CLAIM NUMBER|Date of Loss|Summary For|REPLACEMENT COST|LESS RECOVERABLE|ACTUAL CASH VALUE)/i.test(
+                  label
+                ) ||
+                // Date patterns at the top of documents
+                /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}$/i.test(
+                  label
+                ) ||
+                // Value patterns that indicate key-value pairs
+                /^\d{10,}$/.test(value) || // Claim numbers
+                /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value) || // Dates
+                /^\$[\d,]+\.?\d*$/.test(value) || // Currency
+                /^[A-Z][a-z]+,\s+[A-Z]{2}\s+\d{5}/.test(value) || // Addresses
+                // Single address or name lines
+                /^\d+\s+[A-Z]/.test(label) || // Street addresses
+                parts.some(p =>
+                  p.match(
+                    /^(Omaha|Lincoln|Bennington|Elkhorn|Papillion|Bellevue|Council Bluffs),\s+[A-Z]{2}/i
+                  )
+                );
+
+              if (isLikelyPair) {
+                // Convert to bold label with value
+                return `**${label}:** ${value}`;
+              }
+            }
+
+            // Check if this is a false table header (single row that shouldn't be a table)
+            const nextLine = lines[index + 1];
+            const prevLine = lines[index - 1];
+            const nextNextLine = lines[index + 2];
+
+            // Better table detection - look for separator lines or multiple data rows
+            const hasTableSeparator =
+              (nextLine && /^\s*\|?\s*[-:]+\s*\|/.test(nextLine)) ||
+              (prevLine && /^\s*\|?\s*[-:]+\s*\|/.test(prevLine));
+
+            const hasMultipleTableRows =
+              (nextLine && nextLine.includes('|') && parts.length >= 3) ||
+              (nextNextLine && nextNextLine.includes('|') && parts.length >= 3);
+
+            const looksLikeTableHeader =
+              parts.length >= 3 &&
+              parts.some(p =>
+                /^(DESCRIPTION|QTY|QUANTITY|UNIT|PRICE|TAX|RCV|ACV|DEPREC|TOTAL)/i.test(
+                  p.trim()
+                )
+              );
+
+            // If it's not a table context and only has 2 parts or less, convert it
+            if (
+              !hasTableSeparator &&
+              !hasMultipleTableRows &&
+              !looksLikeTableHeader &&
+              parts.length <= 2
+            ) {
+              // This is likely not meant to be a table
+              return parts.join(' - ').trim();
+            }
+          }
+
+          // Detect and preserve bold formatting for important text
+          // Look for patterns that should be bold
+          if (!line.includes('**')) {
+            // Make section headers bold
+            line = line.replace(
+              /(Summary For Coverage [A-Z][\s\-\w]*)/g,
+              '**$1**'
+            );
+
+            // Make totals and important financial lines bold
+            line = line.replace(
+              /(Total [A-Z\s]+Settlement|Total Outstanding|Net Claim|Line Item Total|Material Sales Tax|Grand Total)/gi,
+              '**$1**'
+            );
+
+            // Make important labels bold
+            line = line.replace(
+              /^(Replacement Cost Value|Less Deductible|Actual Cash Value \(ACV\)|Less Recoverable|Less Non Recoverable)(\s|:|\||$)/gim,
+              '**$1**$2'
+            );
+
+            // Make coverage types bold
+            line = line.replace(
+              /^(Coverage:\s*Dwelling|Coverage:\s*Other Structures|Dwelling|Other Structures|Personal Property)/gim,
+              '**$1**'
+            );
+
+            // Make document headers bold
+            line = line.replace(
+              /^(ESTIMATE|ROOF REPORT|EAGLEVIEW|HOVER|Source -|Precise Aerial Measurement Report|AGR Roofing and Construction)/gim,
+              '**$1**'
+            );
+
+            // Bold company names and contact info labels
+            line = line.replace(/^(tel\.|email:|www\.)/gim, '**$1**');
+
+            // Bold important roof measurements and related terms
+            line = line.replace(
+              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares|Ridge Length|Hip Length|Eave Length|Rake Length|Valley Length|Roof Slope|Stories|Roof Material|Soffit Depth):/gi,
+              '**$1**:'
+            );
+
+            // Bold aerial measurement report headers and sections
+            line = line.replace(
+              /^(ROOF MEASUREMENTS|DETAILED MEASUREMENTS|RIDGE AND HIP BREAKDOWN|EAVE MEASUREMENTS|RAKE MEASUREMENTS|ICE & WATER BARRIER|EAGLEVIEW|HOVER|Source - EagleView|Property Address|ROOF REPORT|Aerial Measurement|Measurement Report)/gim,
+              '**$1**'
+            );
+
+            // Bold addresses and property info
+            line = line.replace(
+              /^(\d+\s+[A-Z][a-z]+.*(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Boulevard|Blvd).*)/gim,
+              '**$1**'
+            );
+          }
+
+          return line;
+        })
+        .join('\n');
+
+      // Additional cleanup for currency and formatting
+      processedMarkdown = processedMarkdown
+        .replace(/\$\s*\$/g, '$') // Fix duplicate $$
+        .replace(/\(\s*\$\s*([0-9,]+\.?\d*)\s*\)/g, '($$$1)') // Fix negative currency
+        .replace(/\$\s+([0-9])/g, '$$$1') // Remove space between $ and number
+        .replace(/([0-9])\s*\$/g, '$1'); // Move $ to correct position
+
+      // Clean up excessive whitespace
+      const cleanedMarkdown = processedMarkdown
+        .replace(/\n{4,}/g, '\n\n\n') // Limit to max 3 newlines
+        .replace(/^\s+$/gm, '') // Remove whitespace-only lines
+        .trim();
+
+      return (
+        <div
+          className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 prose-img:max-w-full prose-img:h-auto overflow-x-hidden ${
+            isRoofReport
+              ? 'prose-headings:text-emerald-700 dark:prose-headings:text-emerald-400'
+              : ''
+          }`}
+        >
+          {isRoofReport && page.images && page.images.length > 0 && (
+            <div className='mb-6 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800'>
+              <div className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300 mb-2'>
+                <ImageIcon className='h-4 w-4' />
+                <span className='font-medium'>
+                  Roof Report Diagrams ({page.images.length} available above)
+                </span>
+              </div>
+              <p className='text-xs text-emerald-600 dark:text-emerald-400'>
+                This page contains visual roof measurements and diagrams
+                extracted from the aerial imagery report.
+              </p>
+            </div>
+          )}
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+            components={{
+              // Custom table rendering for better display
+              table: ({ children }) => (
+                <div className='overflow-x-auto my-4'>
+                  <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className='bg-gray-50 dark:bg-gray-800'>
+                  {children}
+                </thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className='bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700'>
+                  {children}
+                </tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className='hover:bg-gray-50 dark:hover:bg-gray-800'>
+                  {children}
+                </tr>
+              ),
+              th: ({ children }) => (
+                <th className='px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider'>
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className='px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap'>
+                  {children}
+                </td>
+              ),
+              // Custom image rendering with click-to-expand
+              img: ({ src, alt, ...props }) => {
+                if (!src) return null;
+                const isPageImage = page.images?.includes(src);
+                if (!isPageImage) {
+                  return (
+                    <img
+                      src={src}
+                      alt={alt}
+                      {...props}
+                      className='max-w-full h-auto'
+                    />
+                  );
+                }
+                return (
+                  <img
+                    src={src}
+                    alt={alt}
+                    {...props}
+                    className='max-w-full h-auto cursor-pointer rounded-lg border hover:shadow-lg transition-shadow duration-200 my-4'
+                    onClick={() => {
+                      if (src && document) {
+                        openImageOverlay(src, document);
+                      }
+                    }}
+                    title='Click to expand'
+                  />
+                );
+              },
+            }}
+          >
+            {cleanedMarkdown}
+          </ReactMarkdown>
+        </div>
+      );
+    }
+
+    // Otherwise, apply the heuristic formatter pipeline to produce more readable Markdown from raw OCR text
     // 1) Promote probable section headings (ALL CAPS lines, or Title Case lines with no trailing colon) to H2/H3
     // 2) Bold label-value pairs like "Claim Number: 123" → **Claim Number**: 123
     // 3) Convert enumerated items like "3a. Remove Flashing" to bullet list items
@@ -633,7 +1088,7 @@ export function EnhancedDocumentViewer({
 
   return (
     <>
-      <Card className='h-full flex flex-col'>
+      <Card className='h-full flex flex-col overflow-hidden mb-0 rounded-b-none'>
         <CardHeader className='pb-4 flex-shrink-0'>
           <div className='flex items-center justify-between'>
             <CardTitle className='flex items-center gap-3'>
@@ -690,7 +1145,7 @@ export function EnhancedDocumentViewer({
           </div>
         </CardHeader>
 
-        <CardContent className='p-0 flex-1 flex flex-col min-h-0'>
+        <CardContent className='p-0 flex-1 flex flex-col min-h-0 overflow-hidden'>
           {documents.length === 0 ? (
             <div className='flex items-center justify-center h-full'>
               <p className='text-zinc-500 dark:text-zinc-400'>
@@ -701,7 +1156,7 @@ export function EnhancedDocumentViewer({
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
-              className='flex-1 flex flex-col'
+              className='flex-1 flex flex-col overflow-hidden'
             >
               {/* Document Tabs */}
               <div className='px-6 pb-4'>
@@ -738,7 +1193,7 @@ export function EnhancedDocumentViewer({
                 <TabsContent
                   key={doc.id}
                   value={doc.id}
-                  className='flex-1 flex flex-col mt-0 min-h-0'
+                  className='flex-1 flex flex-col mt-0 min-h-0 overflow-hidden'
                 >
                   {/* Controls */}
                   <div className='flex items-center justify-between px-6 py-3 border-b bg-zinc-50 dark:bg-zinc-800/50 flex-shrink-0'>
@@ -747,7 +1202,7 @@ export function EnhancedDocumentViewer({
                         variant='outline'
                         size='sm'
                         onClick={() =>
-                          setCurrentPage(Math.max(1, currentPage - 1))
+                          scrollToPage(Math.max(1, currentPage - 1))
                         }
                         disabled={currentPage === 1}
                         className='h-8'
@@ -761,9 +1216,7 @@ export function EnhancedDocumentViewer({
                         variant='outline'
                         size='sm'
                         onClick={() =>
-                          setCurrentPage(
-                            Math.min(doc.pageCount, currentPage + 1)
-                          )
+                          scrollToPage(Math.min(doc.pageCount, currentPage + 1))
                         }
                         disabled={currentPage === doc.pageCount}
                         className='h-8'
@@ -782,16 +1235,6 @@ export function EnhancedDocumentViewer({
                                 .length
                             }{' '}
                             on this page
-                          </Badge>
-                        </>
-                      )}
-
-                      {activePage && activePage.confidence && (
-                        <>
-                          <Separator orientation='vertical' className='h-4' />
-                          <Badge variant='outline' className='text-xs'>
-                            {Math.round(activePage.confidence * 100)}%
-                            confidence
                           </Badge>
                         </>
                       )}
@@ -847,52 +1290,55 @@ export function EnhancedDocumentViewer({
                     </div>
                   </div>
 
-                  {/* Content Viewer */}
+                  {/* Content Viewer - Stacked Pages */}
                   <div className='flex-1 overflow-auto bg-gray-50 dark:bg-zinc-900/50 min-h-0'>
                     {viewMode === 'extracted' ? (
-                      <div className='h-full overflow-auto p-6'>
-                        {activePage ? (
-                          <div className='max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
-                            {activePage.images &&
-                            activePage.images.length > 0 ? (
-                              <div className='bg-zinc-50 dark:bg-zinc-900 border-b grid grid-cols-1 gap-2 p-2'>
-                                {activePage.images.map((src, idx) => (
-                                  <img
-                                    key={idx}
-                                    alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
-                                    src={src}
-                                    className='w-full h-auto block rounded'
-                                  />
-                                ))}
-                              </div>
-                            ) : null}
-                            <div className='p-8'>
-                              {renderExtractedText(activePage)}
-                              {/* Hidden debug container to retrieve raw OCR text via the console */}
-                              <pre data-doc-debug className='hidden'>
-                                {activePage.rawText || ''}
-                              </pre>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className='flex items-center justify-center h-full'>
-                            <p className='text-zinc-500 dark:text-zinc-400'>
-                              No content available for this page
-                            </p>
-                          </div>
-                        )}
+                      <div
+                        className='h-full overflow-auto p-6'
+                        ref={setScrollContainer}
+                      >
+                        <div className='max-w-4xl mx-auto overflow-x-hidden'>
+                          {renderAllPagesStacked(doc)}
+                          {/* Hidden debug container for all pages */}
+                          <pre data-doc-debug className='hidden'>
+                            {doc.pages
+                              .map(p => p.rawText || '')
+                              .join('\n\n--- PAGE BREAK ---\n\n')}
+                          </pre>
+                        </div>
                       </div>
                     ) : (
                       <div className='h-full overflow-auto p-6'>
-                        <div
-                          className='mx-auto'
-                          style={{
-                            maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
-                            transform: `scale(${zoom / 100})`,
-                            transformOrigin: 'top center',
-                          }}
-                        >
-                          {renderPDFView(doc, currentPage)}
+                        <div className='max-w-4xl mx-auto space-y-0'>
+                          {/* Render all PDF pages stacked */}
+                          {doc.pages.map((page, pageIndex) => (
+                            <div key={page.pageNumber} className='relative'>
+                              {/* Page divider with floating page number (skip for first page) */}
+                              {pageIndex > 0 && (
+                                <div className='relative my-8'>
+                                  <div className='absolute inset-0 flex items-center'>
+                                    <div className='w-full border-t border-gray-200 dark:border-gray-700'></div>
+                                  </div>
+                                  <div className='relative flex justify-center'>
+                                    <div className='bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium bg-gray-50 dark:bg-zinc-900'>
+                                      Page {page.pageNumber}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div
+                                className='mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border overflow-hidden'
+                                style={{
+                                  maxWidth: `${Math.min(800 * (zoom / 100), 1000)}px`,
+                                  transform: `scale(${zoom / 100})`,
+                                  transformOrigin: 'top center',
+                                }}
+                              >
+                                {renderPDFView(doc, page.pageNumber)}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -932,6 +1378,90 @@ export function EnhancedDocumentViewer({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Overlay Modal - Portal to document.body */}
+      {imageOverlay.isOpen &&
+        typeof window !== 'undefined' &&
+        createPortal(
+          <div className='fixed inset-0 z-[9999] flex items-center justify-center'>
+            {/* Backdrop with blur */}
+            <div
+              className='absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200'
+              onClick={closeImageOverlay}
+            />
+
+            {/* Close button */}
+            <Button
+              variant='ghost'
+              size='sm'
+              className='absolute top-4 right-4 z-10 h-10 w-10 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+              onClick={closeImageOverlay}
+            >
+              <X className='h-4 w-4' />
+            </Button>
+
+            {/* Image counter */}
+            {imageOverlay.images.length > 1 && (
+              <div className='absolute top-4 left-4 z-10 bg-black/40 text-white px-3 py-1.5 rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm'>
+                {imageOverlay.currentIndex + 1} of {imageOverlay.images.length}
+              </div>
+            )}
+
+            {/* Download button */}
+            <Button
+              variant='ghost'
+              size='sm'
+              className='absolute top-4 right-16 z-10 h-10 w-10 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+              onClick={downloadCurrentImage}
+              title='Download image'
+            >
+              <Download className='h-4 w-4' />
+            </Button>
+
+            {/* Previous button */}
+            {imageOverlay.images.length > 1 && (
+              <Button
+                variant='ghost'
+                size='lg'
+                className='absolute left-4 top-1/2 -translate-y-1/2 z-10 h-14 w-14 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+                onClick={prevImage}
+                title='Previous image (←)'
+              >
+                <ChevronLeft className='h-6 w-6' />
+              </Button>
+            )}
+
+            {/* Next button */}
+            {imageOverlay.images.length > 1 && (
+              <Button
+                variant='ghost'
+                size='lg'
+                className='absolute right-4 top-1/2 -translate-y-1/2 z-10 h-14 w-14 p-0 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 hover:scale-110'
+                onClick={nextImage}
+                title='Next image (→)'
+              >
+                <ChevronRight className='h-6 w-6' />
+              </Button>
+            )}
+
+            {/* Main image container with fly-in animation */}
+            {imageOverlay.images.length > 0 && (
+              <div className='relative z-5 flex items-center justify-center w-full h-full p-8 animate-in fade-in zoom-in-95 duration-200'>
+                <img
+                  src={imageOverlay.images[imageOverlay.currentIndex]}
+                  alt={`Image ${imageOverlay.currentIndex + 1}`}
+                  className='max-w-full max-h-full object-contain rounded-lg shadow-2xl'
+                  style={{
+                    maxWidth: 'calc(100vw - 8rem)',
+                    maxHeight: 'calc(100vh - 8rem)',
+                    filter: 'drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5))',
+                  }}
+                />
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
