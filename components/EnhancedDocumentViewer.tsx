@@ -751,7 +751,8 @@ export function EnhancedDocumentViewer({
               // Custom image rendering with click-to-expand
               img: ({ src, alt, ...props }) => {
                 if (!src) return null;
-                const isPageImage = page.images?.includes(src);
+                const isPageImage =
+                  typeof src === 'string' && page.images?.includes(src);
                 if (!isPageImage) {
                   return (
                     <img
