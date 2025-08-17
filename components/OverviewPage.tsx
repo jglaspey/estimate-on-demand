@@ -103,7 +103,7 @@ export function OverviewPage({
                   Claim Rep:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.adjusterName}
+                  {jobData.claimRep || 'N/A'}
                 </span>
               </div>
               <div className='flex justify-between'>
@@ -111,7 +111,7 @@ export function OverviewPage({
                   Estimator:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.estimator || jobData.adjusterName}
+                  {jobData.estimator || 'N/A'}
                 </span>
               </div>
               <div className='flex justify-between'>
