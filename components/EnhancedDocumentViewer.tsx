@@ -340,9 +340,15 @@ export function EnhancedDocumentViewer({
       /^#{1,6}\s+/m.test(text) || // Has markdown headers
       /^\s*[-*+]\s+/m.test(text) || // Has markdown lists
       /\[.*?\]\(.*?\)/.test(text) || // Has markdown links
-      /^(Precise Aerial Measurement Report|AGR Roofing|Summary For Coverage|REPLACEMENT COST|LORI HOUSER)/im.test(
+      /^(Precise Aerial Measurement Report|AGR Roofing|Summary For Coverage|REPLACEMENT COST|LORI HOUSER|ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView)/im.test(
         text
       ); // Structured documents
+
+    // Determine if this is a roof report page for special formatting
+    const isRoofReport =
+      /^(ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView|Precise Aerial Measurement|Property Address.*\d{5}|Ridge Length|Hip Length|Total Squares|Predominant Pitch)/im.test(
+        text
+      );
 
     // If it's already markdown, apply smart processing
     if (isAlreadyMarkdown) {
@@ -460,10 +466,16 @@ export function EnhancedDocumentViewer({
             // Bold company names and contact info labels
             line = line.replace(/^(tel\.|email:|www\.)/gim, '**$1**');
 
-            // Bold important roof measurements
+            // Bold important roof measurements and related terms
             line = line.replace(
-              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares):/gi,
+              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares|Ridge Length|Hip Length|Eave Length|Rake Length|Valley Length|Roof Slope|Stories|Roof Material|Soffit Depth):/gi,
               '**$1**:'
+            );
+
+            // Bold aerial measurement report headers and sections
+            line = line.replace(
+              /^(ROOF MEASUREMENTS|DETAILED MEASUREMENTS|RIDGE AND HIP BREAKDOWN|EAVE MEASUREMENTS|RAKE MEASUREMENTS|ICE & WATER BARRIER|EAGLEVIEW|HOVER|Source - EagleView|Property Address|ROOF REPORT|Aerial Measurement|Measurement Report)/gim,
+              '**$1**'
             );
 
             // Bold addresses and property info
@@ -491,7 +503,27 @@ export function EnhancedDocumentViewer({
         .trim();
 
       return (
-        <div className='prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2'>
+        <div
+          className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 ${
+            isRoofReport
+              ? 'prose-headings:text-emerald-700 dark:prose-headings:text-emerald-400'
+              : ''
+          }`}
+        >
+          {isRoofReport && page.images && page.images.length > 0 && (
+            <div className='mb-6 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800'>
+              <div className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300 mb-2'>
+                <ImageIcon className='h-4 w-4' />
+                <span className='font-medium'>
+                  Roof Report Diagrams ({page.images.length} available above)
+                </span>
+              </div>
+              <p className='text-xs text-emerald-600 dark:text-emerald-400'>
+                This page contains visual roof measurements and diagrams
+                extracted from the aerial imagery report.
+              </p>
+            </div>
+          )}
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
             components={{
@@ -1051,15 +1083,83 @@ export function EnhancedDocumentViewer({
                           <div className='max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
                             {activePage.images &&
                             activePage.images.length > 0 ? (
-                              <div className='bg-zinc-50 dark:bg-zinc-900 border-b grid grid-cols-1 gap-2 p-2'>
-                                {activePage.images.map((src, idx) => (
-                                  <img
-                                    key={idx}
-                                    alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
-                                    src={src}
-                                    className='w-full h-auto block rounded'
-                                  />
-                                ))}
+                              <div className='bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-800 border-b'>
+                                <div className='p-4 border-b bg-zinc-100 dark:bg-zinc-800'>
+                                  <div className='flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300'>
+                                    <ImageIcon className='h-4 w-4' />
+                                    <span className='font-medium'>
+                                      Extracted Images (
+                                      {activePage.images.length})
+                                    </span>
+                                    <Badge
+                                      variant='secondary'
+                                      className='text-xs'
+                                    >
+                                      Page {activePage.pageNumber}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4'>
+                                  {activePage.images.map((src, idx) => (
+                                    <div
+                                      key={idx}
+                                      className='group relative bg-white dark:bg-zinc-900 rounded-lg border shadow-sm overflow-hidden'
+                                    >
+                                      <div className='aspect-[4/3] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
+                                        <img
+                                          alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
+                                          src={src}
+                                          className='w-full h-full object-contain transition-transform duration-200 group-hover:scale-105'
+                                          onError={e => {
+                                            console.error(
+                                              'Image failed to load:',
+                                              src
+                                            );
+                                            (
+                                              e.target as HTMLImageElement
+                                            ).style.display = 'none';
+                                          }}
+                                        />
+                                        <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200' />
+                                      </div>
+                                      <div className='p-2 bg-zinc-50 dark:bg-zinc-900 border-t'>
+                                        <div className='flex items-center justify-between'>
+                                          <span className='text-xs text-zinc-500 dark:text-zinc-400 font-medium'>
+                                            Image {idx + 1}
+                                          </span>
+                                          <div className='flex gap-1'>
+                                            <Button
+                                              variant='ghost'
+                                              size='sm'
+                                              className='h-6 w-6 p-0'
+                                              onClick={() =>
+                                                window.open(src, '_blank')
+                                              }
+                                              title='Open in new tab'
+                                            >
+                                              <Eye className='h-3 w-3' />
+                                            </Button>
+                                            <Button
+                                              variant='ghost'
+                                              size='sm'
+                                              className='h-6 w-6 p-0'
+                                              onClick={() => {
+                                                const link =
+                                                  document.createElement('a');
+                                                link.href = src;
+                                                link.download = `page-${activePage.pageNumber}-image-${idx + 1}.jpeg`;
+                                                link.click();
+                                              }}
+                                              title='Download image'
+                                            >
+                                              <Download className='h-3 w-3' />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ) : null}
                             <div className='p-8'>
@@ -1109,8 +1209,88 @@ export function EnhancedDocumentViewer({
               (viewMode === 'extracted' ? (
                 <ScrollArea className='h-full p-6'>
                   {activePage ? (
-                    <div className='max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-8'>
-                      {renderExtractedText(activePage)}
+                    <div className='max-w-5xl mx-auto bg-white dark:bg-zinc-900 rounded-lg shadow-sm border p-0 overflow-hidden'>
+                      {activePage.images && activePage.images.length > 0 ? (
+                        <div className='bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-800 border-b'>
+                          <div className='p-4 border-b bg-zinc-100 dark:bg-zinc-800'>
+                            <div className='flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300'>
+                              <ImageIcon className='h-4 w-4' />
+                              <span className='font-medium'>
+                                Extracted Images ({activePage.images.length})
+                              </span>
+                              <Badge variant='secondary' className='text-xs'>
+                                Page {activePage.pageNumber}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className='grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6'>
+                            {activePage.images.map((src, idx) => (
+                              <div
+                                key={idx}
+                                className='group relative bg-white dark:bg-zinc-900 rounded-lg border shadow-sm overflow-hidden'
+                              >
+                                <div className='aspect-[4/3] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800'>
+                                  <img
+                                    alt={`Page ${activePage.pageNumber} extracted image ${idx + 1}`}
+                                    src={src}
+                                    className='w-full h-full object-contain transition-transform duration-200 group-hover:scale-105 cursor-pointer'
+                                    onClick={() => window.open(src, '_blank')}
+                                    onError={e => {
+                                      console.error(
+                                        'Image failed to load:',
+                                        src
+                                      );
+                                      (
+                                        e.target as HTMLImageElement
+                                      ).style.display = 'none';
+                                    }}
+                                  />
+                                  <div className='absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200' />
+                                  <div className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
+                                    <Button
+                                      variant='secondary'
+                                      size='sm'
+                                      className='h-8 w-8 p-0 bg-white/90 hover:bg-white'
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        window.open(src, '_blank');
+                                      }}
+                                      title='Open in new tab'
+                                    >
+                                      <Eye className='h-4 w-4' />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className='p-2 bg-zinc-50 dark:bg-zinc-900 border-t'>
+                                  <div className='flex items-center justify-between'>
+                                    <span className='text-xs text-zinc-500 dark:text-zinc-400 font-medium'>
+                                      Image {idx + 1}
+                                    </span>
+                                    <Button
+                                      variant='ghost'
+                                      size='sm'
+                                      className='h-6 w-6 p-0'
+                                      onClick={() => {
+                                        const link =
+                                          document.createElement('a');
+                                        link.href = src;
+                                        link.download = `page-${activePage.pageNumber}-image-${idx + 1}.jpeg`;
+                                        link.click();
+                                      }}
+                                      title='Download image'
+                                    >
+                                      <Download className='h-3 w-3' />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className='p-8'>
+                        {renderExtractedText(activePage)}
+                      </div>
                     </div>
                   ) : (
                     <div className='flex items-center justify-center h-full'>

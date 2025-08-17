@@ -163,8 +163,19 @@ export class SmartExtractionService {
                 const fileBase = `${path.basename(filePath, path.extname(filePath))}-p${p.pageNumber}-img${i + 1}.jpeg`;
                 const outPath = path.join(uploadsDir, fileBase);
                 if (!existsSync(outPath)) {
-                  const buf = Buffer.from(b64, 'base64');
+                  // Clean the base64 string - remove data URL prefix if present
+                  let cleanB64 = b64;
+                  if (b64.includes(',')) {
+                    cleanB64 = b64.split(',')[1];
+                  }
+                  // Remove any whitespace and non-base64 characters
+                  cleanB64 = cleanB64.replace(/[^A-Za-z0-9+/=]/g, '');
+
+                  const buf = Buffer.from(cleanB64, 'base64');
                   writeFileSync(outPath, buf);
+                  console.log(
+                    `📸 Saved image: ${fileBase} (${buf.length} bytes, original b64 length: ${b64.length})`
+                  );
                 }
                 paths.push(outPath);
               } catch (err) {
@@ -545,11 +556,34 @@ export class SmartExtractionService {
 
       const extractedPages = ocrPages.map((page: any, index: number) => {
         const content = page.markdown || page.text || page.content || '';
-        const imgs = Array.isArray(page.images)
-          ? page.images
-              .map((img: any) => img.image_base64 || img.imageBase64)
-              .filter((b64: any) => typeof b64 === 'string' && b64.length > 0)
-          : [];
+        // Enhanced image extraction debugging
+        const imgs: string[] = [];
+        if (Array.isArray(page.images)) {
+          console.log(
+            `🔍 Page ${index + 1} images array length:`,
+            page.images.length
+          );
+          page.images.forEach((img: any, imgIdx: number) => {
+            console.log(`  - Image ${imgIdx} keys:`, Object.keys(img));
+            const b64Data =
+              img.image_base64 || img.imageBase64 || img.base64 || img.data;
+            if (b64Data && typeof b64Data === 'string' && b64Data.length > 0) {
+              console.log(`  - Image ${imgIdx} base64 length:`, b64Data.length);
+              console.log(
+                `  - Image ${imgIdx} starts with:`,
+                b64Data.substring(0, 50)
+              );
+              imgs.push(b64Data);
+            } else {
+              console.log(`  - Image ${imgIdx} has no valid base64 data`);
+            }
+          });
+        } else {
+          console.log(
+            `📄 Page ${index + 1}: no images array (type: ${typeof page.images})`
+          );
+        }
+
         console.log(
           `📄 OCR page ${index + 1}: text=${String(content || '').length} chars, images=${imgs.length}`
         );

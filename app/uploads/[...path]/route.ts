@@ -33,10 +33,33 @@ export async function GET(
 
     const data = await readFile(resolved);
 
-    // Infer content type (PDF expected)
-    const contentType = resolved.toLowerCase().endsWith('.pdf')
-      ? 'application/pdf'
-      : 'application/octet-stream';
+    // Infer content type based on file extension
+    const ext = path.extname(resolved).toLowerCase();
+    let contentType = 'application/octet-stream';
+    
+    switch (ext) {
+      case '.pdf':
+        contentType = 'application/pdf';
+        break;
+      case '.jpg':
+      case '.jpeg':
+        contentType = 'image/jpeg';
+        break;
+      case '.png':
+        contentType = 'image/png';
+        break;
+      case '.gif':
+        contentType = 'image/gif';
+        break;
+      case '.webp':
+        contentType = 'image/webp';
+        break;
+      case '.svg':
+        contentType = 'image/svg+xml';
+        break;
+      default:
+        contentType = 'application/octet-stream';
+    }
 
     return new NextResponse(new Uint8Array(data), {
       headers: {
