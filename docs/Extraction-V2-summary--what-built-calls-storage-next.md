@@ -1,7 +1,7 @@
 ## Extraction V2 – What we built, calls made, responses, storage, and what’s next
 
 ### What we built
-- **Extraction V2 pipeline** behind feature flag `EXTRACTION_V2=1` with safe POST/GET endpoints at `/api/jobs/[jobId]/extract-v2`.
+- **Extraction V2 pipeline** is now the default with POST/GET endpoints at `/api/jobs/[jobId]/extract-v2`.
 - **New orchestrator** `lib/extraction/v2/orchestrator.ts` emitting WebSocket progress and writing results to `mistral_extractions.extractedData.v2`.
 - **Deterministic-first modules**:
   - `estimate-normalizer.ts`: regex-first parsing of RCV, ACV, Net Claim, Price List, Date Completed; tiny LLM fallback only if needed.
@@ -89,7 +89,7 @@
   - Implement analysis for Starter, Drip Edge & Gutter Apron, Ice & Water using v2 data + requirements.
 
 ### How to run v2 now
-- Set `EXTRACTION_V2=1` in env.
+- No env flag required; v2 runs by default.
 - Upload via existing UI; Phase 2 will use v2 pipeline automatically.
 - Or call: `POST /api/jobs/{jobId}/extract-v2` to trigger.
 - Retrieve: `GET /api/jobs/{jobId}/extract-v2` → `{ jobId, v2, job }`.

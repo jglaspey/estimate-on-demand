@@ -8,7 +8,7 @@
 
 #### Branch & rollout strategy
 - Create branch: `feature/extraction-v2` (parallel implementation, no breaking changes to current pipeline).
-- Add new orchestrator under `lib/extraction/v2/` used behind a feature flag (`EXTRACTION_V2=1`) or dedicated API route (`/api/jobs/[jobId]/extract-v2`).
+- Add new orchestrator under `lib/extraction/v2/` and dedicated API route (`/api/jobs/[jobId]/extract-v2`).
 - Progressive enablement per environment; full swap after QA.
 
 ---
@@ -108,7 +108,7 @@
 
 ### Rollout
 - Dev: run via `/api/jobs/[jobId]/extract-v2` and compare outputs vs current.
-- Stage: enable `EXTRACTION_V2=1` for real-time testing.
+- Stage: v2 enabled by default; route and queue now call v2 directly.
 - Prod: swap orchestrator once parity plus added coverage is verified.
 
 ### Reliability guidelines
