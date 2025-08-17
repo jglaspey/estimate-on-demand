@@ -9,6 +9,7 @@ import {
   extractDripEdgeItems,
   extractGutterApronItems,
   extractIceWaterItems,
+  extractRidgeCapItems,
 } from '@/lib/extraction/v2/line-item-extractors';
 import { parseRoofMeasurementsFromText } from '@/lib/extraction/v2/roof-measurement-parser';
 import { extractRoofMaterialFromPages } from '@/lib/extraction/v2/roof-material';
@@ -65,13 +66,16 @@ export class ExtractionV2Orchestrator {
       'Extracting targeted line item categories'
     );
     const extractorPages = pages;
-    const [starterRes, dripRes, gutterRes, iceRes] = await Promise.all([
-      extractStarterItems(extractorPages),
-      extractDripEdgeItems(extractorPages),
-      extractGutterApronItems(extractorPages),
-      extractIceWaterItems(extractorPages),
-    ]);
+    const [ridgeRes, starterRes, dripRes, gutterRes, iceRes] =
+      await Promise.all([
+        extractRidgeCapItems(extractorPages),
+        extractStarterItems(extractorPages),
+        extractDripEdgeItems(extractorPages),
+        extractGutterApronItems(extractorPages),
+        extractIceWaterItems(extractorPages),
+      ]);
     const lineItems = [
+      ...ridgeRes.items,
       ...starterRes.items,
       ...dripRes.items,
       ...gutterRes.items,

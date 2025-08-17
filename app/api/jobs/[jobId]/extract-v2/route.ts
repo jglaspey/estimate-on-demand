@@ -7,13 +7,6 @@ export async function POST(
   _req: NextRequest,
   ctx: { params: Promise<{ jobId: string }> }
 ) {
-  if (process.env.EXTRACTION_V2 !== '1') {
-    return NextResponse.json(
-      { error: 'EXTRACTION_V2 disabled' },
-      { status: 403 }
-    );
-  }
-
   const params = await ctx.params;
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
@@ -51,13 +44,6 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ jobId: string }> }
 ) {
-  if (process.env.EXTRACTION_V2 !== '1') {
-    return NextResponse.json(
-      { error: 'EXTRACTION_V2 disabled' },
-      { status: 403 }
-    );
-  }
-
   const params = await ctx.params;
   const job = await prisma.job.findUnique({
     where: { id: params.jobId },
@@ -90,7 +76,10 @@ export async function GET(
     }) || latest;
 
   const data = withV2.extractedData as Record<string, unknown>;
-  const v2 = (data as any)?.v2 ?? null;
+  const v2 =
+    data && typeof data === 'object' && 'v2' in data
+      ? ((data as { v2?: unknown }).v2 ?? null)
+      : null;
   const jobSummary = {
     roofSquares: job.roofSquares,
     roofStories: job.roofStories,

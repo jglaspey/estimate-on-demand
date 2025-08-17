@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/database/client';
 import { processingQueue } from '@/lib/extraction/processing-queue';
+import { extractionV2 } from '@/lib/extraction/v2/orchestrator';
 
 export async function POST(
   _request: NextRequest,
@@ -44,8 +45,14 @@ export async function POST(
       },
     });
 
-    // Requeue with existing file paths
-    await processingQueue.addToQueue(jobId, filePaths);
+    // Prefer direct v2 run for immediate processing
+    extractionV2.run(jobId, filePaths).catch(err => {
+      console.error('Reprocess v2 run failed, falling back to queue:', err);
+      // Fallback to queue
+      processingQueue.addToQueue(jobId, filePaths).catch(error => {
+        console.error(`Failed to queue job ${jobId} for processing:`, error);
+      });
+    });
 
     return NextResponse.json({ success: true, queued: filePaths.length });
   } catch (error) {

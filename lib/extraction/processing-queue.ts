@@ -5,7 +5,7 @@ import {
 } from '@/lib/websocket/socket-handler';
 import { extractionV2 } from '@/lib/extraction/v2/orchestrator';
 
-import { smartExtractionService } from './smart-extraction-service';
+// v1 full-document path removed in favor of v2 orchestrator
 import { executeUploadExtraction } from './upload-integration';
 
 export interface ProcessingJob {
@@ -161,35 +161,19 @@ export class DocumentProcessingQueue {
       );
 
       // 🔄 PHASE 2: Full document extraction (parallel, in background)
-      // When EXTRACTION_V2 is enabled, run the v2 orchestrator instead.
+      // Always run the v2 orchestrator (v1 deprecated)
       console.warn(
-        `🔄 PHASE 2: Starting background full extraction for job ${job.jobId}`
+        `🔄 PHASE 2: Starting background full extraction (v2) for job ${job.jobId}`
       );
 
-      if (process.env.EXTRACTION_V2 === '1') {
-        extractionV2
-          .run(job.jobId, job.filePaths)
-          .then(() => {
-            console.warn(`✅ PHASE 2 (v2) complete for job ${job.jobId}`);
-          })
-          .catch(error => {
-            console.error(
-              `❌ PHASE 2 (v2) failed for job ${job.jobId}:`,
-              error
-            );
-          });
-      } else {
-        // Don't await this - let it run in background
-        smartExtractionService
-          .extractFullDocumentData(job.filePaths, job.jobId)
-          .then(() => {
-            console.warn(`✅ PHASE 2 complete for job ${job.jobId}`);
-            // Phase 2 emits its own progress events and updates job status
-          })
-          .catch(error => {
-            console.error(`❌ PHASE 2 failed for job ${job.jobId}:`, error);
-          });
-      }
+      extractionV2
+        .run(job.jobId, job.filePaths)
+        .then(() => {
+          console.warn(`✅ PHASE 2 (v2) complete for job ${job.jobId}`);
+        })
+        .catch(error => {
+          console.error(`❌ PHASE 2 (v2) failed for job ${job.jobId}:`, error);
+        });
 
       // Mark phase 1 as completed - user can see data immediately
       job.status = 'completed';

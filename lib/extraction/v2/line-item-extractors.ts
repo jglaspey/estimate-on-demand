@@ -22,6 +22,8 @@ export interface LineItem {
   pageIndex?: number;
   sourcePages?: number[];
   confidence?: number; // 0..1
+  // Ridge cap specific (only for category === 'ridge_cap')
+  ridgeCapQuality?: 'purpose-built' | 'high-profile' | 'cut-from-3tab' | null;
 }
 
 export interface ExtractorInputPage {
@@ -75,7 +77,7 @@ async function callClaude(
     )
     .join('\n');
 
-  const sys = `Extract only ${category} line items from the estimate text. Return strict JSON array 'items'. Each item: {category, code?, description, quantity{value,unit}?, unitPrice?, totalPrice?, sourcePages[], confidence}. ${promptHint}`;
+  const sys = `Extract only ${category} line items from the estimate text. Return strict JSON array 'items'. Each item: {category, code?, description, quantity{value,unit}?, unitPrice?, totalPrice?, sourcePages[], confidence${category === 'ridge_cap' ? ', ridgeCapQuality' : ''}}. ${promptHint}`;
   const resp = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL_EXTRACTOR || 'claude-3-5-haiku-20241022',
     max_tokens: 500,
@@ -94,6 +96,21 @@ async function callClaude(
   } catch {
     return { items: [] };
   }
+}
+
+export async function extractRidgeCapItems(
+  pages: ExtractorInputPage[]
+): Promise<ExtractorResult> {
+  const relevant = selectRelevantPages(
+    pages,
+    /(\bridge\s*cap\b|\bhip\s*cap\b|ridge\s*\/\s*hip|hip\s*\/\s*ridge|RFG\s*RIDG[A-Z]*)/i,
+    /(\bridge\b.*\bcap\b|\bcap\b.*\bridge\b)/i
+  );
+  return callClaude(
+    'ridge_cap',
+    relevant,
+    'For each ridge/hip cap item, include ridgeCapQuality as one of "purpose-built", "high-profile", or "cut-from-3tab". Include evidence pages.'
+  );
 }
 
 export async function extractStarterItems(
