@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
 
@@ -129,15 +129,20 @@ export default function JobDetailPage() {
   // createRuleAnalysisFunction removed - now using real analysis results only
   const [validationNotes, setValidationNotes] = useState<string[]>([]);
   const [discrepantFields, setDiscrepantFields] = useState<string[]>([]);
+  const hasInitializedRef = useRef(false);
 
   // Fetch job data on mount
   useEffect(() => {
     const fetchJobData = async () => {
       try {
-        setLoading(true);
+        // Silent refresh after initial mount
+        const isFirstLoad = !hasInitializedRef.current;
+        if (isFirstLoad) setLoading(true);
 
         // Fetch job data
-        const jobResponse = await fetch(`/api/jobs/${jobId}`);
+        const jobResponse = await fetch(`/api/jobs/${jobId}`, {
+          cache: 'no-store',
+        });
         if (!jobResponse.ok) {
           const errorText = await jobResponse.text();
           console.error('API Error:', errorText);
@@ -184,7 +189,9 @@ export default function JobDetailPage() {
 
         // Try to enrich with latest v2 measurements
         try {
-          const v2Res = await fetch(`/api/jobs/${jobId}/extract-v2`);
+          const v2Res = await fetch(`/api/jobs/${jobId}/extract-v2`, {
+            cache: 'no-store',
+          });
           if (v2Res.ok) {
             const v2 = await v2Res.json();
             const m = v2?.v2?.measurements || {};
@@ -214,6 +221,7 @@ export default function JobDetailPage() {
               pitch:
                 (m.roofSlope as string) ??
                 (m.pitch as string) ??
+                ((m as any).predominantPitch as string) ??
                 baseMeasurements.pitch,
               stories:
                 asNum(m.roofStories) ??
@@ -241,7 +249,11 @@ export default function JobDetailPage() {
             } as RoofMeasurements;
 
             // If pitch still missing, retry once shortly to avoid manual refresh
-            const hasPitch = Boolean((m as any).roofSlope || (m as any).pitch);
+            const hasPitch = Boolean(
+              (m as any).roofSlope ||
+                (m as any).pitch ||
+                (m as any).predominantPitch
+            );
             if (!hasPitch) {
               setTimeout(() => setReloadVersion(v => v + 1), 1200);
             }
@@ -277,6 +289,7 @@ export default function JobDetailPage() {
           err instanceof Error ? err.message : 'Failed to load job data'
         );
       } finally {
+        hasInitializedRef.current = true;
         setLoading(false);
       }
     };
@@ -285,6 +298,10 @@ export default function JobDetailPage() {
       fetchJobData();
     }
   }, [jobId, reloadVersion]);
+
+  // Track initial load for silent refresh control (declared above) and a polling timer
+  // Note: hasInitializedRef is declared near the top of component; only pollingRef is defined here
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load existing analysis results on mount
   useEffect(() => {
@@ -321,6 +338,94 @@ export default function JobDetailPage() {
     };
     return statusMap[dbStatus] || 'extracting';
   };
+
+  // Silent polling for missing critical fields (originalEstimate, pitch)
+  useEffect(() => {
+    if (!jobId || !jobData || !roofMeasurements) return;
+
+    const missingOriginalEstimate =
+      !jobData.totalEstimateValue || jobData.totalEstimateValue <= 0;
+    const missingPitch =
+      !roofMeasurements.pitch || roofMeasurements.pitch === 'Unknown';
+
+    if (!missingOriginalEstimate && !missingPitch) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      return;
+    }
+
+    if (pollingRef.current) return;
+
+    let attempts = 0;
+    const maxAttempts = 20; // ~30s at 1.5s
+    pollingRef.current = setInterval(async () => {
+      attempts++;
+      let updated = false;
+      try {
+        if (missingOriginalEstimate) {
+          const jobResponse = await fetch(`/api/jobs/${jobId}`, {
+            cache: 'no-store',
+          });
+          if (jobResponse.ok) {
+            const { job } = await jobResponse.json();
+            if (job?.originalEstimate && job.originalEstimate > 0) {
+              setJobData(prev =>
+                prev
+                  ? { ...prev, totalEstimateValue: job.originalEstimate }
+                  : prev
+              );
+              updated = true;
+            }
+          }
+        }
+      } catch {}
+      try {
+        if (missingPitch) {
+          const v2Res = await fetch(`/api/jobs/${jobId}/extract-v2`, {
+            cache: 'no-store',
+          });
+          if (v2Res.ok) {
+            const v2 = await v2Res.json();
+            const m = v2?.v2?.measurements || {};
+            const pitch =
+              (m.roofSlope as string) ||
+              (m.pitch as string) ||
+              (m.predominantPitch as string);
+            if (pitch && pitch !== 'Unknown') {
+              setRoofMeasurements(prev => (prev ? { ...prev, pitch } : prev));
+              updated = true;
+            }
+          }
+        }
+      } catch {}
+
+      const stillMissing =
+        !jobData?.totalEstimateValue ||
+        jobData.totalEstimateValue <= 0 ||
+        !roofMeasurements?.pitch ||
+        roofMeasurements.pitch === 'Unknown';
+      if (updated && !stillMissing) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } else if (attempts >= maxAttempts) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      }
+    }, 1500);
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [jobId, jobData, roofMeasurements]);
 
   const handleFieldUpdate = (field: string, value: string | number) => {
     if (jobData) {
