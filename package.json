@@ -14,7 +14,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "quality": "npm run type-check && npm run lint && npm run format:check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:clear:dry": "tsx scripts/clear-db.ts",
+    "db:clear": "RUN=1 tsx scripts/clear-db.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.59.0",
