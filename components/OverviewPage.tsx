@@ -22,6 +22,7 @@ interface OverviewPageProps {
   _onFieldUpdate: (field: string, value: string | number) => void;
   onStartReview: () => void;
   discrepantFields?: string[];
+  validationNotes?: string[];
 }
 
 export function OverviewPage({
@@ -31,6 +32,7 @@ export function OverviewPage({
   _onFieldUpdate,
   onStartReview,
   discrepantFields = [],
+  validationNotes = [],
 }: OverviewPageProps) {
   const getComplianceStats = () => {
     const compliant = ruleAnalysis.filter(
@@ -425,6 +427,82 @@ export function OverviewPage({
               </div>
             </div>
           </div>
+
+          {/* Extraction Notes Card */}
+          {validationNotes.length > 0 && (
+            <div className='rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 mt-6'>
+              <div className='px-6 py-4 border-b border-zinc-200 dark:border-zinc-800'>
+                <div className='flex items-center gap-2'>
+                  <div className='flex h-5 w-5 items-center justify-center rounded-md bg-amber-100 dark:bg-amber-900/30'>
+                    <svg
+                      className='h-3 w-3 text-amber-600 dark:text-amber-400'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      strokeWidth={1.5}
+                      stroke='currentColor'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        d='m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10'
+                      />
+                    </svg>
+                  </div>
+                  <h3 className='font-semibold text-zinc-900 dark:text-zinc-100'>
+                    📝 Extraction Notes
+                  </h3>
+                </div>
+              </div>
+              <div className='p-6'>
+                <div className='space-y-3'>
+                  {validationNotes.map((note, i) => {
+                    // Clean up the note text
+                    const cleanNote = note.replace(/^\*\s*/, '').trim();
+
+                    // Check if it's a structured note (contains: colon pattern)
+                    const isStructured = cleanNote.includes(': Phase ');
+
+                    if (isStructured) {
+                      // Parse structured notes like "customerName: Phase 1 = "GARRISON, MARY", Phase 2 = "Smith, Joe & Jane | Estimate: | 00-0000-000 |""
+                      const [field, phases] = cleanNote.split(': ');
+                      return (
+                        <div key={i} className='text-sm'>
+                          <div className='font-medium text-zinc-700 dark:text-zinc-300 mb-2'>
+                            {field.charAt(0).toUpperCase() + field.slice(1)}
+                          </div>
+                          <div className='ml-4 space-y-1'>
+                            {phases.split(', Phase ').map((phase, j) => {
+                              const cleanPhase =
+                                j === 0 ? phase : 'Phase ' + phase;
+                              return (
+                                <div
+                                  key={j}
+                                  className='font-mono text-xs bg-zinc-50 dark:bg-zinc-800 rounded px-3 py-2 text-zinc-600 dark:text-zinc-400'
+                                >
+                                  {cleanPhase}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Simple note format
+                      return (
+                        <div
+                          key={i}
+                          className='flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400'
+                        >
+                          <div className='w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500 mt-2 flex-shrink-0' />
+                          <span>{cleanNote}</span>
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column - Chat */}

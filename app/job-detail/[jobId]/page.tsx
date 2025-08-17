@@ -734,6 +734,7 @@ export default function JobDetailPage() {
             onStartReview={handleStartReview}
             _onFieldUpdate={handleFieldUpdate}
             discrepantFields={discrepantFields as any}
+            validationNotes={validationNotes}
           />
         ) : (
           <div className='min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950'>
@@ -879,25 +880,6 @@ export default function JobDetailPage() {
           </div>
         </div>
       </main>
-
-      {/* Discrepancy Notes Footer */}
-      {validationNotes.length > 0 && (
-        <div className='border-t border-zinc-200 dark:border-zinc-800'>
-          <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4'>
-            <div className='text-sm text-zinc-600 dark:text-zinc-300'>
-              <div className='font-medium mb-1'>Notes</div>
-              <ul className='list-disc ml-5 space-y-1'>
-                {validationNotes.map((n, i) => (
-                  <li key={i} className='marker:text-zinc-400'>
-                    <span className='mr-1'>*</span>
-                    {n.replace(/^\*\s*/, '')}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Rule navigation footer removed - now showing analysis results directly */}
     </div>
