@@ -127,6 +127,8 @@ export default function JobDetailPage() {
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [reloadVersion, setReloadVersion] = useState(0);
   // createRuleAnalysisFunction removed - now using real analysis results only
+  const [validationNotes, setValidationNotes] = useState<string[]>([]);
+  const [discrepantFields, setDiscrepantFields] = useState<string[]>([]);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -186,6 +188,18 @@ export default function JobDetailPage() {
           if (v2Res.ok) {
             const v2 = await v2Res.json();
             const m = v2?.v2?.measurements || {};
+            const notes: string[] =
+              v2?.v2?.validation?.notes || v2?.validation?.notes || [];
+            setValidationNotes(Array.isArray(notes) ? notes : []);
+            const fields = (Array.isArray(notes) ? notes : [])
+              .map(n =>
+                String(n)
+                  .replace(/^\*\s*/, '')
+                  .split(':')[0]
+                  ?.trim()
+              )
+              .filter(Boolean) as string[];
+            setDiscrepantFields(fields);
             const asNum = (v: unknown): number | undefined =>
               typeof v === 'number'
                 ? v
@@ -225,6 +239,12 @@ export default function JobDetailPage() {
                 ((asNum(m.eaveLength) ?? baseMeasurements.eavesLength) || 0) +
                   ((asNum(m.rakeLength) ?? baseMeasurements.rakesLength) || 0),
             } as RoofMeasurements;
+
+            // If pitch still missing, retry once shortly to avoid manual refresh
+            const hasPitch = Boolean((m as any).roofSlope || (m as any).pitch);
+            if (!hasPitch) {
+              setTimeout(() => setReloadVersion(v => v + 1), 1200);
+            }
           }
         } catch {
           // Non-fatal; keep base measurements
@@ -264,7 +284,7 @@ export default function JobDetailPage() {
     if (jobId) {
       fetchJobData();
     }
-  }, [jobId]);
+  }, [jobId, reloadVersion]);
 
   // Load existing analysis results on mount
   useEffect(() => {
@@ -457,6 +477,24 @@ export default function JobDetailPage() {
             Loading job details...
           </h2>
         </div>
+        {/* Discrepancy Notes Footer */}
+        {validationNotes.length > 0 && (
+          <div className='border-t border-zinc-200 dark:border-zinc-800 mt-6'>
+            <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4'>
+              <div className='text-sm text-zinc-600 dark:text-zinc-300'>
+                <div className='font-medium mb-1'>Notes</div>
+                <ul className='list-disc ml-5 space-y-1'>
+                  {validationNotes.map((n, i) => (
+                    <li key={i} className='marker:text-zinc-400'>
+                      <span className='mr-1'>*</span>
+                      {n.replace(/^\*\s*/, '')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -590,6 +628,7 @@ export default function JobDetailPage() {
             ruleAnalysis={ruleAnalysis as any}
             onStartReview={handleStartReview}
             _onFieldUpdate={handleFieldUpdate}
+            discrepantFields={discrepantFields as any}
           />
         ) : (
           <div className='min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950'>
@@ -735,6 +774,25 @@ export default function JobDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Discrepancy Notes Footer */}
+      {validationNotes.length > 0 && (
+        <div className='border-t border-zinc-200 dark:border-zinc-800'>
+          <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4'>
+            <div className='text-sm text-zinc-600 dark:text-zinc-300'>
+              <div className='font-medium mb-1'>Notes</div>
+              <ul className='list-disc ml-5 space-y-1'>
+                {validationNotes.map((n, i) => (
+                  <li key={i} className='marker:text-zinc-400'>
+                    <span className='mr-1'>*</span>
+                    {n.replace(/^\*\s*/, '')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rule navigation footer removed - now showing analysis results directly */}
     </div>

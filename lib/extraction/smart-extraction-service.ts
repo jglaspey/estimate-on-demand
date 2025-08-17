@@ -26,6 +26,9 @@ export interface CoreInfo {
   claimNumber?: string;
   policyNumber?: string;
   dateOfLoss?: string;
+  // Canonical going forward
+  claimRep?: string;
+  // Legacy (kept for backward compatibility during transition)
   adjusterName?: string;
   originalEstimate?: number;
 }
@@ -192,6 +195,7 @@ export class SmartExtractionService {
           claimNumber: job?.claimNumber || undefined,
           policyNumber: job?.policyNumber || undefined,
           dateOfLoss: job?.dateOfLoss?.toISOString() || undefined,
+          claimRep: job?.claimRep || undefined,
           adjusterName: job?.claimRep || undefined,
           originalEstimate: job?.originalEstimate || undefined,
         };
@@ -663,7 +667,7 @@ export class SmartExtractionService {
         }
       }
 
-      // Adjuster name patterns
+      // Claim rep (adjuster) name patterns
       const adjusterPatterns = [
         /(?:adjuster|claim rep|claim representative):\s*([A-Za-z\s]{2,40})/i,
         /adjuster:\s*([A-Za-z\s]{2,40})/i,
@@ -672,7 +676,9 @@ export class SmartExtractionService {
       for (const pattern of adjusterPatterns) {
         const match = text.match(pattern);
         if (match && match[1].trim().length > 2) {
-          coreInfo.adjusterName = match[1].trim();
+          const name = match[1].trim();
+          coreInfo.claimRep = name;
+          coreInfo.adjusterName = name; // legacy mirror for compatibility
           break;
         }
       }
@@ -759,6 +765,9 @@ export class SmartExtractionService {
     claimNumber?: string;
     policyNumber?: string;
     dateOfLoss?: string;
+    // Canonical going forward
+    claimRep?: string;
+    // Legacy
     adjusterName?: string;
     originalEstimate?: number;
   } {
@@ -767,6 +776,7 @@ export class SmartExtractionService {
       claimNumber?: string;
       policyNumber?: string;
       dateOfLoss?: string;
+      claimRep?: string;
       adjusterName?: string;
       originalEstimate?: number;
     } = {};
@@ -828,7 +838,7 @@ export class SmartExtractionService {
         }
       }
 
-      // Adjuster name patterns
+      // Claim rep (adjuster) name patterns
       const adjusterPatterns = [
         /(?:adjuster|claim rep|representative):\s*([A-Za-z\s]{2,40})/i,
         /adjuster:\s*([A-Za-z\s]{2,40})/i,
@@ -837,7 +847,9 @@ export class SmartExtractionService {
       for (const pattern of adjusterPatterns) {
         const match = text.match(pattern);
         if (match && match[1].trim().length > 2) {
-          claimInfo.adjusterName = match[1].trim();
+          const name = match[1].trim();
+          claimInfo.claimRep = name;
+          claimInfo.adjusterName = name; // legacy mirror
           break;
         }
       }
@@ -877,6 +889,7 @@ export class SmartExtractionService {
       claimNumber?: string;
       policyNumber?: string;
       dateOfLoss?: string;
+      claimRep?: string;
       adjusterName?: string;
       originalEstimate?: number;
     }
@@ -891,10 +904,12 @@ export class SmartExtractionService {
       claimNumber?: string;
       policyNumber?: string;
       dateOfLoss?: string;
-      adjusterName?: string;
+      claimRep?: string;
+      adjusterName?: string; // legacy display only
       originalEstimate?: number;
       _confidence?: string;
     };
+    discrepancyNotes: string[];
     validationSummary: {
       agreements: number;
       disagreements: number;
@@ -911,6 +926,7 @@ export class SmartExtractionService {
 
     // Customer Info Validation
     const customerInfo: any = {};
+    const discrepancyNotes: string[] = [];
 
     // Customer Name
     if (phase1CoreInfo.customerName && phase2CustomerInfo.customerName) {
@@ -920,15 +936,17 @@ export class SmartExtractionService {
       } else {
         customerInfo.customerName = `${phase1CoreInfo.customerName}*`;
         customerInfo._confidence = `Customer name disagreement: Phase1="${phase1CoreInfo.customerName}" Phase2="${phase2CustomerInfo.customerName}"`;
+        discrepancyNotes.push(
+          `* customerName: Phase 1 = "${phase1CoreInfo.customerName}", Phase 2 = "${phase2CustomerInfo.customerName}"`
+        );
         validationSummary.disagreements++;
       }
     } else if (phase1CoreInfo.customerName) {
       customerInfo.customerName = phase1CoreInfo.customerName;
       validationSummary.phase1Only++;
     } else if (phase2CustomerInfo.customerName) {
-      customerInfo.customerName = `${phase2CustomerInfo.customerName}*`;
-      customerInfo._confidence =
-        'Customer name found only in Phase 2, needs manual verification';
+      customerInfo.customerName = phase2CustomerInfo.customerName;
+      // No asterisk or note for phase-only finds per requirements
       validationSummary.phase2Only++;
     }
 
@@ -944,18 +962,44 @@ export class SmartExtractionService {
         customerInfo._confidence =
           (customerInfo._confidence || '') +
           ` Property address disagreement: Phase1="${phase1CoreInfo.propertyAddress}" Phase2="${phase2CustomerInfo.propertyAddress}"`;
+        discrepancyNotes.push(
+          `* propertyAddress: Phase 1 = "${phase1CoreInfo.propertyAddress}", Phase 2 = "${phase2CustomerInfo.propertyAddress}"`
+        );
         validationSummary.disagreements++;
       }
     } else if (phase1CoreInfo.propertyAddress) {
       customerInfo.propertyAddress = phase1CoreInfo.propertyAddress;
       validationSummary.phase1Only++;
     } else if (phase2CustomerInfo.propertyAddress) {
-      customerInfo.propertyAddress = `${phase2CustomerInfo.propertyAddress}*`;
-      customerInfo._confidence =
-        (customerInfo._confidence || '') +
-        ' Property address found only in Phase 2, needs manual verification';
+      customerInfo.propertyAddress = phase2CustomerInfo.propertyAddress;
+      // No asterisk or note for phase-only finds per requirements
       validationSummary.phase2Only++;
     }
+
+    // Normalization helpers
+    const normalizeWhitespaceCase = (val: any) =>
+      typeof val === 'string'
+        ? val.trim().replace(/\s+/g, ' ').toLowerCase()
+        : val;
+    const normalizeDate = (val: any) => {
+      if (!val) return val;
+      // Accept variants like MM/DD/YYYY or M/D/YY etc., return MM/DD/YYYY
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return normalizeWhitespaceCase(val);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    };
+    const normalizeMoneyNumber = (val: any) => {
+      if (val == null) return val;
+      if (typeof val === 'number') return Number(val.toFixed(2));
+      if (typeof val === 'string') {
+        const n = parseFloat(val.replace(/[^0-9.]/g, ''));
+        if (!isNaN(n)) return Number(n.toFixed(2));
+      }
+      return val;
+    };
 
     // Claim Info Validation (similar pattern for all claim fields)
     const claimInfo: any = {};
@@ -966,9 +1010,29 @@ export class SmartExtractionService {
       phase1Value: any,
       phase2Value: any
     ) => {
+      // Field-specific normalization
+      let p1 = phase1Value;
+      let p2 = phase2Value;
+      if (fieldName === 'dateOfLoss') {
+        p1 = normalizeDate(p1);
+        p2 = normalizeDate(p2);
+      } else if (fieldName === 'originalEstimate') {
+        p1 = normalizeMoneyNumber(p1);
+        p2 = normalizeMoneyNumber(p2);
+      } else {
+        p1 = normalizeWhitespaceCase(p1);
+        p2 = normalizeWhitespaceCase(p2);
+      }
+
+      if (p1 || p2) {
+        console.warn(
+          `[Validation] ${fieldName}: P1="${phase1Value}" | P2="${phase2Value}" => norm P1="${p1}" | norm P2="${p2}"`
+        );
+      }
+
       if (phase1Value && phase2Value) {
-        if (phase1Value === phase2Value) {
-          claimInfo[fieldName] = phase1Value;
+        if (p1 === p2) {
+          claimInfo[fieldName] = phase1Value; // keep original formatting where possible
           validationSummary.agreements++;
         } else {
           claimInfo[fieldName] = `${phase1Value}*`;
@@ -976,15 +1040,17 @@ export class SmartExtractionService {
             (claimInfo._confidence || '') +
             ` ${fieldName} disagreement: Phase1="${phase1Value}" Phase2="${phase2Value}"`;
           validationSummary.disagreements++;
+          discrepancyNotes.push(
+            `* ${fieldName}: Phase 1 = "${phase1Value}", Phase 2 = "${phase2Value}"`
+          );
         }
       } else if (phase1Value) {
         claimInfo[fieldName] = phase1Value;
+        // No note for phase-only
         validationSummary.phase1Only++;
       } else if (phase2Value) {
-        claimInfo[fieldName] = `${phase2Value}*`;
-        claimInfo._confidence =
-          (claimInfo._confidence || '') +
-          ` ${fieldName} found only in Phase 2, needs manual verification`;
+        claimInfo[fieldName] = phase2Value;
+        // No asterisk or note for phase-only
         validationSummary.phase2Only++;
       }
     };
@@ -1009,10 +1075,11 @@ export class SmartExtractionService {
       phase1CoreInfo.dateOfLoss,
       phase2ClaimInfo.dateOfLoss
     );
+    // Canonical: claimRep (fallback to legacy adjusterName if needed)
     validateField(
-      'adjusterName',
-      phase1CoreInfo.adjusterName,
-      phase2ClaimInfo.adjusterName
+      'claimRep',
+      phase1CoreInfo.claimRep || phase1CoreInfo.adjusterName,
+      phase2ClaimInfo.claimRep || phase2ClaimInfo.adjusterName
     );
     validateField(
       'originalEstimate',
@@ -1023,6 +1090,7 @@ export class SmartExtractionService {
     return {
       customerInfo,
       claimInfo,
+      discrepancyNotes,
       validationSummary,
     };
   }
@@ -1122,6 +1190,10 @@ export class SmartExtractionService {
       // Add validation results to structured data
       structuredData.customerInfo = validation.customerInfo;
       structuredData.claimInfo = validation.claimInfo;
+      structuredData.validation = {
+        summary: validation.validationSummary,
+        notes: validation.discrepancyNotes,
+      };
       structuredData.validationSummary = validation.validationSummary;
 
       // Log validation results
@@ -1315,7 +1387,8 @@ export class SmartExtractionService {
     if (coreInfo.policyNumber) updateData.policyNumber = coreInfo.policyNumber;
     if (coreInfo.dateOfLoss)
       updateData.dateOfLoss = new Date(coreInfo.dateOfLoss);
-    if (coreInfo.adjusterName) updateData.claimRep = coreInfo.adjusterName;
+    if (coreInfo.claimRep || coreInfo.adjusterName)
+      updateData.claimRep = coreInfo.claimRep || coreInfo.adjusterName;
     if (coreInfo.originalEstimate)
       updateData.originalEstimate = coreInfo.originalEstimate;
 
@@ -1478,6 +1551,7 @@ export class SmartExtractionService {
     let roofType: any = {};
     let estimateDoc: any = null;
     let roofReportDoc: any = null;
+    let validation: { summary?: any; notes?: string[] } | undefined = undefined;
 
     // Separate and merge data by document type
     for (const result of results) {
@@ -1487,6 +1561,7 @@ export class SmartExtractionService {
         estimateDoc = result;
         allLineItems.push(...(data.lineItems || []));
         if (data.roofType) roofType = data.roofType;
+        if (data.validation) validation = data.validation;
       }
 
       if (data.documentType === 'roof_report') {
@@ -1508,6 +1583,7 @@ export class SmartExtractionService {
       roofMeasurements,
       roofType,
       ridgeCapItems,
+      validation,
 
       // Document metadata
       estimateDoc: estimateDoc?.docType,
@@ -1540,6 +1616,16 @@ export class SmartExtractionService {
         roofMeasurements: mergedData.roofMeasurements,
         roofType: mergedData.roofType,
         ridgeCapItems: mergedData.ridgeCapItems,
+        validation: mergedData.validation,
+
+        // v2 wrapper for newer API consumers
+        v2: {
+          lineItems: mergedData.lineItems,
+          measurements: mergedData.roofMeasurements,
+          roofType: mergedData.roofType,
+          ridgeCapItems: mergedData.ridgeCapItems,
+          validation: mergedData.validation,
+        },
 
         // Metadata
         extractionMetadata: {

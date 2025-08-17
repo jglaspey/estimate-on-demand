@@ -21,6 +21,7 @@ interface OverviewPageProps {
   ruleAnalysis: RuleAnalysisResult[];
   _onFieldUpdate: (field: string, value: string | number) => void;
   onStartReview: () => void;
+  discrepantFields?: string[];
 }
 
 export function OverviewPage({
@@ -29,6 +30,7 @@ export function OverviewPage({
   ruleAnalysis,
   _onFieldUpdate,
   onStartReview,
+  discrepantFields = [],
 }: OverviewPageProps) {
   const getComplianceStats = () => {
     const compliant = ruleAnalysis.filter(
@@ -103,7 +105,8 @@ export function OverviewPage({
                   Claim Rep:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  XXX
+                  {jobData.claimRep}
+                  {discrepantFields.includes('claimRep') ? ' *' : ''}
                 </span>
               </div>
               <div className='flex justify-between'>
@@ -111,7 +114,8 @@ export function OverviewPage({
                   Estimator:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  XXX
+                  {jobData.estimator || '—'}
+                  {discrepantFields.includes('estimator') ? ' *' : ''}
                 </span>
               </div>
               <div className='flex justify-between'>
