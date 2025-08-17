@@ -13,6 +13,8 @@ export interface JobData {
   status: 'uploading' | 'extracting' | 'analyzing' | 'reviewing' | 'complete';
   createdAt: string;
   updatedAt: string;
+  claimRep?: string;
+  estimator?: string;
 }
 
 export interface RoofMeasurements {
@@ -25,7 +27,7 @@ export interface RoofMeasurements {
   rakesLength: number;
   ridgesLength: number;
   valleysLength: number;
-  
+
   // Additional detailed measurements
   roofArea: number;
   ridgeLength: number;
@@ -33,7 +35,7 @@ export interface RoofMeasurements {
   totalRidgeHip: number;
   soffitDepth: string;
   wallThickness: string;
-  
+
   // Additional fields for JobDetailsCard compatibility
   totalRoofArea: number;
   numberOfSquares: number;
@@ -86,12 +88,3 @@ export interface JobSummary {
   status: JobData['status'];
   createdAt: string;
 }
-
-
-
-
-
-
-
-
-
