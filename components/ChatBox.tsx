@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { TextStreamChatTransport } from 'ai';
+import { DefaultChatTransport } from 'ai';
 import { Send, MessageCircle, User, Bot, Paperclip } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -35,7 +35,7 @@ export function ChatBox({ jobId }: ChatBoxProps) {
 
   const { messages, sendMessage, status, setMessages } = useChat({
     id: `job-chat-${jobId}`,
-    transport: new TextStreamChatTransport({ api: `/api/jobs/${jobId}/chat` }),
+    transport: new DefaultChatTransport({ api: `/api/jobs/${jobId}/chat` }),
     messages: initialMessages as any,
     onFinish: () => {
       try {
