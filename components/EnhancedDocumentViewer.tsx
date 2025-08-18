@@ -107,7 +107,7 @@ export const EnhancedDocumentViewer = forwardRef<
   );
   const [zoom, setZoom] = useState(100);
   const [activeTab, setActiveTab] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('extracted');
+  const [viewMode, setViewMode] = useState<'pdf' | 'extracted'>('pdf');
   const [_showHighlights] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [imageOverlay, setImageOverlay] = useState<{
@@ -128,7 +128,7 @@ export const EnhancedDocumentViewer = forwardRef<
         const targetDoc =
           documents.find(d => d.fileType === t.docType) ?? documents[0];
         if (targetDoc) setActiveTab(targetDoc.id);
-        setViewMode('extracted');
+        setViewMode('pdf'); // Default to PDF view for better highlighting
         const clamped = Math.min(
           Math.max(1, t.page),
           targetDoc?.pageCount ?? t.page
@@ -246,24 +246,57 @@ export const EnhancedDocumentViewer = forwardRef<
 
     const highlightMap: Record<string, DocumentHighlight[]> = {
       ridge_cap: [
+        // Primary estimate line item
         {
           type: 'line-item',
-          description: 'Hip/Ridge cap - Standard profile',
+          description: 'Hip/Ridge cap - Standard profile - composition shingles',
           page: 4,
           relevance: 'high',
-          location: 'Line 3b',
-          value: '6.00 LF @ $42.90 = $257.40',
+          location: 'Line RFG RIDGC',
+          value: '93.32 LF @ $12.05 = $1,147.66',
           issue: true,
-          textMatch: 'Hip/Ridge cap.*6\\.00 LF',
+          textMatch: 'Hip.*Ridge.*cap.*Standard.*profile|RFG.*RIDGC|Ridge.*cap.*composition',
         },
+        // Alternative line item patterns
+        {
+          type: 'line-item', 
+          description: 'Ridge cap line item (alternative format)',
+          page: 4,
+          relevance: 'high',
+          location: 'Estimate line item',
+          value: 'Ridge cap materials and labor',
+          issue: true,
+          textMatch: '93\\.32.*LF|\\$1,?147\\.66|\\$12\\.05',
+        },
+        // Roof report measurements - Ridges
         {
           type: 'measurement',
-          description: 'Total Ridges/Hips: 119 ft',
+          description: 'Ridge measurements from roof report',
           page: 2,
           relevance: 'high',
-          location: 'EagleView Report',
-          value: 'Ridges: 26 ft, Hips: 93 ft',
-          textMatch: 'Ridge.*119|Total.*Ridge.*Hip',
+          location: 'Roof Report - Ridges',
+          value: 'Ridges: 101 LF',
+          textMatch: 'Ridges.*101|Ridge.*101.*LF|Total.*Ridge.*101',
+        },
+        // Roof report measurements - Hips  
+        {
+          type: 'measurement',
+          description: 'Hip measurements from roof report', 
+          page: 2,
+          relevance: 'high',
+          location: 'Roof Report - Hips',
+          value: 'Hips: 6 LF',
+          textMatch: 'Hips.*6|Hip.*6.*LF|Total.*Hip.*6',
+        },
+        // Combined ridge/hip total
+        {
+          type: 'calculation',
+          description: 'Total ridge and hip length required',
+          page: 2,
+          relevance: 'high', 
+          location: 'Roof Report Summary',
+          value: 'Combined: 107 LF',
+          textMatch: '107.*LF|Total.*107|Ridge.*Hip.*107',
         },
       ],
       starter_strip: [

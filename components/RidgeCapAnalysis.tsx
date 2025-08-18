@@ -8,7 +8,7 @@ import {
   X,
   Edit,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -63,6 +63,18 @@ export function RidgeCapAnalysis({
 }: RidgeCapAnalysisProps) {
   const [notes, setNotes] = useState(ridgeCapData?.userNotes || '');
   const [justificationCopied, setJustificationCopied] = useState(false);
+
+  // Auto-scroll to first evidence on component mount
+  useEffect(() => {
+    if (onJumpToEvidence && ridgeCapData) {
+      // Small delay to ensure document viewer is fully loaded
+      const timer = setTimeout(() => {
+        // Jump to estimate page 4 where ridge cap line item is located
+        onJumpToEvidence('page 4', 'estimate');
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [onJumpToEvidence, ridgeCapData]);
 
   // Copy justification to clipboard
   const copyJustification = async () => {
