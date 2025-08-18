@@ -364,8 +364,18 @@ export default function JobDetailPage() {
 
             // Add other rules as they become available
             // if (data.uiData.starterStrip) rules.push(data.uiData.starterStrip);
-            // if (data.uiData.dripEdge) rules.push(data.uiData.dripEdge);
-            // if (data.uiData.iceAndWater) rules.push(data.uiData.iceAndWater);
+            if (data.uiData.dripEdge) {
+              rules.push({
+                ...data.uiData.dripEdge,
+                ruleName: 'drip_edge_gutter_apron',
+              });
+            }
+            if (data.uiData.iceAndWater) {
+              rules.push({
+                ...data.uiData.iceAndWater,
+                ruleName: 'ice_water_barrier',
+              });
+            }
 
             setRuleAnalysis(rules);
           }

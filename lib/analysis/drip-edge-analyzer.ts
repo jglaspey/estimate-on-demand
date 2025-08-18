@@ -143,85 +143,95 @@ export class DripEdgeAnalyzer {
   private async extractEdgeProtectionItems(
     lineItems: ExtractedLineItem[]
   ): Promise<DripEdgeItemData> {
-    const prompt = `
-Analyze these line items to identify drip edge and gutter apron components:
+    console.log(
+      `🔍 Analyzing ${lineItems.length} line items for drip edge/gutter apron...`
+    );
 
-LINE ITEMS:
-${lineItems
-  .map(
-    (item, i) =>
-      `${i + 1}. ${item.code || 'N/A'} - ${item.description} | ${item.quantity.value} ${item.quantity.unit} @ $${item.unitPrice || 0} = $${item.rcv || 0}`
-  )
-  .join('\n')}
+    // Log all line items for debugging
+    lineItems.forEach((item, i) => {
+      console.log(
+        `   ${i + 1}. ${item.code || 'N/A'} - "${item.description}" | ${JSON.stringify(item.quantity)} @ $${item.unitPrice || 0}`
+      );
+    });
 
-IDENTIFICATION RULES:
-- Drip Edge: Look for "drip edge" (not "gutter apron") - protects rake edges (sides)
-- Gutter Apron: Look for "gutter apron" or "drip edge/gutter apron" - protects eaves (bottom)
-- Both serve different functions and have different shapes/costs
+    // Direct pattern matching approach for better reliability
+    const dripEdgeItems: any[] = [];
+    const gutterApronItems: any[] = [];
 
-Extract edge protection items and categorize them properly.
+    for (const item of lineItems) {
+      const desc = (item.description || '').toLowerCase();
+      const code = (item.code || '').toLowerCase();
 
-Respond with JSON:
-{
-  "dripEdgeItems": [
-    {
-      "code": "line item code",
-      "description": "full description", 
-      "quantity": number,
-      "unit": "LF",
-      "unitPrice": number,
-      "total": number,
-      "category": "drip-edge"
-    }
-  ],
-  "gutterApronItems": [
-    {
-      "code": "line item code",
-      "description": "full description",
-      "quantity": number, 
-      "unit": "LF",
-      "unitPrice": number,
-      "total": number,
-      "category": "gutter-apron"
-    }
-  ],
-  "hasAnyEdgeProtection": boolean,
-  "confidence": 0.95
-}`;
+      console.log(
+        `   🔍 Checking item: "${item.description}" - contains drip edge? ${desc.includes('drip edge')}`
+      );
 
-    try {
-      const message = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
-        temperature: 0.1,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
+      // Look for drip edge items (including simple "drip edge" entries)
+      if (desc.includes('drip edge') && !desc.includes('gutter apron')) {
+        const quantity =
+          typeof item.quantity === 'object'
+            ? item.quantity.value
+            : parseFloat(String(item.quantity)) || 0;
+        const unit =
+          typeof item.quantity === 'object' ? item.quantity.unit : 'LF';
+        const unitPrice = item.unitPrice || 0;
+        const total = item.totalPrice || item.rcv || quantity * unitPrice;
 
-      const response =
-        message.content[0].type === 'text' ? message.content[0].text : '';
-
-      // Parse response as JSON
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in Claude response');
+        dripEdgeItems.push({
+          code: item.code || '',
+          description: item.description || '',
+          quantity,
+          unit,
+          unitPrice,
+          total,
+          category: 'drip-edge',
+        });
+        console.log(
+          `   📌 Found drip edge: ${quantity} ${unit} @ $${unitPrice} = $${total}`
+        );
       }
 
-      return JSON.parse(jsonMatch[0]) as DripEdgeItemData;
-    } catch (error) {
-      console.error('Failed to extract edge protection items:', error);
-      // Return fallback data
-      return {
-        dripEdgeItems: [],
-        gutterApronItems: [],
-        hasAnyEdgeProtection: false,
-        confidence: 0.1,
-      };
+      // Look for gutter apron items
+      if (
+        desc.includes('gutter apron') ||
+        (desc.includes('drip') && desc.includes('gutter'))
+      ) {
+        const quantity =
+          typeof item.quantity === 'object'
+            ? item.quantity.value
+            : parseFloat(String(item.quantity)) || 0;
+        const unit =
+          typeof item.quantity === 'object' ? item.quantity.unit : 'LF';
+        const unitPrice = item.unitPrice || 0;
+        const total = item.totalPrice || item.rcv || quantity * unitPrice;
+
+        gutterApronItems.push({
+          code: item.code || '',
+          description: item.description || '',
+          quantity,
+          unit,
+          unitPrice,
+          total,
+          category: 'gutter-apron',
+        });
+        console.log(
+          `   📌 Found gutter apron: ${quantity} ${unit} @ $${unitPrice} = $${total}`
+        );
+      }
     }
+
+    const hasAnyEdgeProtection =
+      dripEdgeItems.length > 0 || gutterApronItems.length > 0;
+    console.log(
+      `   ✅ Found ${dripEdgeItems.length} drip edge + ${gutterApronItems.length} gutter apron items`
+    );
+
+    return {
+      dripEdgeItems,
+      gutterApronItems,
+      hasAnyEdgeProtection,
+      confidence: 0.95,
+    };
   }
 
   /**
