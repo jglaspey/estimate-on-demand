@@ -125,22 +125,80 @@ export const EnhancedDocumentViewer = forwardRef<
     ref,
     () => ({
       jumpToEvidence: (t: EvidenceJump) => {
+        console.log('📍 EnhancedDocumentViewer.jumpToEvidence called with:', t);
+
+        // CHECK #2: Are documents loaded?
+        console.log(
+          '📚 Documents loaded:',
+          documents.length,
+          documents.map(d => ({
+            id: d.id,
+            type: d.fileType,
+            fileName: d.fileName,
+          }))
+        );
+        console.log('🔍 Looking for docType:', t.docType);
+        console.log(
+          '🔍 Available fileTypes:',
+          documents.map(d => d.fileType)
+        );
+        if (documents.length === 0) {
+          console.error(
+            '❌ CRITICAL: No documents loaded yet - this could be the issue!'
+          );
+          return;
+        }
+
         const targetDoc =
           documents.find(d => d.fileType === t.docType) ?? documents[0];
-        if (targetDoc) setActiveTab(targetDoc.id);
-        setViewMode('pdf'); // Default to PDF view for better highlighting
+        console.log(
+          '🎯 Target document:',
+          targetDoc
+            ? {
+                id: targetDoc.id,
+                type: targetDoc.fileType,
+                pageCount: targetDoc.pageCount,
+              }
+            : 'NOT FOUND'
+        );
+
+        if (targetDoc) {
+          console.log('🏷️  Setting active tab to:', targetDoc.id);
+          setActiveTab(targetDoc.id);
+        } else {
+          console.error(
+            '❌ Could not find target document for type:',
+            t.docType
+          );
+        }
+
+        console.log('🖥️  Setting view mode to extracted');
+        setViewMode('extracted'); // Use extracted view for working navigation
+
         const clamped = Math.min(
           Math.max(1, t.page),
           targetDoc?.pageCount ?? t.page
         );
+        console.log(
+          '📖 Setting current page to:',
+          clamped,
+          '(clamped from',
+          t.page,
+          ')'
+        );
         setCurrentPage(clamped);
         setPendingTarget({ ...t, page: clamped });
+
+        console.log('🔄 State updates queued - React should re-render now');
+
         // Ensure we actually scroll to the target page immediately
         // (highlight scroll will follow once the mark is rendered)
         try {
+          console.log('🏃‍♂️ Calling scrollToPage:', clamped);
           scrollToPage(clamped);
-        } catch {}
-        // Defer scroll to a post-render effect below
+        } catch (error) {
+          console.error('❌ Error in scrollToPage:', error);
+        }
       },
     }),
     [documents]
@@ -178,7 +236,7 @@ export const EnhancedDocumentViewer = forwardRef<
       documents.find(d => d.fileType === 'estimate') || documents[0];
 
     setActiveTab(estimateDoc.id);
-    setViewMode('extracted');
+    setViewMode('extracted'); // Use extracted view for working navigation
     setCurrentPage(1);
     // Prevent immediate auto-jump on first render
     setLastAutoRule(selectedRule);
@@ -249,17 +307,19 @@ export const EnhancedDocumentViewer = forwardRef<
         // Primary estimate line item
         {
           type: 'line-item',
-          description: 'Hip/Ridge cap - Standard profile - composition shingles',
+          description:
+            'Hip/Ridge cap - Standard profile - composition shingles',
           page: 4,
           relevance: 'high',
           location: 'Line RFG RIDGC',
           value: '93.32 LF @ $12.05 = $1,147.66',
           issue: true,
-          textMatch: 'Hip.*Ridge.*cap.*Standard.*profile|RFG.*RIDGC|Ridge.*cap.*composition',
+          textMatch:
+            'Hip.*Ridge.*cap.*Standard.*profile|RFG.*RIDGC|Ridge.*cap.*composition',
         },
         // Alternative line item patterns
         {
-          type: 'line-item', 
+          type: 'line-item',
           description: 'Ridge cap line item (alternative format)',
           page: 4,
           relevance: 'high',
@@ -278,10 +338,10 @@ export const EnhancedDocumentViewer = forwardRef<
           value: 'Ridges: 101 LF',
           textMatch: 'Ridges.*101|Ridge.*101.*LF|Total.*Ridge.*101',
         },
-        // Roof report measurements - Hips  
+        // Roof report measurements - Hips
         {
           type: 'measurement',
-          description: 'Hip measurements from roof report', 
+          description: 'Hip measurements from roof report',
           page: 2,
           relevance: 'high',
           location: 'Roof Report - Hips',
@@ -293,7 +353,7 @@ export const EnhancedDocumentViewer = forwardRef<
           type: 'calculation',
           description: 'Total ridge and hip length required',
           page: 2,
-          relevance: 'high', 
+          relevance: 'high',
           location: 'Roof Report Summary',
           value: 'Combined: 107 LF',
           textMatch: '107.*LF|Total.*107|Ridge.*Hip.*107',
@@ -369,28 +429,34 @@ export const EnhancedDocumentViewer = forwardRef<
 
   const highlights = getHighlights(selectedRule);
 
-  // Decide which text to highlight on a page
+  // Always highlight text that's referenced by the current rule
   const resolveMatch = (pageNumber: number): RegExp | null => {
-    if (!pendingTarget) return null;
-    if (pendingTarget.textMatch) {
-      try {
-        return new RegExp(pendingTarget.textMatch, 'i');
-      } catch {
-        /* ignore invalid regex */
-      }
-    }
-    const rule = pendingTarget.rule ?? selectedRule;
-    const candidate = getHighlights(rule ?? null).find(
+    if (!selectedRule) return null;
+
+    // Get all highlights for the current rule on this page
+    const pageHighlights = getHighlights(selectedRule).filter(
       h => h.page === pageNumber && h.textMatch
     );
-    if (candidate?.textMatch) {
+
+    if (pageHighlights.length === 0) return null;
+
+    // Combine all textMatch patterns for this page into one regex
+    const patterns = pageHighlights.map(h => h.textMatch!).filter(Boolean);
+
+    if (patterns.length === 0) return null;
+
+    try {
+      // Create a single regex that matches any of the patterns
+      const combinedPattern = patterns.join('|');
+      return new RegExp(`(${combinedPattern})`, 'gi');
+    } catch {
+      // If combined regex fails, try the first pattern only
       try {
-        return new RegExp(candidate.textMatch, 'i');
+        return new RegExp(patterns[0], 'i');
       } catch {
-        /* ignore */
+        return null;
       }
     }
-    return null;
   };
 
   // Get all images from all pages of active document for global navigation
@@ -520,17 +586,23 @@ export const EnhancedDocumentViewer = forwardRef<
       // Double RAF to ensure tab switch + markdown render completed
       const id2 = requestAnimationFrame(() => {
         const root = scrollContainer;
-        const mark = root.querySelector(
-          '#evidence-target'
+        // First try to find any highlighted text on the target page
+        const pageEl = root.querySelector(
+          `[data-page-number="${pendingTarget.page}"]`
         ) as HTMLElement | null;
-        if (mark) {
-          mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          const pageEl = root.querySelector(
-            `[data-page-number="${pendingTarget.page}"]`
+
+        if (pageEl) {
+          // Look for highlighted elements within this page
+          const highlight = pageEl.querySelector(
+            '.evidence-highlight'
           ) as HTMLElement | null;
-          if (pageEl)
+          if (highlight) {
+            // Scroll to the first highlighted element on the page
+            highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            // Fallback to page top if no highlights found
             pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
         }
         // Clear the pending target after scrolling so user can navigate freely
         setPendingTarget(null);
@@ -659,528 +731,320 @@ export const EnhancedDocumentViewer = forwardRef<
     // Determine highlights for this page up-front
     const _pageHighlights = highlights.filter(h => h.page === page.pageNumber);
 
-    // Check if the text is already properly formatted markdown OR looks like structured document content
-    // (has markdown tables, headers, or other markdown formatting, or structured report content)
-    const isAlreadyMarkdown =
-      /^\|.*\|.*\|$/m.test(text) || // Has markdown tables
-      /^#{1,6}\s+/m.test(text) || // Has markdown headers
-      /^\s*[-*+]\s+/m.test(text) || // Has markdown lists
-      /\[.*?\]\(.*?\)/.test(text) || // Has markdown links
-      /^(Precise Aerial Measurement Report|AGR Roofing|Summary For Coverage|REPLACEMENT COST|LORI HOUSER|ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView)/im.test(
-        text
-      ); // Structured documents
-
     // Determine if this is a roof report page for special formatting
     const isRoofReport =
       /^(ROOF MEASUREMENTS|EAGLEVIEW|HOVER|Source - EagleView|Precise Aerial Measurement|Property Address.*\d{5}|Ridge Length|Hip Length|Total Squares|Predominant Pitch)/im.test(
         text
       );
 
-    // If it's already markdown, apply smart processing
-    if (isAlreadyMarkdown) {
-      // Process the markdown to fix common OCR issues
-      let processedMarkdown = text
-        .split('\n')
-        .map((line, index, lines) => {
-          // Check if this looks like a false table (e.g., simple key-value pairs)
-          if (line.includes('|')) {
-            const parts = line.split('|').filter(p => p.trim());
+    // Unified markdown processing pipeline for consistent rendering
+    // This replaces the dual-path logic that was causing inconsistent table rendering
+    // 1) Promote probable section headings (ALL CAPS lines, or Title Case lines with no trailing colon) to H2/H3
+    // 2) Bold label-value pairs like "Claim Number: 123" → **Claim Number**: 123
+    // 3) Convert enumerated items like "3a. Remove Flashing" to bullet list items
+    // 4) Preserve existing paragraphs and whitespace sensibly
+    const processMarkdown = (input: string): string => {
+      // Pre-pass: normalize text and add logical breaks
+      const processed = input
+        // Normalize pipes for better table detection
+        .replace(/\|{2,}/g, '|')
+        .replace(/\s*\|\s*/g, ' | ')
+        // Add breaks before section headers and important labels
+        .replace(
+          /\s(Subtotals|Estimate Total|Estimated Total RC|Loss of Use|Claim Number|Policy Number|Type of Loss|Insurance Company|Date of Loss|Property|Benefits|Taxes|Replacement Cost|Deductible|Overpayment|Summary of this Payment)\b/g,
+          '\n$1'
+        )
+        // Break before label-like patterns "Word Word:"
+        .replace(/([^\n])\s([A-Z][A-Za-z /()&]+:\s)/g, '$1\n$2')
+        // Add soft breaks after sentences if still in single line
+        .replace(/\.\s+(?=[A-Z])/g, '.\n');
 
-            // If it's only 2 parts and looks like a label:value pair, convert it
-            if (parts.length === 2) {
-              const [label, value] = parts.map(p => p.trim());
+      const lines = processed.split(/\r?\n/);
+      const output: string[] = [];
 
-              // Check if this is likely a header/value pair, not a table
-              const isLikelyPair =
-                // Common document headers and labels
-                /^(Customer Name|Property Address|Insured|Property|Claim Rep|Estimator|Insurance Company|Carrier|Policy Number)/i.test(
-                  label
-                ) ||
-                /^(LORI HOUSER|Claim Number|Date of Loss|CLAIM NUMBER|Date of Loss|Summary For|REPLACEMENT COST|LESS RECOVERABLE|ACTUAL CASH VALUE)/i.test(
-                  label
-                ) ||
-                // Date patterns at the top of documents
-                /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}$/i.test(
-                  label
-                ) ||
-                // Value patterns that indicate key-value pairs
-                /^\d{10,}$/.test(value) || // Claim numbers
-                /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value) || // Dates
-                /^\$[\d,]+\.?\d*$/.test(value) || // Currency
-                /^[A-Z][a-z]+,\s+[A-Z]{2}\s+\d{5}/.test(value) || // Addresses
-                // Single address or name lines
-                /^\d+\s+[A-Z]/.test(label) || // Street addresses
-                parts.some(p =>
-                  p.match(
-                    /^(Omaha|Lincoln|Bennington|Elkhorn|Papillion|Bellevue|Council Bluffs),\s+[A-Z]{2}/i
-                  )
-                );
+      // Process each line for markdown formatting
+      lines.forEach((line, index) => {
+        let processedLine = line.trim();
 
-              if (isLikelyPair) {
-                // Convert to bold label with value
-                return `**${label}:** ${value}`;
-              }
+        // Skip empty lines
+        if (!processedLine) {
+          output.push('');
+          return;
+        }
+
+        // Handle pipe-separated content (potential tables)
+        if (processedLine.includes('|')) {
+          const parts = processedLine
+            .split('|')
+            .map(p => p.trim())
+            .filter(p => p);
+
+          // Simple key-value pairs (convert to bold label format)
+          if (parts.length === 2) {
+            const [label, value] = parts;
+
+            // Check if this looks like a document header/value pair
+            const isDocumentLabel =
+              /^(Customer Name|Property Address|Insured|Property|Claim Rep|Estimator|Insurance Company|Carrier|Policy Number|LORI HOUSER|Claim Number|Date of Loss|CLAIM NUMBER|Summary For|REPLACEMENT COST)/i.test(
+                label
+              ) ||
+              /^\d{10,}$/.test(value) || // Claim numbers
+              /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value) || // Dates
+              /^\$[\d,]+\.?\d*$/.test(value) || // Currency
+              /^[A-Z][a-z]+,\s+[A-Z]{2}\s+\d{5}/.test(value); // Addresses
+
+            if (isDocumentLabel) {
+              output.push(`**${label}:** ${value}`);
+              return;
             }
+          }
 
-            // Check if this is a false table header (single row that shouldn't be a table)
+          // Multi-column content (keep as potential table)
+          if (parts.length >= 3) {
+            // Look ahead to see if this is part of a table
             const nextLine = lines[index + 1];
-            const prevLine = lines[index - 1];
-            const nextNextLine = lines[index + 2];
-
-            // Better table detection - look for separator lines or multiple data rows
-            const hasTableSeparator =
-              (nextLine && /^\s*\|?\s*[-:]+\s*\|/.test(nextLine)) ||
-              (prevLine && /^\s*\|?\s*[-:]+\s*\|/.test(prevLine));
-
-            const hasMultipleTableRows =
-              (nextLine && nextLine.includes('|') && parts.length >= 3) ||
-              (nextNextLine && nextNextLine.includes('|') && parts.length >= 3);
-
-            const looksLikeTableHeader =
-              parts.length >= 3 &&
+            const hasTableContext =
+              (nextLine &&
+                nextLine.includes('|') &&
+                nextLine.split('|').filter(p => p.trim()).length >= 3) ||
               parts.some(p =>
                 /^(DESCRIPTION|QTY|QUANTITY|UNIT|PRICE|TAX|RCV|ACV|DEPREC|TOTAL)/i.test(
                   p.trim()
                 )
               );
 
-            // If it's not a table context and only has 2 parts or less, convert it
-            if (
-              !hasTableSeparator &&
-              !hasMultipleTableRows &&
-              !looksLikeTableHeader &&
-              parts.length <= 2
-            ) {
-              // This is likely not meant to be a table
-              return parts.join(' - ').trim();
+            if (hasTableContext) {
+              // Keep as table row
+              output.push(`| ${parts.join(' | ')} |`);
+              return;
             }
           }
 
-          // Detect and preserve bold formatting for important text
-          // Look for patterns that should be bold
-          if (!line.includes('**')) {
-            // Make section headers bold
-            line = line.replace(
-              /(Summary For Coverage [A-Z][\s\-\w]*)/g,
-              '**$1**'
-            );
+          // Fallback: join parts with dashes
+          output.push(parts.join(' - '));
+          return;
+        }
 
-            // Make totals and important financial lines bold
-            line = line.replace(
+        // Convert label-value pairs to bold format
+        processedLine = processedLine.replace(
+          /^([A-Z][A-Za-z ]{2,}?):\s*(.+)$/,
+          '**$1:** $2'
+        );
+
+        // Convert numbered/lettered lists to markdown bullets
+        processedLine = processedLine.replace(
+          /^(\d+[a-zA-Z]?)\.\s*(.+)$/,
+          '- $2'
+        );
+
+        // Make important sections bold
+        if (!processedLine.includes('**')) {
+          processedLine = processedLine
+            .replace(/(Summary For Coverage [A-Z][\s\-\w]*)/g, '**$1**')
+            .replace(
               /(Total [A-Z\s]+Settlement|Total Outstanding|Net Claim|Line Item Total|Material Sales Tax|Grand Total)/gi,
               '**$1**'
-            );
-
-            // Make important labels bold
-            line = line.replace(
-              /^(Replacement Cost Value|Less Deductible|Actual Cash Value \(ACV\)|Less Recoverable|Less Non Recoverable)(\s|:|\||$)/gim,
-              '**$1**$2'
-            );
-
-            // Make coverage types bold
-            line = line.replace(
-              /^(Coverage:\s*Dwelling|Coverage:\s*Other Structures|Dwelling|Other Structures|Personal Property)/gim,
-              '**$1**'
-            );
-
-            // Make document headers bold
-            line = line.replace(
+            )
+            .replace(
               /^(ESTIMATE|ROOF REPORT|EAGLEVIEW|HOVER|Source -|Precise Aerial Measurement Report|AGR Roofing and Construction)/gim,
               '**$1**'
-            );
-
-            // Bold company names and contact info labels
-            line = line.replace(/^(tel\.|email:|www\.)/gim, '**$1**');
-
-            // Bold important roof measurements and related terms
-            line = line.replace(
-              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares|Ridge Length|Hip Length|Eave Length|Rake Length|Valley Length|Roof Slope|Stories|Roof Material|Soffit Depth):/gi,
-              '**$1**:'
-            );
-
-            // Bold aerial measurement report headers and sections
-            line = line.replace(
-              /^(ROOF MEASUREMENTS|DETAILED MEASUREMENTS|RIDGE AND HIP BREAKDOWN|EAVE MEASUREMENTS|RAKE MEASUREMENTS|ICE & WATER BARRIER|EAGLEVIEW|HOVER|Source - EagleView|Property Address|ROOF REPORT|Aerial Measurement|Measurement Report)/gim,
-              '**$1**'
-            );
-
-            // Bold addresses and property info
-            line = line.replace(
+            )
+            .replace(
+              /(Total Squares|Total Area|Predominant Pitch|Total Eaves|Total Rakes|Total Ridge[s]?\/Hip[s]?|Squares|Ridge Length|Hip Length):/gi,
+              '**$1:**'
+            )
+            .replace(
               /^(\d+\s+[A-Z][a-z]+.*(?:Avenue|Ave|Street|St|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Boulevard|Blvd).*)/gim,
               '**$1**'
             );
-          }
+        }
 
-          return line;
-        })
-        .join('\n');
+        // Detect and format as headings
+        const isHeading =
+          (/^[A-Z0-9 &()\/\-.,']{6,}$/.test(processedLine) &&
+            /\s[A-Z]/.test(processedLine)) ||
+          (/^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){1,}$/.test(processedLine) &&
+            !processedLine.endsWith(':'));
 
-      // Additional cleanup for currency and formatting
-      processedMarkdown = processedMarkdown
-        .replace(/\$\s*\$/g, '$') // Fix duplicate $$
-        .replace(/\(\s*\$\s*([0-9,]+\.?\d*)\s*\)/g, '($$$1)') // Fix negative currency
-        .replace(/\$\s+([0-9])/g, '$$$1') // Remove space between $ and number
-        .replace(/([0-9])\s*\$/g, '$1'); // Move $ to correct position
-
-      // Clean up excessive whitespace
-      const cleanedMarkdown = processedMarkdown
-        .replace(/\n{4,}/g, '\n\n\n') // Limit to max 3 newlines
-        .replace(/^\s+$/gm, '') // Remove whitespace-only lines
-        .trim();
-
-      return (
-        <div
-          className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 prose-img:max-w-full prose-img:h-auto overflow-x-hidden ${
-            isRoofReport
-              ? 'prose-headings:text-emerald-700 dark:prose-headings:text-emerald-400'
-              : ''
-          }`}
-        >
-          {isRoofReport && page.images && page.images.length > 0 && (
-            <div className='mb-6 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800'>
-              <div className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300 mb-2'>
-                <ImageIcon className='h-4 w-4' />
-                <span className='font-medium'>
-                  Roof Report Diagrams ({page.images.length} available above)
-                </span>
-              </div>
-              <p className='text-xs text-emerald-600 dark:text-emerald-400'>
-                This page contains visual roof measurements and diagrams
-                extracted from the aerial imagery report.
-              </p>
-            </div>
-          )}
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              // Custom table rendering for better display
-              table: ({ children }) => (
-                <div className='overflow-x-auto my-4'>
-                  <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
-                    {children}
-                  </table>
-                </div>
-              ),
-              thead: ({ children }) => (
-                <thead className='bg-gray-50 dark:bg-gray-800'>
-                  {children}
-                </thead>
-              ),
-              tbody: ({ children }) => (
-                <tbody className='bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700'>
-                  {children}
-                </tbody>
-              ),
-              tr: ({ children }) => (
-                <tr className='hover:bg-gray-50 dark:hover:bg-gray-800'>
-                  {children}
-                </tr>
-              ),
-              th: ({ children }) => (
-                <th className='px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider'>
-                  {children}
-                </th>
-              ),
-              td: ({ children }) => (
-                <td className='px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap'>
-                  {children}
-                </td>
-              ),
-              // Custom image rendering with click-to-expand
-              img: ({ src, alt, ...props }) => {
-                if (!src) return null;
-                const isPageImage =
-                  typeof src === 'string' && page.images?.includes(src);
-                if (!isPageImage) {
-                  return (
-                    <img
-                      src={src}
-                      alt={alt}
-                      {...props}
-                      className='max-w-full h-auto'
-                    />
-                  );
-                }
-                return (
-                  <img
-                    src={src}
-                    alt={alt}
-                    {...props}
-                    className='max-w-full h-auto cursor-pointer rounded-lg border hover:shadow-lg transition-shadow duration-200 my-4'
-                    onClick={() => {
-                      if (src && document) {
-                        openImageOverlay(src, document);
-                      }
-                    }}
-                    title='Click to expand'
-                  />
-                );
-              },
-            }}
-          >
-            {(() => {
-              const rx = resolveMatch(page.pageNumber);
-              const highlighted = rx
-                ? cleanedMarkdown.replace(
-                    rx,
-                    m => `<mark id="evidence-target">${m}</mark>`
-                  )
-                : cleanedMarkdown;
-              return highlighted;
-            })()}
-          </ReactMarkdown>
-        </div>
-      );
-    }
-
-    // Otherwise, apply the heuristic formatter pipeline to produce more readable Markdown from raw OCR text
-    // 1) Promote probable section headings (ALL CAPS lines, or Title Case lines with no trailing colon) to H2/H3
-    // 2) Bold label-value pairs like "Claim Number: 123" → **Claim Number**: 123
-    // 3) Convert enumerated items like "3a. Remove Flashing" to bullet list items
-    // 4) Preserve existing paragraphs and whitespace sensibly
-    const toStructuredMarkdown = (input: string): string => {
-      // Pre-pass: normalize separators and synthesize logical breaks
-      let pre = input
-        // Normalize repeated pipes and add spacing around them to help table detection
-        .replace(/\|{2,}/g, '|')
-        .replace(/\s*\|\s*/g, ' | ')
-        // Promote inline heading markers that appear without newlines
-        .replace(/\s##\s+/g, '\n## ')
-        .replace(/\s#\s+/g, '\n## ')
-        // Numbered or lettered list markers like " 3." or " 3a." → newline before
-        .replace(/\s(\d+[a-zA-Z]?)\.(?=\s)/g, '\n$1.')
-        // Common section keywords (start new lines)
-        .replace(
-          /\s(Subtotals|Estimate Total|Estimated Total RC|Loss of Use|Claim Number|Policy Number|Type of Loss|Insurance Company|Date of Loss|Property|Benefits|Taxes|Replacement Cost|Deductible|Overpayment|Summary of this Payment)\b/g,
-          '\n$1'
-        )
-        // Table-ish section starters
-        .replace(
-          /\s(Description\s+Qty\s+.*?Actual Replacement Cost w\/Tax)\b/g,
-          '\n$1'
-        )
-        // Break before "Source -" blocks seen in reports
-        .replace(/\s(Source\s+-\s+EagleView[^\n]*)/g, '\n$1');
-
-      // Insert breaks before any label-like token "Word Word:"
-      pre = pre.replace(/([^\n])\s([A-Z][A-Za-z /()&]+:\s)/g, '$1\n$2');
-
-      // If still a single long line, add soft breaks after periods followed by Capital
-      if (!/\n/.test(pre)) {
-        pre = pre.replace(/\.\s+(?=[A-Z])/g, '.\n');
-      }
-
-      const rawLines = pre.split(/\r?\n/);
-
-      const processed: string[] = [];
-      let inList = false;
-
-      const isLikelyHeading = (line: string): boolean => {
-        const trimmed = line.trim();
-        if (trimmed.length < 4) return false;
-        // All caps (with symbols/spaces) and at least two words
-        const allCaps =
-          /^[A-Z0-9 &()\/\-.,']{6,}$/.test(trimmed) && /\s[A-Z]/.test(trimmed);
-        // Title-ish case with no trailing colon
-        const titleCase =
-          /^(?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+){1,}$/.test(trimmed) &&
-          !trimmed.endsWith(':');
-        // Avoid lines that look like addresses or phone numbers
-        const looksLikeContact =
-          /(Phone|Fax|Email|E-mail|\d{3}[-). ]?\d{3}[-.]?\d{4})/i.test(trimmed);
-        return (allCaps || titleCase) && !looksLikeContact;
-      };
-
-      rawLines.forEach((line, _idx) => {
-        const l = line.replace(/\s+$/g, ''); // trim right only to keep left alignment
-
-        // Convert label-value pairs to bold labels
-        const labelValue = l.replace(
-          /(^|\s)([A-Z][A-Za-z ]{2,}?):\s*(.+)$/,
-          (_m, leading, label, value) =>
-            `${leading}**${label.trim()}**: ${value.trim()}`
-        );
-
-        // Detect list items like "1.", "12.", or "3a." at start of line
-        const listMatch = labelValue.match(/^\s*(\d+[a-zA-Z]?)\./);
-        if (listMatch && labelValue.length > listMatch[0].length + 1) {
-          if (!inList) {
-            // add a blank line to open a list block if previous content wasn't a list
-            if (
-              processed.length > 0 &&
-              processed[processed.length - 1] !== ''
-            ) {
-              processed.push('');
-            }
-            inList = true;
-          }
-          processed.push(
-            `- ${labelValue.replace(/^\s*\d+[a-zA-Z]?\.[\s]*/, '')}`
-          );
+        if (
+          isHeading &&
+          !/(Phone|Fax|Email|E-mail|\d{3}[-). ]?\d{3}[-.]?\d{4})/i.test(
+            processedLine
+          )
+        ) {
+          output.push(`## ${processedLine}`);
+          output.push(''); // Add blank line after heading
           return;
         }
 
-        // Close list block when encountering a non-list line
-        if (inList) {
-          inList = false;
-          if (processed.length > 0 && processed[processed.length - 1] !== '') {
-            processed.push('');
-          }
-        }
-
-        // Promote likely headings
-        if (isLikelyHeading(labelValue)) {
-          // Determine depth: start new sections as H2, sub-sections as H3 if previous line was empty
-          const prev = processed[processed.length - 1] || '';
-          const depth = prev === '' ? '##' : '###';
-          processed.push(`${depth} ${labelValue.trim()}`);
-          // Ensure blank line after a heading for proper rendering
-          processed.push('');
-          return;
-        }
-
-        // Reduce excessive internal whitespace (but preserve alignment in tables handled later)
-        const squeezed = labelValue.replace(/\s{3,}/g, '  ');
-        processed.push(squeezed);
+        output.push(processedLine);
       });
 
-      // Close any open list at EOF
-      if (inList) processed.push('');
+      // Post-process: convert consecutive table-like lines to proper markdown tables
+      const finalOutput: string[] = [];
+      let tableLines: string[] = [];
 
-      let md = processed.join('\n');
+      for (let i = 0; i < output.length; i++) {
+        const line = output[i];
 
-      // Post-pass A: normalize money artifacts like "- $$ 2,000.00$" → "- $2,000.00"
-      md = md
-        .replace(/\$\$\s*/g, '$')
-        .replace(/(\d)\$/g, '$1')
-        .replace(/\$\s+(\d)/g, '$$1');
+        if (line.startsWith('|') && line.endsWith('|')) {
+          tableLines.push(line);
+        } else {
+          // Flush any accumulated table
+          if (tableLines.length > 0) {
+            if (tableLines.length >= 2) {
+              // Add table header separator if missing
+              const headerCells = tableLines[0]
+                .split('|')
+                .filter(p => p.trim()).length;
+              finalOutput.push('');
+              finalOutput.push(tableLines[0]);
 
-      // Post-pass B: convert consecutive dotted/leader key-value rows into a table
-      // Supports optional trailing notes column
-      // e.g., "Taxes....................... $409.68" → "| Taxes | $409.68 |"
-      // e.g., "Overpayment............... - $0.00$ note" → "| Overpayment | - $0.00 | note |"
-      const lines2 = md.split(/\r?\n/);
-      const out: string[] = [];
-      let block: string[] = [];
-      const kvRegex =
-        /^\s*([A-Za-z][A-Za-z \-/()&%]+?)\s*[.:·•\-\s]{4,}\s*(\(?-?\$?[\d,]+(?:\.\d{1,2})?\)?|\$?0(?:\.00)?)\s*(.*)$/;
-      const flushBlock = () => {
-        if (block.length >= 2) {
-          out.push('');
-          const hasNotes = block.some(r => r.match(kvRegex)?.[3]?.trim());
-          out.push(
-            hasNotes ? '| Item | Amount | Notes |' : '| Item | Amount |'
-          );
-          out.push(hasNotes ? '| --- | ---: | --- |' : '| --- | ---: |');
-          block.forEach(row => {
-            const m = row.match(kvRegex);
-            if (m) {
-              const [_full, k, v, note] = m;
-              const val = v.replace(/\)$/, '').replace(/^\(/, '-');
-              if (hasNotes) {
-                out.push(
-                  `| ${k.trim()} | ${val.trim()} | ${note?.trim() || ''} |`
-                );
+              // Add separator if the second line isn't already one
+              if (!tableLines[1].includes('---')) {
+                finalOutput.push('|' + ' --- |'.repeat(headerCells));
+                finalOutput.push(...tableLines.slice(1));
               } else {
-                out.push(`| ${k.trim()} | ${val.trim()} |`);
+                finalOutput.push(...tableLines.slice(1));
               }
+              finalOutput.push('');
+            } else {
+              finalOutput.push(...tableLines);
             }
-          });
-          out.push('');
-        } else {
-          out.push(...block);
-        }
-        block = [];
-      };
-
-      for (const ln of lines2) {
-        if (kvRegex.test(ln)) {
-          block.push(ln);
-        } else {
-          if (block.length) flushBlock();
-          out.push(ln);
+            tableLines = [];
+          }
+          finalOutput.push(line);
         }
       }
-      if (block.length) flushBlock();
 
-      return out.join('\n');
-    };
-
-    // Lightweight formatter: convert pipe-delimited lines into GFM tables
-    const toMarkdownTables = (input: string): string => {
-      const lines = input.split(/\r?\n/);
-      const output: string[] = [];
-      let i = 0;
-      while (i < lines.length) {
-        const line = lines[i];
-        const pipeCount = (line.match(/\|/g) || []).length;
-        const looksTabular = pipeCount >= 3 && line.includes('|');
-        if (!looksTabular) {
-          output.push(line);
-          i++;
-          continue;
-        }
-
-        // Collect consecutive pipe-heavy lines to form a table block
-        const block: string[] = [];
-        while (i < lines.length) {
-          const l = lines[i];
-          const pc = (l.match(/\|/g) || []).length;
-          if (pc >= 3) {
-            block.push(l);
-            i++;
+      // Flush any remaining table
+      if (tableLines.length > 0) {
+        if (tableLines.length >= 2) {
+          const headerCells = tableLines[0]
+            .split('|')
+            .filter(p => p.trim()).length;
+          finalOutput.push('');
+          finalOutput.push(tableLines[0]);
+          if (!tableLines[1].includes('---')) {
+            finalOutput.push('|' + ' --- |'.repeat(headerCells));
+            finalOutput.push(...tableLines.slice(1));
           } else {
-            break;
+            finalOutput.push(...tableLines.slice(1));
           }
+          finalOutput.push('');
+        } else {
+          finalOutput.push(...tableLines);
         }
-
-        if (block.length > 0) {
-          // Use first line as header; split on pipes and trim cells
-          const split = (s: string) =>
-            s
-              .split('|')
-              .map(c => c.trim())
-              .filter(c => c.length > 0);
-          const headerCells = split(block[0]);
-          if (headerCells.length >= 2) {
-            output.push('');
-            output.push(`| ${headerCells.join(' | ')} |`);
-            output.push(`| ${headerCells.map(() => '---').join(' | ')} |`);
-            for (let r = 1; r < block.length; r++) {
-              const rowCells = split(block[r]);
-              // Pad/truncate to header length for stable table layout
-              const normalized = headerCells.map(
-                (_, idx) => rowCells[idx] ?? ''
-              );
-              output.push(`| ${normalized.join(' | ')} |`);
-            }
-            output.push('');
-            continue;
-          }
-        }
-
-        // Fallback if parsing failed
-        output.push(...block);
       }
-      return output.join('\n');
+
+      return finalOutput
+        .join('\n')
+        .replace(/\n{4,}/g, '\n\n\n')
+        .trim();
     };
 
     // Always prefer Markdown rendering for readability, even when highlights exist
     // We keep the highlights count badge in the UI controls, but avoid injecting raw HTML
     // so that our markdown structuring renders consistently.
-    const md = toMarkdownTables(toStructuredMarkdown(text));
+    const processedMarkdown = processMarkdown(text);
     return (
-      <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
+      <div
+        className={`prose prose-zinc dark:prose-invert max-w-none text-sm prose-table:text-xs prose-th:font-medium prose-td:p-2 prose-img:max-w-full prose-img:h-auto overflow-x-hidden ${
+          isRoofReport
+            ? 'prose-headings:text-emerald-700 dark:prose-headings:text-emerald-400'
+            : ''
+        }`}
+      >
+        {isRoofReport && page.images && page.images.length > 0 && (
+          <div className='mb-6 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800'>
+            <div className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300 mb-2'>
+              <ImageIcon className='h-4 w-4' />
+              <span className='font-medium'>
+                Roof Report Diagrams ({page.images.length} available)
+              </span>
+            </div>
+            <p className='text-xs text-emerald-600 dark:text-emerald-400'>
+              This page contains visual roof measurements and diagrams extracted
+              from the aerial imagery report.
+            </p>
+          </div>
+        )}
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkBreaks]}
           rehypePlugins={[rehypeRaw]}
+          components={{
+            // Custom table rendering for better display
+            table: ({ children }) => (
+              <div className='overflow-x-auto my-4'>
+                <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700'>
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className='bg-gray-50 dark:bg-gray-800'>{children}</thead>
+            ),
+            tbody: ({ children }) => (
+              <tbody className='bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700'>
+                {children}
+              </tbody>
+            ),
+            tr: ({ children }) => (
+              <tr className='hover:bg-gray-50 dark:hover:bg-gray-800'>
+                {children}
+              </tr>
+            ),
+            th: ({ children }) => (
+              <th className='px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider'>
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className='px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap'>
+                {children}
+              </td>
+            ),
+            // Custom image rendering with click-to-expand
+            img: ({ src, alt, ...props }) => {
+              if (!src) return null;
+              const isPageImage =
+                typeof src === 'string' && page.images?.includes(src);
+              if (!isPageImage) {
+                return (
+                  <img
+                    src={src}
+                    alt={alt}
+                    {...props}
+                    className='max-w-full h-auto'
+                  />
+                );
+              }
+              return (
+                <img
+                  src={src}
+                  alt={alt}
+                  {...props}
+                  className='max-w-full h-auto cursor-pointer rounded-lg border hover:shadow-lg transition-shadow duration-200 my-4'
+                  onClick={() => {
+                    if (src && document) {
+                      openImageOverlay(src, document);
+                    }
+                  }}
+                  title='Click to expand'
+                />
+              );
+            },
+          }}
         >
           {(() => {
             const rx = resolveMatch(page.pageNumber);
             return rx
-              ? md.replace(rx, m => `<mark id="evidence-target">${m}</mark>`)
-              : md;
+              ? processedMarkdown.replace(
+                  rx,
+                  (match: string) =>
+                    `<mark class="evidence-highlight">${match}</mark>`
+                )
+              : processedMarkdown;
           })()}
         </ReactMarkdown>
       </div>

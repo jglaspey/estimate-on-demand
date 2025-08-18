@@ -192,12 +192,13 @@ html {
   font-size: var(--font-size);
 }
 
-/* jump-to-evidence highlight */
+/* persistent evidence highlighting */
 @layer base {
-  mark#evidence-target {
-    background: #fde68a;
+  mark.evidence-highlight {
+    background: #fde68a !important;
     color: inherit;
     padding: 0 0.15em;
     border-radius: 2px;
+    font-weight: 500;
   }
 }

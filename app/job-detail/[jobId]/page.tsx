@@ -630,8 +630,21 @@ export default function JobDetailPage() {
             totalRules={4}
             ridgeCapData={ridgeCapData}
             onJumpToEvidence={(location, type) => {
+              console.log('🔍 onJumpToEvidence called:', { location, type });
+
+              // CHECK #1: Is viewerRef properly set?
+              console.log('🔗 viewerRef.current exists:', !!viewerRef.current);
+              if (!viewerRef.current) {
+                console.error(
+                  '❌ CRITICAL: viewerRef.current is null - this is likely the main issue!'
+                );
+                return;
+              }
+
               const match = String(location || '').match(/page[-\s]?(\d+)/i);
               const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              console.log('📄 Parsed page:', page);
+
               // Jump to evidence in document viewer
               const payload = {
                 docType: type,
@@ -639,11 +652,17 @@ export default function JobDetailPage() {
                 rule: rule.ruleName,
                 location,
               } as const;
-              viewerRef.current?.jumpToEvidence(payload);
-              // Fire a microtask after a tick to reinforce when switching tabs
-              setTimeout(() => viewerRef.current?.jumpToEvidence(payload), 0);
+              console.log('📦 Payload created:', payload);
+
+              try {
+                console.log('🚀 Calling jumpToEvidence...');
+                viewerRef.current.jumpToEvidence(payload);
+                console.log('✅ jumpToEvidence call completed');
+              } catch (error) {
+                console.error('❌ Error in jumpToEvidence:', error);
+              }
             }}
-            onDecision={(decision, notes) => onDecision(rule, decision, notes)}
+            onDecision={(decision, notes) => onDecision(decision, notes)}
           />
         );
       case 'starter_strip':

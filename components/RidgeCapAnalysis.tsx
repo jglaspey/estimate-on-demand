@@ -50,7 +50,10 @@ interface RidgeCapAnalysisProps {
   ridgeCapData?: RidgeCapData;
   showHighlighting?: boolean;
   onJumpToEvidence?: (page: string, type: 'estimate' | 'report') => void;
-  onDecision?: (decision: 'accepted' | 'rejected' | 'modified', notes?: string) => void;
+  onDecision?: (
+    decision: 'accepted' | 'rejected' | 'modified',
+    notes?: string
+  ) => void;
 }
 
 export function RidgeCapAnalysis({
@@ -64,17 +67,22 @@ export function RidgeCapAnalysis({
   const [notes, setNotes] = useState(ridgeCapData?.userNotes || '');
   const [justificationCopied, setJustificationCopied] = useState(false);
 
-  // Auto-scroll to first evidence on component mount
+  // Auto-scroll to first evidence on component mount (once only)
   useEffect(() => {
+    console.log('RidgeCapAnalysis useEffect running...');
+    console.log('onJumpToEvidence exists:', !!onJumpToEvidence);
+    console.log('ridgeCapData exists:', !!ridgeCapData);
     if (onJumpToEvidence && ridgeCapData) {
+      console.log('Setting up auto-scroll timer...');
       // Small delay to ensure document viewer is fully loaded
       const timer = setTimeout(() => {
+        console.log('Auto-scroll executing: jumping to page 4 estimate');
         // Jump to estimate page 4 where ridge cap line item is located
         onJumpToEvidence('page 4', 'estimate');
-      }, 300);
+      }, 1000); // Increased delay to ensure viewer is ready
       return () => clearTimeout(timer);
     }
-  }, [onJumpToEvidence, ridgeCapData]);
+  }, [onJumpToEvidence]); // Remove ridgeCapData dependency to prevent re-runs
 
   // Copy justification to clipboard
   const copyJustification = async () => {
@@ -159,14 +167,28 @@ export function RidgeCapAnalysis({
                     {ridgeCapData?.estimateTotal || '$1,147.66'}
                   </div>
                 </div>
-                {onJumpToEvidence && (
+                {onJumpToEvidence ? (
                   <button
-                    onClick={() => onJumpToEvidence('page 4', 'estimate')}
-                    className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 ml-2 whitespace-nowrap'
+                    onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Clicking Estimate p.4 link...');
+                      console.log(
+                        'onJumpToEvidence exists:',
+                        !!onJumpToEvidence
+                      );
+                      onJumpToEvidence('page 4', 'estimate');
+                    }}
+                    className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 ml-2 whitespace-nowrap cursor-pointer'
+                    type='button'
                   >
                     <ExternalLink className='h-3 w-3' />
                     Estimate p.4
                   </button>
+                ) : (
+                  <span className='text-xs text-gray-400'>
+                    No navigation available
+                  </span>
                 )}
               </div>
             </div>
@@ -190,8 +212,15 @@ export function RidgeCapAnalysis({
                     </span>
                     {onJumpToEvidence && (
                       <button
-                        onClick={() => onJumpToEvidence('page 2', 'report')}
-                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Clicking Ridge report link...');
+                          onJumpToEvidence('page 2', 'report');
+                        }}
+                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer'
+                        title='Jump to roof report page 2 - Ridge measurements'
+                        type='button'
                       >
                         <ExternalLink className='h-3 w-3' />
                       </button>
@@ -208,8 +237,15 @@ export function RidgeCapAnalysis({
                     </span>
                     {onJumpToEvidence && (
                       <button
-                        onClick={() => onJumpToEvidence('page 2', 'report')}
-                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Clicking Hip report link...');
+                          onJumpToEvidence('page 2', 'report');
+                        }}
+                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer'
+                        title='Jump to roof report page 2 - Hip measurements'
+                        type='button'
                       >
                         <ExternalLink className='h-3 w-3' />
                       </button>
@@ -316,7 +352,7 @@ export function RidgeCapAnalysis({
                 <Textarea
                   placeholder='Add any custom notes for this supplement...'
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={e => setNotes(e.target.value)}
                   className='min-h-[60px] text-sm border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'
                 />
               </div>
@@ -372,7 +408,9 @@ export function RidgeCapAnalysis({
                 </div>
                 <div className='flex-1'>
                   <p className='text-sm font-semibold text-indigo-900 dark:text-indigo-100'>
-                    Decision: {ridgeCapData.userDecision.charAt(0).toUpperCase() + ridgeCapData.userDecision.slice(1)}
+                    Decision:{' '}
+                    {ridgeCapData.userDecision.charAt(0).toUpperCase() +
+                      ridgeCapData.userDecision.slice(1)}
                   </p>
                   {ridgeCapData.userNotes && (
                     <p className='text-sm text-indigo-700 dark:text-indigo-300 mt-1'>
