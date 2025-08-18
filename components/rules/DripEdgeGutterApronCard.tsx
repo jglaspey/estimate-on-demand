@@ -55,15 +55,31 @@ export function DripEdgeGutterApronCard({
   const [notes, setNotes] = useState(ruleAnalysis?.userNotes || '');
   const [justificationCopied, setJustificationCopied] = useState(false);
 
-  // Mock data based on the business rule (similar to StarterStripCard)
-  const dripEdgePresent = true;
-  const gutterApronPresent = false;
-  const dripEdgeQty = '45.2 LF';
-  const dripEdgePrice = '$2.85';
-  const dripEdgeTotal = '$128.82';
-  const requiredRakeLength = '45.2 LF';
-  const requiredEaveLength = '178.6 LF';
-  const additionalCost = ruleAnalysis.costImpact;
+  // Real values from analysis with sensible fallbacks
+  const a: any = ruleAnalysis || {};
+  const dripEdgePresent: boolean = Boolean(a.dripEdgePresent);
+  const gutterApronPresent: boolean = Boolean(a.gutterApronPresent);
+  const display = (v?: string | number | null) =>
+    v === undefined || v === null || v === '' ? '---' : String(v);
+  const dripEdgeQty: string = dripEdgePresent
+    ? display(a.dripEdgeQuantity)
+    : '---';
+  const dripEdgePrice: string = dripEdgePresent
+    ? display(a.dripEdgeUnitPrice)
+    : '---';
+  const dripEdgeTotal: string = dripEdgePresent
+    ? display(a.dripEdgeTotal)
+    : '---';
+  const requiredRakeLength: string = display(a.requiredRakeLength);
+  const requiredEaveLength: string = display(a.requiredEaveLength);
+  const gutterApronPrice: string = gutterApronPresent
+    ? display(a.gutterApronUnitPrice)
+    : display(a.gutterApronUnitPrice); // show provided price if backend supplies it, else '---'
+  const additionalCostValue =
+    typeof ruleAnalysis.costImpact === 'number' && ruleAnalysis.costImpact > 0
+      ? ruleAnalysis.costImpact
+      : undefined;
+  const complianceStatus: string | undefined = a.complianceStatus; // e.g., 'partial'
 
   const standardJustification =
     'Drip edge and gutter apron are both essential components in a roofing system. Drip edge protects rakes (side edges) while gutter apron protects eaves (bottom edges) and directs water into gutters. Both are required for proper water management and code compliance.';
@@ -79,9 +95,8 @@ export function DripEdgeGutterApronCard({
   };
 
   const getStatusIcon = () => {
-    return ruleAnalysis.status === 'SUPPLEMENT_NEEDED'
-      ? AlertTriangle
-      : CheckCircle;
+    if (ruleAnalysis.status === 'COMPLIANT') return CheckCircle;
+    return AlertTriangle;
   };
 
   const StatusIcon = getStatusIcon();
@@ -109,14 +124,18 @@ export function DripEdgeGutterApronCard({
         </div>
         <Badge
           className={`${
-            ruleAnalysis.status === 'SUPPLEMENT_NEEDED'
-              ? 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
-              : 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400'
+            ruleAnalysis.status === 'COMPLIANT'
+              ? 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400'
+              : complianceStatus === 'partial'
+                ? 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300'
+                : 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
           }`}
         >
-          {ruleAnalysis.status === 'SUPPLEMENT_NEEDED'
-            ? 'Supplement Needed'
-            : 'Compliant'}
+          {ruleAnalysis.status === 'COMPLIANT'
+            ? 'Compliant'
+            : complianceStatus === 'partial'
+              ? 'Partial'
+              : 'Supplement Needed'}
         </Badge>
       </div>
 
@@ -129,9 +148,13 @@ export function DripEdgeGutterApronCard({
               {/* Drip Edge Status */}
               <div className='space-y-2'>
                 <div className='flex items-center gap-2'>
-                  <CheckCircle className='h-4 w-4 text-green-600' />
+                  {dripEdgePresent ? (
+                    <CheckCircle className='h-4 w-4 text-green-600' />
+                  ) : (
+                    <XCircle className='h-4 w-4 text-red-600' />
+                  )}
                   <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
-                    Drip Edge (Found)
+                    Drip Edge ({dripEdgePresent ? 'Found' : 'Missing'})
                   </span>
                 </div>
                 <div className='text-xs text-zinc-600 dark:text-zinc-400 ml-6'>
@@ -145,16 +168,21 @@ export function DripEdgeGutterApronCard({
               {/* Gutter Apron Status */}
               <div className='space-y-2'>
                 <div className='flex items-center gap-2'>
-                  <XCircle className='h-4 w-4 text-red-600' />
+                  {gutterApronPresent ? (
+                    <CheckCircle className='h-4 w-4 text-green-600' />
+                  ) : (
+                    <XCircle className='h-4 w-4 text-red-600' />
+                  )}
                   <span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
-                    Gutter Apron (Missing)
+                    Gutter Apron ({gutterApronPresent ? 'Found' : 'Missing'})
                   </span>
                 </div>
                 <div className='text-xs text-red-600 dark:text-red-400 ml-6'>
                   • Required for eave edges
                 </div>
                 <div className='text-xs text-red-600 dark:text-red-400 ml-6'>
-                  • Eave edges: {requiredEaveLength} ❌
+                  • Eave edges: {requiredEaveLength}{' '}
+                  {gutterApronPresent ? '✓' : '❌'}
                 </div>
               </div>
             </div>
@@ -173,11 +201,13 @@ export function DripEdgeGutterApronCard({
                     Recommended: Add Gutter Apron
                   </span>
                   <span className='text-lg font-bold text-blue-600 dark:text-blue-400'>
-                    +${additionalCost.toFixed(2)}
+                    {additionalCostValue
+                      ? `+$${additionalCostValue.toFixed(2)}`
+                      : '---'}
                   </span>
                 </div>
                 <div className='text-xs text-blue-700 dark:text-blue-300 mt-1'>
-                  {requiredEaveLength} @ $3.15/LF
+                  {requiredEaveLength} @ {gutterApronPrice}/LF
                 </div>
               </div>
             )}
@@ -240,11 +270,12 @@ export function DripEdgeGutterApronCard({
                     {ruleAnalysis.userNotes}
                   </p>
                 )}
-                {ruleAnalysis.userDecision === 'accepted' && (
-                  <p className='text-sm text-green-700 dark:text-green-300 mt-1'>
-                    Added +${additionalCost.toFixed(2)} to supplement
-                  </p>
-                )}
+                {ruleAnalysis.userDecision === 'accepted' &&
+                  additionalCostValue !== undefined && (
+                    <p className='text-sm text-green-700 dark:text-green-300 mt-1'>
+                      Added +${additionalCostValue.toFixed(2)} to supplement
+                    </p>
+                  )}
               </div>
             </div>
           </div>

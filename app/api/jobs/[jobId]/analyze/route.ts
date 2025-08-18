@@ -69,14 +69,12 @@ export async function POST(
           take: 1,
         },
         ruleAnalyses: {
-          where: { ruleType: 'HIP_RIDGE_CAP' },
           orderBy: { analyzedAt: 'desc' },
-          take: 1,
         },
       },
     });
 
-    // Map ridge cap analysis to UI format
+    // Map business rule analyses to UI format
     let ridgeCapUiData = null;
     if (updatedJob && results.ridgeCap) {
       const ruleAnalysisResult = {
@@ -93,8 +91,87 @@ export async function POST(
         currentSpecification: results.ridgeCap.currentSpecification,
       };
 
-      // V2: UI data mapping is now handled by the frontend
       ridgeCapUiData = ruleAnalysisResult;
+    }
+
+    // Map drip edge analysis to UI format
+    let dripEdgeUiData = null;
+    if (updatedJob && results.dripEdge) {
+      const ruleAnalysisResult = {
+        ruleName: 'drip_edge',
+        status: results.dripEdge.status,
+        confidence: results.dripEdge.confidence,
+        reasoning: results.dripEdge.reasoning,
+        costImpact: results.dripEdge.costImpact,
+        // Standard fields
+        estimateQuantity: results.dripEdge.dripEdgeQuantity || 'Not found',
+        requiredQuantity: results.dripEdge.requiredRakeLength || 'Unknown',
+        variance:
+          results.dripEdge.rakeShortfall ||
+          results.dripEdge.eaveShortfall ||
+          'See analysis',
+        varianceType:
+          results.dripEdge.status === 'COMPLIANT' ? 'adequate' : 'shortage',
+        materialStatus: results.dripEdge.complianceStatus || 'non-compliant',
+        // Pass-through fields used by the UI card
+        dripEdgePresent: results.dripEdge.dripEdgePresent,
+        gutterApronPresent: results.dripEdge.gutterApronPresent,
+        dripEdgeQuantity: results.dripEdge.dripEdgeQuantity,
+        dripEdgeUnitPrice: results.dripEdge.dripEdgeUnitPrice,
+        dripEdgeTotal: results.dripEdge.dripEdgeTotal,
+        requiredRakeLength: results.dripEdge.requiredRakeLength,
+        requiredEaveLength: results.dripEdge.requiredEaveLength,
+        rakeShortfall: results.dripEdge.rakeShortfall,
+        eaveShortfall: results.dripEdge.eaveShortfall,
+        gutterApronUnitPrice: results.dripEdge.gutterApronUnitPrice,
+        gutterApronTotal: results.dripEdge.gutterApronTotal,
+        complianceStatus: results.dripEdge.complianceStatus,
+        currentSpecification: {
+          code:
+            results.dripEdge.dripEdgeLineItem?.code ||
+            results.dripEdge.gutterApronLineItem?.code ||
+            null,
+          description:
+            results.dripEdge.dripEdgeLineItem?.description ||
+            results.dripEdge.gutterApronLineItem?.description ||
+            null,
+          quantity:
+            results.dripEdge.dripEdgeQuantity ||
+            results.dripEdge.gutterApronQuantity ||
+            null,
+          rate:
+            results.dripEdge.dripEdgeUnitPrice ||
+            results.dripEdge.gutterApronUnitPrice ||
+            null,
+          total:
+            results.dripEdge.dripEdgeTotal ||
+            results.dripEdge.gutterApronTotal ||
+            null,
+        },
+      };
+
+      dripEdgeUiData = ruleAnalysisResult;
+    }
+
+    // Map ice & water barrier analysis to UI format
+    let iceWaterUiData = null;
+    if (updatedJob && results.iceAndWater) {
+      const ruleAnalysisResult = {
+        ruleName: 'ice_water_barrier',
+        status: results.iceAndWater.status,
+        confidence: results.iceAndWater.confidence,
+        reasoning: results.iceAndWater.reasoning,
+        costImpact: results.iceAndWater.costImpact,
+        estimateQuantity: results.iceAndWater.estimateQuantity,
+        requiredQuantity: results.iceAndWater.requiredQuantity,
+        variance: results.iceAndWater.variance,
+        varianceType: results.iceAndWater.varianceType,
+        materialStatus: results.iceAndWater.materialStatus,
+        currentSpecification: results.iceAndWater.currentSpecification,
+        calculationDetails: results.iceAndWater.calculationDetails,
+      };
+
+      iceWaterUiData = ruleAnalysisResult;
     }
 
     console.log(`✅ Business rule analysis completed for job ${jobId}`);
@@ -110,6 +187,8 @@ export async function POST(
       },
       uiData: {
         ridgeCap: ridgeCapUiData,
+        dripEdge: dripEdgeUiData,
+        iceAndWater: iceWaterUiData,
       },
       progressUpdates,
       summary: {
@@ -184,7 +263,6 @@ export async function GET(
     );
 
     if (ridgeCapAnalysis) {
-      // Extract data directly from RuleAnalysis fields and findings JSON
       const findings = ridgeCapAnalysis.findings as any;
       const ruleAnalysisResult = {
         ruleName: 'ridge_cap',
@@ -200,8 +278,102 @@ export async function GET(
         currentSpecification: findings?.currentSpecification || {},
       };
 
-      // V2: UI data mapping is now handled by the frontend
       ridgeCapUiData = ruleAnalysisResult;
+    }
+
+    // Map drip edge analysis
+    let dripEdgeUiData = null;
+    const dripEdgeAnalysis = job.ruleAnalyses.find(
+      a => a.ruleType === 'DRIP_EDGE'
+    );
+
+    if (dripEdgeAnalysis) {
+      const findings = dripEdgeAnalysis.findings as any;
+      const ruleAnalysisResult = {
+        ruleName: 'drip_edge',
+        status: dripEdgeAnalysis.status,
+        confidence: dripEdgeAnalysis.confidence || 0,
+        reasoning: dripEdgeAnalysis.reasoning || '',
+        costImpact: findings?.costImpact || 0,
+        // Map drip edge specific fields from database
+        estimateQuantity:
+          findings?.dripEdgeQuantity ||
+          findings?.estimateQuantity ||
+          'Not found',
+        requiredQuantity:
+          findings?.requiredRakeLength ||
+          findings?.requiredQuantity ||
+          'Unknown',
+        variance:
+          findings?.rakeShortfall ||
+          findings?.eaveShortfall ||
+          findings?.variance ||
+          'See analysis',
+        varianceType:
+          findings?.status === 'COMPLIANT' ? 'adequate' : 'shortage',
+        materialStatus:
+          findings?.complianceStatus ||
+          findings?.materialStatus ||
+          'non-compliant',
+        // Pass-through fields used by the UI card
+        dripEdgePresent: findings?.dripEdgePresent,
+        gutterApronPresent: findings?.gutterApronPresent,
+        dripEdgeQuantity: findings?.dripEdgeQuantity,
+        dripEdgeUnitPrice: findings?.dripEdgeUnitPrice,
+        dripEdgeTotal: findings?.dripEdgeTotal,
+        requiredRakeLength: findings?.requiredRakeLength,
+        requiredEaveLength: findings?.requiredEaveLength,
+        rakeShortfall: findings?.rakeShortfall,
+        eaveShortfall: findings?.eaveShortfall,
+        gutterApronUnitPrice: findings?.gutterApronUnitPrice,
+        gutterApronTotal: findings?.gutterApronTotal,
+        complianceStatus: findings?.complianceStatus,
+        currentSpecification: findings?.currentSpecification || {
+          code:
+            findings?.dripEdgeLineItem?.code ||
+            findings?.gutterApronLineItem?.code ||
+            null,
+          description:
+            findings?.dripEdgeLineItem?.description ||
+            findings?.gutterApronLineItem?.description ||
+            null,
+          quantity:
+            findings?.dripEdgeQuantity || findings?.gutterApronQuantity || null,
+          rate:
+            findings?.dripEdgeUnitPrice ||
+            findings?.gutterApronUnitPrice ||
+            null,
+          total: findings?.dripEdgeTotal || findings?.gutterApronTotal || null,
+        },
+      };
+
+      dripEdgeUiData = ruleAnalysisResult;
+    }
+
+    // Map ice & water barrier analysis
+    let iceWaterUiData = null;
+    const iceWaterAnalysis = job.ruleAnalyses.find(
+      a => a.ruleType === 'ICE_WATER_BARRIER'
+    );
+
+    if (iceWaterAnalysis) {
+      const findings = iceWaterAnalysis.findings as any;
+      const ruleAnalysisResult = {
+        ruleName: 'ice_water_barrier',
+        status: iceWaterAnalysis.status,
+        confidence: iceWaterAnalysis.confidence || 0,
+        reasoning: iceWaterAnalysis.reasoning || '',
+        costImpact: findings?.costImpact || 0,
+        estimateQuantity: findings?.estimateQuantity || '',
+        requiredQuantity: findings?.requiredQuantity || '',
+        variance: findings?.variance || '',
+        varianceType: findings?.varianceType || 'adequate',
+        materialStatus: findings?.materialStatus || 'compliant',
+        currentSpecification: findings?.currentSpecification || {},
+        calculationDetails: findings?.calculationDetails || {},
+      };
+
+      iceWaterUiData = ruleAnalysisResult;
     }
 
     return NextResponse.json({
@@ -211,6 +383,8 @@ export async function GET(
       progress,
       uiData: {
         ridgeCap: ridgeCapUiData,
+        dripEdge: dripEdgeUiData,
+        iceAndWater: iceWaterUiData,
       },
       analyses: job.ruleAnalyses.map(analysis => {
         const findings = analysis.findings as any;

@@ -364,10 +364,115 @@ export default function JobDetailPage() {
 
             // Add other rules as they become available
             // if (data.uiData.starterStrip) rules.push(data.uiData.starterStrip);
-            // if (data.uiData.dripEdge) rules.push(data.uiData.dripEdge);
-            // if (data.uiData.iceAndWater) rules.push(data.uiData.iceAndWater);
+            if (data.uiData.dripEdge) {
+              rules.push({
+                ...data.uiData.dripEdge,
+                ruleName: 'drip_edge',
+              });
+            }
+            if (data.uiData.iceAndWater) {
+              rules.push({
+                ...data.uiData.iceAndWater,
+                ruleName: 'ice_water_barrier',
+              });
+            }
+
+            // If backend UI data doesn't include all rules yet, call analyze to get full results
+            try {
+              if (!data.uiData.dripEdge || !data.uiData.iceAndWater) {
+                const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
+                  method: 'POST',
+                });
+                if (postRes.ok) {
+                  const analyzed = await postRes.json();
+                  const results = analyzed?.results || {};
+                  const addRule = (rName: string, payload?: any) => {
+                    if (!payload) return;
+                    rules.push({
+                      ruleName: rName,
+                      status: payload.status,
+                      confidence: payload.confidence ?? 0.95,
+                      reasoning: payload.reasoning ?? '',
+                      costImpact: payload.costImpact ?? 0,
+                      // pass through extra fields for cards that know how to use them
+                      ...(payload || {}),
+                    } as any);
+                  };
+                  // Ridge cap (keep existing if already present)
+                  if (
+                    !rules.find(r => r.ruleName === 'ridge_cap') &&
+                    results.ridgeCap
+                  ) {
+                    addRule('ridge_cap', results.ridgeCap);
+                  }
+                  // Drip edge & gutter apron
+                  if (
+                    !rules.find(r => r.ruleName === 'drip_edge') &&
+                    results.dripEdge
+                  ) {
+                    addRule('drip_edge', results.dripEdge);
+                  }
+                  // Ice & Water Barrier
+                  if (
+                    !rules.find(r => r.ruleName === 'ice_water_barrier') &&
+                    results.iceAndWater
+                  ) {
+                    addRule('ice_water_barrier', results.iceAndWater);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn(
+                'Optional analyze POST failed; continuing with existing UI data',
+                e
+              );
+            }
 
             setRuleAnalysis(rules);
+
+            // Always refresh with a fresh analysis run to avoid stale DB state
+            try {
+              const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
+                method: 'POST',
+              });
+              if (postRes.ok) {
+                const fresh = await postRes.json();
+                const ui = fresh?.uiData || {};
+                const keyToRule: Record<string, string> = {
+                  ridgeCap: 'ridge_cap',
+                  dripEdge: 'drip_edge',
+                  starterStrip: 'starter_strip',
+                  iceAndWater: 'ice_water_barrier',
+                };
+
+                // Build in stable UI order based on availableRules
+                const orderedKeys = [
+                  'ridgeCap',
+                  'dripEdge',
+                  'starterStrip',
+                  'iceAndWater',
+                ];
+                const freshRules: RuleAnalysisResult[] = [];
+                orderedKeys.forEach(k => {
+                  if ((ui as any)[k]) {
+                    freshRules.push({
+                      ...(ui as any)[k],
+                      ruleName: keyToRule[k],
+                    } as any);
+                  }
+                });
+
+                if (freshRules.length > 0) {
+                  setRuleAnalysis(freshRules);
+                  setAnalysisResults(ui);
+                }
+              }
+            } catch (e) {
+              console.warn(
+                'Optional fresh analysis failed; using existing UI data',
+                e
+              );
+            }
           }
         }
       } catch (error) {

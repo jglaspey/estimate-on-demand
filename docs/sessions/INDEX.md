@@ -28,6 +28,17 @@ Implemented comprehensive rule navigation system allowing users to move between 
 **Branch:** `feat/drip-edge-gutter-apron-analysis`  
 **Status:** ✅ Complete - Multiple navigation pathways implemented with clean URL routing
 
+### 08.18 - Ice & Water Barrier Implementation
+**File:** [08.18-ice-water-barrier-implementation.md](./08.18-ice-water-barrier-implementation.md)  
+**Type:** Feature Development  
+**Focus:** Business Rules & Compliance  
+
+Implemented comprehensive ice & water barrier analysis rule following IRC R905.1.2 requirements, including business logic analyzer, API integration, and UI components. Added automatic pitch-adjusted coverage calculations and cost impact analysis to complete the fourth major business rule in the EOD system.
+
+**Key Files Changed:** `lib/analysis/ice-water-barrier-analyzer.ts`, `lib/analysis/analysis-worker.ts`, `lib/rules/rule-config.ts`, `app/job-detail/[jobId]/page.tsx`, `app/api/jobs/[jobId]/analyze/route.ts`  
+**Branch:** `feature/ice-water-barrier-analysis`  
+**Status:** ✅ Complete - IRC R905.1.2 compliant analysis with automatic coverage calculations
+
 ---
 
 ## Usage

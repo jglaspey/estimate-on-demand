@@ -62,7 +62,7 @@ export const RULE_DEFINITIONS: RuleDefinition[] = [
     category: 'coverage',
     component: 'IceWaterBarrierCard',
     analysisKey: 'iceWaterBarrier',
-    isAvailable: false, // Not yet implemented
+    isAvailable: true, // Now implemented
     priority: 4,
   },
 ];

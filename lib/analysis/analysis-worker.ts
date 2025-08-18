@@ -18,6 +18,11 @@ import {
   DripEdgeAnalysisInput,
   DripEdgeAnalysisResult,
 } from './drip-edge-analyzer';
+import {
+  iceWaterBarrierAnalyzer,
+  IceWaterBarrierAnalysisInput,
+  IceWaterBarrierAnalysisResult,
+} from './ice-water-barrier-analyzer';
 
 // Progress update interface
 export interface AnalysisProgress {
@@ -43,7 +48,7 @@ export interface BusinessRuleResults {
   ridgeCap: RidgeCapAnalysisResult | null;
   starterStrip: Record<string, unknown> | null; // Future implementation
   dripEdge: DripEdgeAnalysisResult | null;
-  iceAndWater: Record<string, unknown> | null; // Future implementation
+  iceAndWater: IceWaterBarrierAnalysisResult | null;
 }
 
 export class AnalysisWorker {
@@ -166,7 +171,7 @@ export class AnalysisWorker {
 
         // Save drip edge analysis to database
         await this.saveRuleAnalysis(
-          'DRIP_EDGE_GUTTER_APRON',
+          'DRIP_EDGE',
           results.dripEdge as unknown as Record<string, unknown>
         );
 
@@ -196,13 +201,19 @@ export class AnalysisWorker {
       );
 
       try {
-        // Future implementation
         results.iceAndWater = await this.runIceAndWaterAnalysis(jobData);
+
+        // Save ice & water analysis to database
+        await this.saveRuleAnalysis(
+          'ICE_WATER_BARRIER',
+          results.iceAndWater as unknown as Record<string, unknown>
+        );
+
         this.updateProgress(
           'ice_water',
           'completed',
           100,
-          'All business rule analyses completed'
+          `Ice & water analysis: ${results.iceAndWater.status} - ${results.iceAndWater.costImpact > 0 ? `$${results.iceAndWater.costImpact.toFixed(2)} supplement` : 'compliant'}`
         );
       } catch (error) {
         this.updateProgress(
@@ -251,9 +262,18 @@ export class AnalysisWorker {
     const extraction = extractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `🔍 Ridge Cap Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
     // Prepare analysis input with proper type casting
     const analysisInput: RidgeCapAnalysisInput = {
-      lineItems: (extractedData.lineItems as any[]) || [],
+      lineItems: v2LineItems,
       ridgeCapItems: (extractedData.ridgeCapItems as any[]) || [],
       roofMeasurements: (extractedData.roofMeasurements as any) || {
         ridgeLength: null,
@@ -330,58 +350,205 @@ export class AnalysisWorker {
     const extraction = extractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
-    // Prepare analysis input with proper type casting
+    // Get actual roof measurements from extracted data
+    const actualMeasurements = (extractedData.roofMeasurements as any) || {};
+    console.log(
+      '🔍 Drip Edge Analysis - Raw measurements:',
+      actualMeasurements
+    );
+
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `🔍 Drip Edge Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
+    // Prepare analysis input with proper type casting and actual measurements
     const analysisInput: DripEdgeAnalysisInput = {
-      lineItems: (extractedData.lineItems as any[]) || [],
-      roofMeasurements: (extractedData.roofMeasurements as any) || {
-        ridgeLength: null,
-        hipLength: null,
-        totalRidgeHip: null,
-        confidence: 0.5,
-        sourcePages: [],
-        extractedFrom: 'other' as const,
-        // Add required fields from RoofMeasurements interface
-        totalArea: 0,
-        totalSquares: 0,
-        pitch: 'Unknown',
-        stories: 1,
-        eavesLength: 0,
-        rakesLength: 0,
-        ridgesLength: 0,
-        valleysLength: 0,
-        roofArea: 0,
-        hipsLength: 0,
-        soffitDepth: 'Unknown',
-        wallThickness: 'Unknown',
-        totalRoofArea: 0,
-        numberOfSquares: 0,
-        predominantPitch: 'Unknown',
-        numberOfStories: 1,
-        totalEaves: 0,
-        totalRakes: 0,
-        totalRidges: 0,
-        totalValleys: 0,
+      lineItems: v2LineItems,
+      roofMeasurements: {
+        // Use actual extracted measurements
+        ridgeLength: actualMeasurements.ridgeLength || null,
+        hipsLength:
+          actualMeasurements.hipLength || actualMeasurements.hipsLength || null,
+        totalRidgeHip: actualMeasurements.totalRidgeHip || null,
+        // fields below may not exist on the typed RoofMeasurements; include only if present using type cast
+        ...(actualMeasurements.sourcePages
+          ? { sourcePages: actualMeasurements.sourcePages }
+          : {}),
+        ...(actualMeasurements.extractedFrom
+          ? { extractedFrom: actualMeasurements.extractedFrom }
+          : {}),
+        // Core measurements for drip edge analysis
+        totalArea:
+          actualMeasurements.totalArea || actualMeasurements.totalRoofArea || 0,
+        totalSquares:
+          actualMeasurements.totalSquares || actualMeasurements.squares || 0,
+        pitch:
+          actualMeasurements.pitch ||
+          actualMeasurements.predominantPitch ||
+          'Unknown',
+        stories:
+          actualMeasurements.stories || actualMeasurements.numberOfStories || 1,
+        // CRITICAL: Eave and rake measurements for drip edge analysis
+        eavesLength:
+          actualMeasurements.eavesLength ||
+          actualMeasurements.eaveLength ||
+          actualMeasurements.totalEaves ||
+          0,
+        rakesLength:
+          actualMeasurements.rakesLength ||
+          actualMeasurements.rakeLength ||
+          actualMeasurements.totalRakes ||
+          0,
+        ridgesLength:
+          actualMeasurements.ridgesLength ||
+          actualMeasurements.ridgeLength ||
+          0,
+        valleysLength:
+          actualMeasurements.valleysLength ||
+          actualMeasurements.valleyLength ||
+          0,
+        // Additional fields
+        roofArea:
+          actualMeasurements.roofArea || actualMeasurements.totalArea || 0,
+        // keep only additional fields that exist in our type; hipsLength already mapped above
+        soffitDepth: actualMeasurements.soffitDepth || 'Unknown',
+        wallThickness: actualMeasurements.wallThickness || 'Unknown',
+        totalRoofArea:
+          actualMeasurements.totalRoofArea || actualMeasurements.totalArea || 0,
+        numberOfSquares:
+          actualMeasurements.numberOfSquares || actualMeasurements.squares || 0,
+        predominantPitch:
+          actualMeasurements.predominantPitch ||
+          actualMeasurements.pitch ||
+          'Unknown',
+        numberOfStories:
+          actualMeasurements.numberOfStories || actualMeasurements.stories || 1,
+        totalEaves:
+          actualMeasurements.totalEaves ||
+          actualMeasurements.eaveLength ||
+          actualMeasurements.eavesLength ||
+          0,
+        totalRakes:
+          actualMeasurements.totalRakes ||
+          actualMeasurements.rakeLength ||
+          actualMeasurements.rakesLength ||
+          0,
+        totalRidges:
+          actualMeasurements.totalRidges || actualMeasurements.ridgeLength || 0,
+        totalValleys:
+          actualMeasurements.totalValleys ||
+          actualMeasurements.valleyLength ||
+          0,
       },
       jobId: this.jobId,
     };
+
+    console.log(
+      '📋 Drip Edge Analysis Input - Line Items:',
+      analysisInput.lineItems?.length || 0
+    );
+    console.log('📏 Drip Edge Analysis Input - Measurements:', {
+      eavesLength: analysisInput.roofMeasurements.eavesLength,
+      rakesLength: analysisInput.roofMeasurements.rakesLength,
+      totalEaves: analysisInput.roofMeasurements.totalEaves,
+      totalRakes: analysisInput.roofMeasurements.totalRakes,
+    });
 
     return await dripEdgeAnalyzer.analyzeDripEdgeCompliance(analysisInput);
   }
 
   /**
-   * Run Ice & Water analysis (placeholder for future implementation)
+   * Run Ice & Water Barrier analysis
    */
   async runIceAndWaterAnalysis(
-    _jobData: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    // Simulate analysis time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    jobData: Record<string, unknown>
+  ): Promise<IceWaterBarrierAnalysisResult> {
+    const extractions = jobData.mistralExtractions as any[];
+    if (
+      !extractions ||
+      !Array.isArray(extractions) ||
+      extractions.length === 0
+    ) {
+      throw new Error('No mistral extractions found in job data');
+    }
 
-    return {
-      status: 'COMPLIANT',
-      reasoning: 'Ice & water analysis not yet implemented',
-      costImpact: 0,
+    const extraction = extractions[0];
+    const extractedData = extraction.extractedData as Record<string, unknown>;
+
+    // Get actual roof measurements from extracted data
+    const actualMeasurements = (extractedData.roofMeasurements as any) || {};
+    console.log(
+      '🔍 Ice & Water Analysis - Raw measurements:',
+      actualMeasurements
+    );
+
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `❄️ Ice & Water Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
+    // Prepare analysis input with proper type casting and actual measurements
+    const analysisInput: IceWaterBarrierAnalysisInput = {
+      lineItems: v2LineItems,
+      roofMeasurements: {
+        // Use actual extracted measurements
+        ridgeLength: actualMeasurements.ridgeLength || null,
+        hipLength:
+          actualMeasurements.hipLength || actualMeasurements.hipsLength || null,
+        totalRidgeHip: actualMeasurements.totalRidgeHip || null,
+        confidence: actualMeasurements.confidence || 0.5,
+        sourcePages: actualMeasurements.sourcePages || [],
+        extractedFrom: actualMeasurements.extractedFrom || ('other' as const),
+        // Core measurements for ice & water analysis
+        eaveLength:
+          actualMeasurements.eaveLength ||
+          actualMeasurements.eavesLength ||
+          actualMeasurements.totalEaves ||
+          0,
+        rakeLength:
+          actualMeasurements.rakeLength ||
+          actualMeasurements.rakesLength ||
+          actualMeasurements.totalRakes ||
+          0,
+        valleyLength:
+          actualMeasurements.valleyLength ||
+          actualMeasurements.valleysLength ||
+          0,
+        totalRoofArea:
+          actualMeasurements.totalRoofArea || actualMeasurements.totalArea || 0,
+        squares:
+          actualMeasurements.squares || actualMeasurements.totalSquares || 0,
+        predominantPitch:
+          actualMeasurements.predominantPitch ||
+          actualMeasurements.pitch ||
+          null,
+        numberOfStories:
+          actualMeasurements.numberOfStories || actualMeasurements.stories || 1,
+      },
+      jobId: this.jobId,
     };
+
+    console.log(
+      '❄️ Ice & Water Analysis Input - Line Items:',
+      analysisInput.lineItems?.length || 0
+    );
+    console.log('📏 Ice & Water Analysis Input - Measurements:', {
+      eaveLength: analysisInput.roofMeasurements.eaveLength,
+      predominantPitch: analysisInput.roofMeasurements.predominantPitch,
+    });
+
+    return await iceWaterBarrierAnalyzer.analyzeIceWaterBarrierCompliance(
+      analysisInput
+    );
   }
 
   /**
