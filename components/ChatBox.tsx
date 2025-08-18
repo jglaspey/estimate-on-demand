@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { Send, MessageCircle, User, Bot, Paperclip } from 'lucide-react';
+import {
+  Send,
+  MessageCircle,
+  User,
+  Bot,
+  Paperclip,
+  RotateCcw,
+} from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -25,7 +32,20 @@ export function ChatBox({ jobId }: ChatBoxProps) {
     try {
       const raw = localStorage.getItem(storageKey);
       const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      const arr = Array.isArray(parsed) ? parsed : [];
+      // Sanitize any legacy bootstrapping user prompts that might have been persisted
+      const filtered = arr.filter((m: any) => {
+        const parts = Array.isArray(m?.parts) ? m.parts : [];
+        const text = parts
+          .filter((p: any) => p && p.type === 'text')
+          .map((p: any) => String(p.text))
+          .join('\n');
+        const looksLikeBootstrap =
+          /Generate the first reply for user\s*"?Storm"?/i.test(text) ||
+          /Provide a summary about this job that hits these rules/i.test(text);
+        return !(m?.role === 'user' && looksLikeBootstrap);
+      });
+      return filtered;
     } catch {
       return [];
     }
@@ -57,23 +77,30 @@ export function ChatBox({ jobId }: ChatBoxProps) {
     }
   }, [messages, storageKey]);
 
-  // First-load auto prompt
+  // Simplified: do not auto-send; seed a friendly assistant message if no history yet
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const already = localStorage.getItem(initKey);
-      if (!already && !initSentRef.current) {
-        const INITIAL_PROMPT = `Generate the first reply for user "Storm". Start with: "Welcome Storm, let me tell you about this job." Then state: "It passes X of 4 quick rules." where X is the number of rules with status COMPLIANT among: HIP_RIDGE_CAP, STARTER_STRIP, DRIP_EDGE_GUTTER_APRON, ICE_WATER_BARRIER (match available rule names). Mention the roof material if present (e.g., composite/asphalt). Then write a single concise sentence for each of the four rules describing material/spec, quantities vs required, and compliance result. End with: "What else can I help you with?" Use ONLY the provided context.`;
-        // Prevent duplicate sends in StrictMode and mark as initialized immediately
+      if (!already && messages.length === 0 && !initSentRef.current) {
         initSentRef.current = true;
+        const welcome = {
+          id: 'welcome',
+          role: 'assistant' as const,
+          parts: [
+            {
+              type: 'text',
+              text: "Welcome! I have the estimate and roof report loaded for this job. Ask me about rule compliance, measurements, or costs and I'll reference specifics.",
+            },
+          ],
+        } as any;
+        setMessages([welcome]);
         localStorage.setItem(initKey, '1');
-        // Kick off the initial user message to the API (which will respond as assistant)
-        sendMessage({ text: INITIAL_PROMPT }).catch(() => {});
       }
     } catch {
       // ignore
     }
-  }, [sendMessage, initKey]);
+  }, [messages.length, initKey, setMessages]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -90,14 +117,14 @@ export function ChatBox({ jobId }: ChatBoxProps) {
     }
   };
 
-  const suggestedQuestions = [
-    'Why was the ridge cap flagged?',
-    'Explain the starter strip issue',
-    'Show me the cost breakdown',
-  ];
+  const suggestedQuestions = ['Give me an update on this job'];
+  const hasUserMessage = useMemo(
+    () => messages.some(m => m.role === 'user'),
+    [messages]
+  );
 
   return (
-    <Card className='h-[600px] flex flex-col'>
+    <Card className='h-[600px] flex flex-col overflow-hidden w-full'>
       <CardHeader className='pb-3'>
         <CardTitle className='flex items-center gap-2'>
           <MessageCircle className='h-5 w-5' />
@@ -108,9 +135,9 @@ export function ChatBox({ jobId }: ChatBoxProps) {
         </p>
       </CardHeader>
 
-      <CardContent className='flex-1 flex flex-col p-0'>
+      <CardContent className='flex-1 flex flex-col p-0 min-h-0'>
         {/* Messages */}
-        <ScrollArea className='flex-1 px-6'>
+        <ScrollArea className='flex-1 px-6 h-full min-h-0'>
           <div className='space-y-4 pb-4'>
             {messages
               .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -145,27 +172,13 @@ export function ChatBox({ jobId }: ChatBoxProps) {
                           : 'bg-muted'
                       }`}
                     >
-                      {(() => {
-                        const parts = Array.isArray((message as any).parts)
-                          ? (message as any).parts
-                          : [];
-                        // Hide the bootstrapping user prompt from UI (but keep assistant reply)
-                        const text = parts
-                          .filter((p: any) => p && p.type === 'text')
-                          .map((p: any) => String(p.text))
-                          .join('\n');
-                        const isInitUser =
-                          message.role === 'user' &&
-                          text.startsWith(
-                            'Generate the first reply for user "Storm"'
-                          );
-                        if (isInitUser) return null;
-                        return parts
-                          .filter((p: any) => p && p.type === 'text')
-                          .map((p: any, i: number) => (
-                            <div key={`${message.id}-${i}`}>{p.text}</div>
-                          ));
-                      })()}
+                      {Array.isArray((message as any).parts)
+                        ? (message as any).parts
+                            .filter((p: any) => p && p.type === 'text')
+                            .map((p: any, i: number) => (
+                              <div key={`${message.id}-${i}`}>{p.text}</div>
+                            ))
+                        : null}
                     </div>
                   </div>
                 </div>
@@ -227,24 +240,30 @@ export function ChatBox({ jobId }: ChatBoxProps) {
             </Button>
           </div>
 
-          {/* Suggested Questions - Now Vertical Stack */}
-          <div className='space-y-2'>
-            <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-2'>
-              Suggested questions:
+          {/* Suggested Question (hides after first user message) */}
+          {!hasUserMessage && (
+            <div className='space-y-2'>
+              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-2'>
+                Suggested question:
+              </div>
+              {suggestedQuestions.map((question, index) => (
+                <Button
+                  key={index}
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    if (isLoading) return;
+                    setInput('');
+                    sendMessage({ text: question });
+                  }}
+                  disabled={isLoading}
+                  className='w-full text-left justify-start h-auto py-2 px-3 text-xs'
+                >
+                  {question}
+                </Button>
+              ))}
             </div>
-            {suggestedQuestions.map((question, index) => (
-              <Button
-                key={index}
-                variant='outline'
-                size='sm'
-                onClick={() => setInput(question)}
-                disabled={isLoading}
-                className='w-full text-left justify-start h-auto py-2 px-3 text-xs'
-              >
-                {question}
-              </Button>
-            ))}
-          </div>
+          )}
         </form>
       </CardContent>
     </Card>
