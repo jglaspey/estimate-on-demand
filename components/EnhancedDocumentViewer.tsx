@@ -492,13 +492,15 @@ export const EnhancedDocumentViewer = forwardRef<
         ) as HTMLElement | null;
         if (mark) {
           mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
+        } else {
+          const pageEl = root.querySelector(
+            `[data-page-number="${pendingTarget.page}"]`
+          ) as HTMLElement | null;
+          if (pageEl)
+            pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        const pageEl = root.querySelector(
-          `[data-page-number="${pendingTarget.page}"]`
-        ) as HTMLElement | null;
-        if (pageEl)
-          pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Clear the pending target after scrolling so user can navigate freely
+        setPendingTarget(null);
       });
       (window as any).__eod_jump_raf2 &&
         cancelAnimationFrame((window as any).__eod_jump_raf2);
