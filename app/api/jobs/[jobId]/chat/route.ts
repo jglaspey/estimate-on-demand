@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { streamText, type CoreMessage } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 import { prisma } from '@/lib/database/client';
@@ -14,10 +14,10 @@ Responsibilities:
 - Answer questions about a single property insurance claim/job.
 - Use ONLY the provided JSON context (job summary, measurements, and rule analyses).
 - Be precise and practical; include numeric quantities with units (LF, SF, squares, $).
-- Prefer short paragraphs and bullet points; keep tone professional and helpful.
-- If findings include evidencePages, reference like "see page 3".
+- Prefer short answers and bullet points; do not explain your answers unless asked to, keep tone professional and helpful.
+- If findings include evidencePages, reference page like "see page 3".
 - If the context is missing something, state what is missing and ask a clarifying question.
-- Never invent costs or line items beyond the provided findings.
+- Never invent costs or line items beyond what is provided - report only from the provided findings.
 
 Here is information on the four business rules in case we reference them:
 
@@ -92,29 +92,7 @@ Do not include procedures for testing shingles that have been cut down or instal
 
 ASTM D3161 and D7158 wind uplift ratings apply only to full, uncut shingles tested in their original manufactured condition. Once a 3-tab shingle is cut (to use as a starter strip or ridge cap), it no longer qualifies under these standards. Cut shingles are not tested, and do not meet wind performance classifications. Therefore, their use in such applications is non-compliant with ASTM standards, manufacturer instructions, and IRC 2018 Section R905.1.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Starter Row
-
-
-
-
 
 Chart Code:
 flowchart TD
@@ -273,25 +251,12 @@ export async function POST(
   ctx: { params: Promise<{ jobId: string }> }
 ) {
   const { jobId } = await ctx.params;
-
-  const body = await req.json().catch(() => ({}));
-  const prior: CoreMessage[] = Array.isArray(body?.messages)
-    ? body.messages
+  const body = (await req.json().catch(() => ({}))) as {
+    messages?: UIMessage[];
+  };
+  const uiMessages: UIMessage[] = Array.isArray(body?.messages)
+    ? (body.messages as UIMessage[])
     : [];
-  const question: string =
-    (typeof body?.question === 'string' && body.question) ||
-    prior
-      .slice()
-      .reverse()
-      .find(m => m.role === 'user')
-      ?.content?.toString() ||
-    '';
-
-  if (!question.trim()) {
-    return new Response(JSON.stringify({ error: 'Missing question' }), {
-      status: 400,
-    });
-  }
 
   const job = await prisma.job.findUnique({
     where: { id: jobId },
@@ -370,25 +335,16 @@ export async function POST(
     finance: { supplementTotal },
   };
 
-  const contextWrappedQuestion = [
-    '--- CONTEXT (JSON) ---',
-    JSON.stringify(context),
-    '--- END CONTEXT ---',
-    '',
-    `Question: ${question}`,
-  ].join('\n');
-
-  const messages: CoreMessage[] = [
-    ...prior.filter(m => m.role !== 'user'),
-    { role: 'user', content: contextWrappedQuestion },
-  ];
-
   const result = await streamText({
     model: anthropic(MODEL_ID),
-    system: SYSTEM_INSTRUCTIONS,
-    messages,
+    system:
+      SYSTEM_INSTRUCTIONS +
+      '\n\n--- CONTEXT (JSON) ---\n' +
+      JSON.stringify(context) +
+      '\n--- END CONTEXT ---',
+    messages: convertToModelMessages(uiMessages),
     temperature: 0.2,
   });
 
-  return result.toTextStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
