@@ -17,6 +17,17 @@ Enhanced the Ridge Cap Analysis interface with auto-scroll navigation, persisten
 **Branch:** `feat/ridge-cap-analysis-ui`  
 **Status:** ✅ Complete - Production ready with successful build validation
 
+### 08.18 - Rule Navigation System Implementation
+**File:** [08.18-rule-navigation-system.md](./08.18-rule-navigation-system.md)  
+**Type:** Feature Development  
+**Focus:** Navigation & User Experience  
+
+Implemented comprehensive rule navigation system allowing users to move between business rules via "View Details" buttons in overview mode and left/right cycling in review mode. Added individual rule pages with clean URLs, flexible rule configuration system, and removed unnecessary UI elements for streamlined interface.
+
+**Key Files Changed:** `app/job-detail/[jobId]/page.tsx`, `app/job/[jobId]/[ruleSlug]/page.tsx`, `components/OverviewPage.tsx`, `lib/rules/rule-config.ts`  
+**Branch:** `feat/drip-edge-gutter-apron-analysis`  
+**Status:** ✅ Complete - Multiple navigation pathways implemented with clean URL routing
+
 ---
 
 ## Usage
