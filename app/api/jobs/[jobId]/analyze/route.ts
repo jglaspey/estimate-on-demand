@@ -98,12 +98,12 @@ export async function POST(
     let dripEdgeUiData = null;
     if (updatedJob && results.dripEdge) {
       const ruleAnalysisResult = {
-        ruleName: 'drip_edge_gutter_apron',
+        ruleName: 'drip_edge',
         status: results.dripEdge.status,
         confidence: results.dripEdge.confidence,
         reasoning: results.dripEdge.reasoning,
         costImpact: results.dripEdge.costImpact,
-        // Map drip edge specific fields to standard format
+        // Standard fields
         estimateQuantity: results.dripEdge.dripEdgeQuantity || 'Not found',
         requiredQuantity: results.dripEdge.requiredRakeLength || 'Unknown',
         variance:
@@ -113,6 +113,19 @@ export async function POST(
         varianceType:
           results.dripEdge.status === 'COMPLIANT' ? 'adequate' : 'shortage',
         materialStatus: results.dripEdge.complianceStatus || 'non-compliant',
+        // Pass-through fields used by the UI card
+        dripEdgePresent: results.dripEdge.dripEdgePresent,
+        gutterApronPresent: results.dripEdge.gutterApronPresent,
+        dripEdgeQuantity: results.dripEdge.dripEdgeQuantity,
+        dripEdgeUnitPrice: results.dripEdge.dripEdgeUnitPrice,
+        dripEdgeTotal: results.dripEdge.dripEdgeTotal,
+        requiredRakeLength: results.dripEdge.requiredRakeLength,
+        requiredEaveLength: results.dripEdge.requiredEaveLength,
+        rakeShortfall: results.dripEdge.rakeShortfall,
+        eaveShortfall: results.dripEdge.eaveShortfall,
+        gutterApronUnitPrice: results.dripEdge.gutterApronUnitPrice,
+        gutterApronTotal: results.dripEdge.gutterApronTotal,
+        complianceStatus: results.dripEdge.complianceStatus,
         currentSpecification: {
           code:
             results.dripEdge.dripEdgeLineItem?.code ||
@@ -271,13 +284,13 @@ export async function GET(
     // Map drip edge analysis
     let dripEdgeUiData = null;
     const dripEdgeAnalysis = job.ruleAnalyses.find(
-      a => a.ruleType === 'DRIP_EDGE'
+      a => a.ruleType === 'DRIP_EDGE' || a.ruleType === 'DRIP_EDGE_GUTTER_APRON'
     );
 
     if (dripEdgeAnalysis) {
       const findings = dripEdgeAnalysis.findings as any;
       const ruleAnalysisResult = {
-        ruleName: 'drip_edge_gutter_apron',
+        ruleName: 'drip_edge',
         status: dripEdgeAnalysis.status,
         confidence: dripEdgeAnalysis.confidence || 0,
         reasoning: dripEdgeAnalysis.reasoning || '',
@@ -302,6 +315,19 @@ export async function GET(
           findings?.complianceStatus ||
           findings?.materialStatus ||
           'non-compliant',
+        // Pass-through fields used by the UI card
+        dripEdgePresent: findings?.dripEdgePresent,
+        gutterApronPresent: findings?.gutterApronPresent,
+        dripEdgeQuantity: findings?.dripEdgeQuantity,
+        dripEdgeUnitPrice: findings?.dripEdgeUnitPrice,
+        dripEdgeTotal: findings?.dripEdgeTotal,
+        requiredRakeLength: findings?.requiredRakeLength,
+        requiredEaveLength: findings?.requiredEaveLength,
+        rakeShortfall: findings?.rakeShortfall,
+        eaveShortfall: findings?.eaveShortfall,
+        gutterApronUnitPrice: findings?.gutterApronUnitPrice,
+        gutterApronTotal: findings?.gutterApronTotal,
+        complianceStatus: findings?.complianceStatus,
         currentSpecification: findings?.currentSpecification || {
           code:
             findings?.dripEdgeLineItem?.code ||

@@ -429,6 +429,40 @@ export default function JobDetailPage() {
             }
 
             setRuleAnalysis(rules);
+
+            // Always refresh with a fresh analysis run to avoid stale DB state
+            try {
+              const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
+                method: 'POST',
+              });
+              if (postRes.ok) {
+                const fresh = await postRes.json();
+                const ui = fresh?.uiData || {};
+                const freshRules: RuleAnalysisResult[] = [];
+                if (ui.ridgeCap) {
+                  freshRules.push({ ...ui.ridgeCap, ruleName: 'ridge_cap' });
+                }
+                if (ui.dripEdge) {
+                  freshRules.push({ ...ui.dripEdge, ruleName: 'drip_edge' });
+                }
+                if (ui.iceAndWater) {
+                  freshRules.push({
+                    ...ui.iceAndWater,
+                    ruleName: 'ice_water_barrier',
+                  });
+                }
+                // Overwrite with fresh results so UI reflects latest analysis
+                if (freshRules.length > 0) {
+                  setRuleAnalysis(freshRules);
+                  setAnalysisResults(ui);
+                }
+              }
+            } catch (e) {
+              console.warn(
+                'Optional fresh analysis failed; using existing UI data',
+                e
+              );
+            }
           }
         }
       } catch (error) {
