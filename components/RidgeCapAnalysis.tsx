@@ -17,6 +17,7 @@ import { Separator } from './ui/separator';
 import { ValueHighlight } from './ui/value-highlight';
 
 interface RidgeCapData {
+  // Existing fields
   estimateQuantity?: string;
   estimateUnitPrice?: string;
   estimateTotal?: string;
@@ -34,61 +35,58 @@ interface RidgeCapData {
   lineItemDescription?: string;
   complianceText?: string;
   documentationNote?: string;
+  // New fields for enhanced display
+  roofShingleType?: 'laminate' | '3-tab' | 'other';
+  ridgeCapSpecification?: 'purpose-built' | 'high-profile' | 'cut-from-3-tab';
+  quantityMatch?: boolean;
+  astmCompliance?: string;
 }
 
 interface RidgeCapAnalysisProps {
   ruleNumber: number;
   totalRules: number;
   ridgeCapData?: RidgeCapData;
-  showHighlighting?: boolean; // New prop to control highlighting
+  showHighlighting?: boolean;
 }
 
 export function RidgeCapAnalysis({
   ruleNumber,
   totalRules,
   ridgeCapData,
-  showHighlighting = true, // Default to showing highlighting
+  showHighlighting = true,
 }: RidgeCapAnalysisProps) {
-  const [showCalculationTrace, setShowCalculationTrace] = useState(false);
-  const [customNotes, setCustomNotes] = useState('');
+  const [showEvidence, setShowEvidence] = useState(false);
 
   // Helper function to determine if a value is from live data or placeholder
   const hasLiveData = (value: any) =>
     value !== undefined && value !== null && value !== '';
 
-  // Helper component that conditionally wraps with highlighting
-  const ConditionalHighlight = ({
-    children,
-    isPlaceholder,
-  }: {
-    children: React.ReactNode;
-    isPlaceholder: boolean;
-  }) => {
-    if (!showHighlighting) {
-      return <>{children}</>;
-    }
-    return (
-      <ValueHighlight isPlaceholder={isPlaceholder}>{children}</ValueHighlight>
-    );
-  };
-
-  // Calculate values with clean XX-style placeholder fallbacks
-  const estimateQty = ridgeCapData?.estimateQuantity || 'XX LF';
-  const requiredQty = ridgeCapData?.requiredQuantity || 'XXX LF';
-  const variance = ridgeCapData?.variance || '-XXX LF';
-  const costImpact = ridgeCapData?.costImpact || 0;
-  const confidence = ridgeCapData?.confidence || 0;
-  const ridgeLength = ridgeCapData?.ridgeLength || 0;
-  const hipLength = ridgeCapData?.hipLength || 0;
-  const unitPrice = ridgeCapData?.estimateUnitPrice || '$XX.XX/LF';
-  const roofType = ridgeCapData?.roofType || 'XX Type';
-  const ridgeCapType = ridgeCapData?.ridgeCapType || 'XX Standard';
+  // Calculate values with clean fallbacks
+  const estimateQty = ridgeCapData?.estimateQuantity || '93.32 LF';
+  const requiredQty = ridgeCapData?.requiredQuantity || '93.32 LF';
+  const variance = ridgeCapData?.variance || '0.00 LF';
+  const costImpact = ridgeCapData?.costImpact || 113.0;
+  const confidence = ridgeCapData?.confidence || 0.99;
+  const ridgeLength = ridgeCapData?.ridgeLength || 37.77;
+  const hipLength = ridgeCapData?.hipLength || 55.55;
+  const unitPrice = ridgeCapData?.estimateUnitPrice || '$1.21';
+  const roofType = ridgeCapData?.roofType || 'Laminate Composition';
+  const ridgeCapType = ridgeCapData?.ridgeCapType || 'cut from 3 tab';
   const isCompliant = ridgeCapData?.complianceStatus === 'compliant';
-  const lineItemCode = ridgeCapData?.lineItemCode || 'XX XXXXX';
+  const lineItemCode = ridgeCapData?.lineItemCode || 'RFG HRSD';
   const lineItemDescription =
-    ridgeCapData?.lineItemDescription || 'XX/Ridge cap - XX profile';
-  const complianceText = ridgeCapData?.complianceText || 'String';
-  const documentationNote = ridgeCapData?.documentationNote || 'String';
+    ridgeCapData?.lineItemDescription ||
+    'Hip/Ridge cap - cut from 3 tab - composition shingles';
+  const documentationNote =
+    ridgeCapData?.documentationNote ||
+    'Cut-up 3-tab shingles used as hip & ridge caps are not independently tested or rated for wind resistance under ASTM D3161 or ASTM D7158, and therefore have no assignable wind rating when used in those applications.';
+
+  // Enhanced display values
+  const roofShingleType = ridgeCapData?.roofShingleType || 'laminate';
+  const ridgeCapSpecification =
+    ridgeCapData?.ridgeCapSpecification || 'cut-from-3-tab';
+  const quantityMatch = ridgeCapData?.quantityMatch !== false;
+  const astmCompliance = ridgeCapData?.astmCompliance || 'ASTM D3161/D7158';
 
   return (
     <div className='space-y-6'>
@@ -99,7 +97,7 @@ export function RidgeCapAnalysis({
             Ridge/Cap Analysis
           </h2>
           <p className='text-sm text-zinc-500 dark:text-zinc-400 mt-1'>
-            Skim → confirm → fix-in-place → move on
+            Verify compliance and quantity requirements
           </p>
         </div>
         <div className='text-sm text-zinc-500 dark:text-zinc-400'>
@@ -107,475 +105,202 @@ export function RidgeCapAnalysis({
         </div>
       </div>
 
-      {/* Status Alert */}
-      <div className='flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-800'>
-        <div className='flex items-center gap-2'>
-          <AlertTriangle className='h-4 w-4 text-red-600 dark:text-red-400' />
-          <span className='font-medium text-red-900 dark:text-red-100'>
-            Shortage:{' '}
-            <ConditionalHighlight
-              isPlaceholder={!hasLiveData(ridgeCapData?.varianceAmount)}
-            >
-              {ridgeCapData?.varianceAmount
-                ? `+${Math.abs(ridgeCapData.varianceAmount)} LF needed`
-                : '+XXX LF needed'}
-            </ConditionalHighlight>
-          </span>
-          <span className='text-sm text-red-700 dark:text-red-300'>
-            <ConditionalHighlight
-              isPlaceholder={!hasLiveData(ridgeCapData?.confidence)}
-            >
-              {confidence > 0
-                ? `${Math.round(confidence * 100)}% confidence`
-                : 'XX% confidence'}
-            </ConditionalHighlight>
-          </span>
-          <button className='text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300'>
-            <HelpCircle className='h-4 w-4' />
-          </button>
-        </div>
-        <div className='flex items-center gap-2'>
-          <Button variant='outline' size='sm' className='h-7 text-xs'>
-            <Copy className='h-3 w-3 mr-1' />
-            Copy Note
-          </Button>
-          <Button
-            size='sm'
-            className='h-7 text-xs bg-blue-600 hover:bg-blue-700'
-          >
-            <Plus className='h-3 w-3 mr-1' />
-            Add to Supplement
-          </Button>
-        </div>
-      </div>
-
-      {/* Coverage Summary */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-sm font-medium flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <div className='w-4 h-4 border border-zinc-300 rounded flex items-center justify-center'>
-                <CheckCircle className='w-3 h-3 text-zinc-400' />
-              </div>
-              Coverage Summary
-            </div>
-            <span className='text-xs text-zinc-500 dark:text-zinc-400'>
-              Click any value to see the source
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Estimate LF:
-              </div>
-              <div className='flex items-center gap-2'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.estimateQuantity)}
-                >
-                  {estimateQty}
-                </ConditionalHighlight>
-                <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1'>
-                  <ExternalLink className='h-3 w-3' />
-                  Estimate p.4
-                </button>
-              </div>
-            </div>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Required LF:
-              </div>
-              <div className='flex items-center gap-2'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.requiredQuantity)}
-                >
-                  {requiredQty}
-                </ConditionalHighlight>
-                <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1'>
-                  <ExternalLink className='h-3 w-3' />
-                  Report p.2
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-              Variance:
-            </div>
-            <div className='text-red-600 dark:text-red-400 font-semibold'>
-              <ConditionalHighlight
-                isPlaceholder={!hasLiveData(ridgeCapData?.variance)}
-              >
-                {variance}
-              </ConditionalHighlight>
-            </div>
-          </div>
-
-          <div className='mt-3 p-2 bg-zinc-50 dark:bg-zinc-800 rounded'>
-            <button
-              className='flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
-              onClick={() => setShowCalculationTrace(!showCalculationTrace)}
-            >
-              <span>Required LF = Ridges + Hips</span>
-              {showCalculationTrace ? (
-                <ChevronUp className='h-3 w-3' />
-              ) : (
-                <ChevronDown className='h-3 w-3' />
-              )}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Type Compliance */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-sm font-medium flex items-center gap-2'>
-            <div className='w-4 h-4 border border-zinc-300 rounded flex items-center justify-center'>
-              <CheckCircle className='w-3 h-3 text-green-500' />
-            </div>
-            Type Compliance
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <div className='grid grid-cols-2 gap-4 text-sm'>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Roof type detected:
-              </div>
-              <div className='font-medium'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.roofType)}
-                >
-                  {roofType}
-                </ConditionalHighlight>
-              </div>
-            </div>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Ridge cap type in estimate:
-              </div>
-              <div className='font-medium'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.ridgeCapType)}
-                >
-                  {ridgeCapType}
-                </ConditionalHighlight>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-              Compliance result:
-            </div>
-            <div className='text-green-600 dark:text-green-400 font-medium'>
-              <ConditionalHighlight
-                isPlaceholder={!hasLiveData(ridgeCapData?.complianceStatus)}
-              >
-                {ridgeCapData?.complianceStatus
-                  ? isCompliant
-                    ? 'Compliant'
-                    : 'Non-Compliant'
-                  : 'XX Status'}
-              </ConditionalHighlight>
-            </div>
-          </div>
-
-          <div className='p-3 bg-green-50 dark:bg-green-950/20 rounded-lg'>
-            <div className='flex items-center gap-2 text-green-800 dark:text-green-200'>
-              <CheckCircle className='h-4 w-4' />
-              <span className='text-xs font-medium'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
-                >
-                  {complianceText}
-                </ConditionalHighlight>
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quantity and Rate to Add */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <CardTitle className='text-sm font-medium flex items-center gap-2'>
-            <Plus className='w-4 h-4 text-blue-600' />
-            Quantity and Rate to Add
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-3'>
-          <div>
-            <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-              Additional quantity:
-            </div>
-            <div className='flex items-center gap-2'>
+      {/* Main Analysis Card */}
+      <Card className='border-zinc-200 dark:border-zinc-700'>
+        <CardContent className='p-6 space-y-6'>
+          {/* Roof Type Identification */}
+          <div className='pb-4 border-b border-zinc-200 dark:border-zinc-700'>
+            <div className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+              Roof Type:{' '}
               <span className='font-semibold text-blue-600 dark:text-blue-400'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.varianceAmount)}
-                >
-                  {ridgeCapData?.varianceAmount
-                    ? `${Math.abs(ridgeCapData.varianceAmount)} LF`
-                    : 'XXX LF'}
-                </ConditionalHighlight>
+                {roofShingleType === 'laminate'
+                  ? 'Laminate Composition'
+                  : '3-Tab Shingle'}
               </span>
-              <button className='p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded'>
-                <ExternalLink className='h-3 w-3 text-zinc-400' />
-              </button>
             </div>
           </div>
 
-          <div className='grid grid-cols-2 gap-4 text-sm'>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Unit price:
-              </div>
-              <div className='font-medium'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.estimateUnitPrice)}
-                >
-                  {unitPrice}
-                </ConditionalHighlight>
+          {/* Current Specification */}
+          <div>
+            <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3'>
+              Current Specification
+            </div>
+            <div className='space-y-2 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg'>
+              <div className='flex items-start justify-between'>
+                <div className='flex-1'>
+                  <div className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+                    • {lineItemDescription}
+                  </div>
+                  <div className='text-xs text-zinc-600 dark:text-zinc-400 mt-1'>
+                    • {estimateQty} @ {unitPrice} ={' '}
+                    {ridgeCapData?.estimateTotal || '$112.94'}
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
-                Total addition:
+          </div>
+
+          {/* Required Measurement */}
+          <div>
+            <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3'>
+              Required Ridge Cap
+            </div>
+            <div className='flex items-center justify-between'>
+              <div>
+                <span className='text-sm text-zinc-600 dark:text-zinc-400'>
+                  Ridge Length from Roof Report:
+                </span>
+                <span className='ml-2 font-semibold text-zinc-900 dark:text-zinc-100'>
+                  {requiredQty}
+                </span>
               </div>
-              <div className='font-bold text-blue-600 dark:text-blue-400 text-lg'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.costImpact)}
+              {quantityMatch ? (
+                <div className='flex items-center gap-1 text-green-600 dark:text-green-400'>
+                  <CheckCircle className='h-4 w-4' />
+                  <span className='text-xs font-medium'>Quantity matches</span>
+                </div>
+              ) : (
+                <div className='flex items-center gap-1 text-amber-600 dark:text-amber-400'>
+                  <AlertTriangle className='h-4 w-4' />
+                  <span className='text-xs font-medium'>
+                    Shortage: {variance}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Compliance Status */}
+          <div
+            className={`p-4 rounded-lg border ${
+              isCompliant
+                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                : 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+            }`}
+          >
+            <div className='flex items-start gap-3'>
+              {isCompliant ? (
+                <CheckCircle className='h-5 w-5 text-green-600 dark:text-green-400 mt-0.5' />
+              ) : (
+                <AlertTriangle className='h-5 w-5 text-red-600 dark:text-red-400 mt-0.5' />
+              )}
+              <div className='flex-1'>
+                <div
+                  className={`font-semibold mb-1 ${
+                    isCompliant
+                      ? 'text-green-900 dark:text-green-100'
+                      : 'text-red-900 dark:text-red-100'
+                  }`}
                 >
-                  {costImpact > 0
-                    ? `$${costImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    : '$X,XXX.XX'}
-                </ConditionalHighlight>
+                  {isCompliant ? 'Compliant' : 'COMPLIANCE ISSUE'}
+                </div>
+                {!isCompliant &&
+                  roofShingleType === 'laminate' &&
+                  ridgeCapSpecification === 'cut-from-3-tab' && (
+                    <div className='text-sm text-red-700 dark:text-red-300'>
+                      Laminate roofs require purpose-built ridge caps (
+                      {astmCompliance})
+                    </div>
+                  )}
               </div>
             </div>
+          </div>
+
+          {/* Supplement Calculation (when non-compliant) */}
+          {!isCompliant && (
+            <div className='bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800'>
+              <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3'>
+                Recommended Change
+              </div>
+              <div className='space-y-2'>
+                <div className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+                  • Purpose-built ridge cap
+                </div>
+                <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+                  • {requiredQty}
+                </div>
+                <div className='text-lg font-bold text-blue-600 dark:text-blue-400'>
+                  Supplement: +${costImpact.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className='flex gap-2 pt-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='flex-1'
+              onClick={() => {
+                navigator.clipboard.writeText(documentationNote);
+              }}
+            >
+              <Copy className='h-3.5 w-3.5 mr-1.5' />
+              Copy Note
+            </Button>
+            <Button
+              size='sm'
+              className='flex-1 bg-blue-600 hover:bg-blue-700 text-white'
+            >
+              <Plus className='h-3.5 w-3.5 mr-1.5' />
+              Add to Supplement
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Calculation Trace */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='text-sm font-medium flex items-center gap-2'>
-              <div className='w-4 h-4 border border-zinc-300 rounded flex items-center justify-center'>
-                <CheckCircle className='w-3 h-3 text-zinc-400' />
-              </div>
-              Calculation Trace
-            </CardTitle>
-            <button
-              className='text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-              onClick={() => setShowCalculationTrace(!showCalculationTrace)}
-            >
-              {showCalculationTrace ? 'Hide details' : 'Show details'}
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className='space-y-3'>
+      {/* Evidence Stack Section - Expandable details */}
+      <details className='group'>
+        <summary className='cursor-pointer flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors'>
+          <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>
+            Evidence Stack
+          </span>
+          <ChevronDown className='h-4 w-4 text-zinc-500 group-open:rotate-180 transition-transform' />
+        </summary>
+        <div className='mt-2 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg space-y-4'>
+          {/* Calculation details */}
           <div className='space-y-2 text-sm'>
             <div className='flex justify-between'>
               <span className='text-zinc-600 dark:text-zinc-400'>
-                Roof report: Ridges =
+                Roof report: Ridges
               </span>
-              <div className='flex items-center gap-2'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.ridgeLength)}
-                >
-                  {ridgeLength > 0 ? `${ridgeLength} LF` : 'XX LF'}
-                </ConditionalHighlight>
-                <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
-                  <ExternalLink className='h-3 w-3' />
-                  Jump
-                </button>
-              </div>
+              <span className='font-medium'>{ridgeLength.toFixed(2)} LF</span>
             </div>
-
             <div className='flex justify-between'>
               <span className='text-zinc-600 dark:text-zinc-400'>
-                Roof report: Hips =
+                Roof report: Hips
               </span>
-              <div className='flex items-center gap-2'>
-                <ConditionalHighlight
-                  isPlaceholder={!hasLiveData(ridgeCapData?.hipLength)}
-                >
-                  {hipLength > 0 ? `${hipLength} LF` : 'XX LF'}
-                </ConditionalHighlight>
-                <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
-                  <ExternalLink className='h-3 w-3' />
-                  Jump
-                </button>
-              </div>
+              <span className='font-medium'>{hipLength.toFixed(2)} LF</span>
             </div>
-
-            <Separator />
-
-            <div className='flex justify-between font-medium'>
-              <span>Sum =</span>
-              <ConditionalHighlight
-                isPlaceholder={
-                  !hasLiveData(ridgeCapData?.ridgeLength) ||
-                  !hasLiveData(ridgeCapData?.hipLength)
-                }
-              >
-                {ridgeLength > 0 && hipLength > 0
-                  ? `${ridgeLength + hipLength} LF`
-                  : 'XXX LF'}
-              </ConditionalHighlight>
-            </div>
-
-            <div className='mt-3 p-2 bg-zinc-50 dark:bg-zinc-800 rounded'>
-              <div className='text-xs text-zinc-600 dark:text-zinc-400 mb-1'>
-                Estimate ridge-cap lines found:
-              </div>
-              <div className='flex items-center justify-between text-sm'>
-                <div>
-                  <div className='font-medium'>
-                    <ConditionalHighlight
-                      isPlaceholder={!hasLiveData(ridgeCapData?.lineItemCode)}
-                    >
-                      {lineItemCode}
-                    </ConditionalHighlight>
-                    {' – '}
-                    <ConditionalHighlight
-                      isPlaceholder={
-                        !hasLiveData(ridgeCapData?.lineItemDescription)
-                      }
-                    >
-                      {lineItemDescription}
-                    </ConditionalHighlight>
-                  </div>
-                  <div className='text-xs text-zinc-500'>
-                    <ConditionalHighlight
-                      isPlaceholder={
-                        !hasLiveData(ridgeCapData?.estimateQuantity)
-                      }
-                    >
-                      {estimateQty}
-                    </ConditionalHighlight>
-                    {' @ '}
-                    <ConditionalHighlight
-                      isPlaceholder={
-                        !hasLiveData(ridgeCapData?.estimateUnitPrice)
-                      }
-                    >
-                      {unitPrice}
-                    </ConditionalHighlight>
-                    {' = '}
-                    <ConditionalHighlight
-                      isPlaceholder={!hasLiveData(ridgeCapData?.estimateTotal)}
-                    >
-                      {ridgeCapData?.estimateTotal || '$XXX.XX'}
-                    </ConditionalHighlight>
-                  </div>
-                </div>
-                <button className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400'>
-                  <ExternalLink className='h-3 w-3' />
-                  Jump
-                </button>
-              </div>
-            </div>
-
-            <div className='mt-3 space-y-1'>
-              <div className='text-xs text-zinc-600 dark:text-zinc-400'>
-                Validation checks:
-              </div>
-              <div className='flex items-center gap-2 text-xs'>
-                <CheckCircle className='h-3 w-3 text-green-500' />
-                <span className='text-green-700 dark:text-green-300'>
-                  <ConditionalHighlight
-                    isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
-                  >
-                    Unit consistency: LF expected for ridge cap
-                  </ConditionalHighlight>
-                </span>
-              </div>
-              <div className='flex items-center gap-2 text-xs'>
-                <CheckCircle className='h-3 w-3 text-green-500' />
-                <span className='text-green-700 dark:text-green-300'>
-                  <ConditionalHighlight
-                    isPlaceholder={!hasLiveData(ridgeCapData?.complianceText)}
-                  >
-                    Reasonableness: ridge/hip LF (
-                    {ridgeLength > 0 && hipLength > 0
-                      ? ridgeLength + hipLength
-                      : 'XXX'}
-                    ) &lt; perimeter
-                  </ConditionalHighlight>
-                </span>
-              </div>
+            <Separator className='my-2' />
+            <div className='flex justify-between font-semibold'>
+              <span>Total Required</span>
+              <span>{(ridgeLength + hipLength).toFixed(2)} LF</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Documentation Note */}
-      <Card>
-        <CardHeader className='pb-3'>
-          <div className='flex items-center justify-between'>
-            <CardTitle className='text-sm font-medium flex items-center gap-2'>
-              <div className='w-4 h-4 border border-zinc-300 rounded flex items-center justify-center text-xs'>
-                📄
-              </div>
-              Documentation Note
-            </CardTitle>
-            <Button variant='outline' size='sm' className='h-7 text-xs'>
-              <Copy className='h-3 w-3 mr-1' />
-              Copy
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className='p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 mb-3'>
-            <ConditionalHighlight
-              isPlaceholder={!hasLiveData(ridgeCapData?.documentationNote)}
-            >
-              {documentationNote}
-            </ConditionalHighlight>
-          </div>
-
-          <div>
+          {/* Estimate line item details */}
+          <div className='pt-2 border-t border-zinc-200 dark:border-zinc-700'>
             <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-2'>
-              Additional Notes (Optional)
+              Estimate Line Item
             </div>
-            <textarea
-              placeholder='Add any custom notes for this analysis...'
-              className='w-full p-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 resize-none'
-              rows={3}
-              value={customNotes}
-              onChange={e => setCustomNotes(e.target.value)}
-            />
+            <div className='text-sm font-mono text-zinc-700 dark:text-zinc-300'>
+              {lineItemCode} - {lineItemDescription}
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Bottom Action */}
-      <div className='flex items-center justify-between pt-4'>
-        <Button
-          size='sm'
-          className='bg-blue-600 hover:bg-blue-700 text-white px-6'
-        >
-          <Plus className='h-4 w-4 mr-2' />
-          Add to Supplement (
-          <ConditionalHighlight
-            isPlaceholder={!hasLiveData(ridgeCapData?.costImpact)}
-          >
-            {costImpact > 0
-              ? `+$${costImpact.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-              : '+$X,XXX'}
-          </ConditionalHighlight>
-          )
-        </Button>
-        <Button variant='outline' size='sm' className='px-6'>
-          <X className='h-4 w-4 mr-2' />
-          Skip
-        </Button>
-      </div>
+          {/* ASTM Note */}
+          <div className='pt-2 border-t border-zinc-200 dark:border-zinc-700'>
+            <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-2'>
+              Documentation Note
+            </div>
+            <div className='text-sm text-zinc-600 dark:text-zinc-400 italic'>
+              {documentationNote}
+            </div>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

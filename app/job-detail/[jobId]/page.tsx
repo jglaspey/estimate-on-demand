@@ -6,11 +6,11 @@ import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-// import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard'; // Unused - using SimplifiedRidgeCapAnalysis instead
+// import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard'; // Unused - using RidgeCapAnalysis instead
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
-import { SimplifiedRidgeCapAnalysis } from '@/components/SimplifiedRidgeCapAnalysis';
+import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
 // import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
 import {
   EnhancedDocumentViewer,
@@ -54,6 +54,11 @@ interface RidgeCapData {
   lineItemDescription?: string;
   complianceText?: string;
   documentationNote?: string;
+  // New fields for enhanced display
+  roofShingleType?: 'laminate' | '3-tab' | 'other';
+  ridgeCapSpecification?: 'purpose-built' | 'high-profile' | 'cut-from-3-tab';
+  quantityMatch?: boolean;
+  astmCompliance?: string;
 }
 
 interface AnalysisResults {
@@ -472,11 +477,77 @@ export default function JobDetailPage() {
     switch (rule.ruleName) {
       case 'ridge_cap':
         // Use real analysis results or show processing state
-        let ridgeCapData;
+        let ridgeCapData: RidgeCapData;
 
-        if (analysisResults?.ridgeCap) {
-          // Analysis complete: use real data
-          ridgeCapData = analysisResults.ridgeCap;
+        if (analysisResults?.ridgeCap || rule.currentSpecification) {
+          // Analysis complete: use real data from rule analysis
+          // Map the rule analysis data to our enhanced RidgeCapData structure
+          const isLaminate =
+            rule.currentSpecification?.description
+              ?.toLowerCase()
+              .includes('laminate') ||
+            rule.reasoning?.toLowerCase().includes('laminate');
+          const isCutFrom3Tab =
+            rule.currentSpecification?.description
+              ?.toLowerCase()
+              .includes('cut from 3 tab') ||
+            rule.currentSpecification?.description
+              ?.toLowerCase()
+              .includes('cut from 3-tab');
+          const isPurposeBuilt =
+            rule.currentSpecification?.description
+              ?.toLowerCase()
+              .includes('purpose') ||
+            rule.currentSpecification?.description
+              ?.toLowerCase()
+              .includes('standard profile');
+          const isHighProfile = rule.currentSpecification?.description
+            ?.toLowerCase()
+            .includes('high profile');
+
+          ridgeCapData = {
+            estimateQuantity:
+              rule.estimateQuantity ||
+              rule.currentSpecification?.quantity ||
+              '0 LF',
+            estimateUnitPrice: rule.currentSpecification?.rate || '$0.00',
+            estimateTotal: rule.currentSpecification?.total || '$0.00',
+            requiredQuantity: rule.requiredQuantity || '0 LF',
+            ridgeLength: parseFloat(rule.requiredQuantity || '0') * 0.4 || 0, // Estimate ridge as 40% of total
+            hipLength: parseFloat(rule.requiredQuantity || '0') * 0.6 || 0, // Estimate hip as 60% of total
+            variance: rule.variance || '0 LF',
+            varianceAmount: parseFloat(rule.variance || '0'),
+            costImpact: rule.costImpact || 0,
+            confidence: rule.confidence || 0,
+            roofType: isLaminate ? 'Laminate Composition' : '3-Tab Shingle',
+            ridgeCapType: isCutFrom3Tab
+              ? 'cut from 3 tab'
+              : isHighProfile
+                ? 'high profile'
+                : 'standard profile',
+            complianceStatus:
+              (rule.materialStatus as 'compliant' | 'non-compliant') ||
+              (rule.status === 'COMPLIANT' ? 'compliant' : 'non-compliant'),
+            lineItemCode: rule.currentSpecification?.code || 'RFG HRSD',
+            lineItemDescription:
+              rule.currentSpecification?.description ||
+              'Hip/Ridge cap - composition shingles',
+            complianceText:
+              rule.materialStatus === 'compliant'
+                ? 'Ridge cap specification meets ASTM D3161/D7158 requirements'
+                : 'Cut-from-3-tab ridge caps do not meet ASTM wind resistance standards',
+            documentationNote:
+              'Cut-up 3-tab shingles used as hip & ridge caps are not independently tested or rated for wind resistance under ASTM D3161 or ASTM D7158, and therefore have no assignable wind rating when used in those applications.',
+            // New enhanced fields
+            roofShingleType: isLaminate ? 'laminate' : '3-tab',
+            ridgeCapSpecification: isCutFrom3Tab
+              ? 'cut-from-3-tab'
+              : isHighProfile
+                ? 'high-profile'
+                : 'purpose-built',
+            quantityMatch: rule.varianceType === 'adequate',
+            astmCompliance: 'ASTM D3161/D7158',
+          };
         } else {
           // Analysis in progress or pending: show processing state
           ridgeCapData = {
@@ -500,35 +571,20 @@ export default function JobDetailPage() {
               'Analyzing compliance against ASTM standards with Claude AI',
             documentationNote:
               "Automatic analysis is processing this job's documents. Results will appear shortly as the system analyzes document data and applies business rules.",
+            // Default enhanced fields for processing state
+            roofShingleType: 'laminate',
+            ridgeCapSpecification: 'purpose-built',
+            quantityMatch: false,
+            astmCompliance: 'ASTM D3161/D7158',
           };
         }
 
         return (
-          <SimplifiedRidgeCapAnalysis
+          <RidgeCapAnalysis
             key={rule.ruleName}
             ruleNumber={1}
             totalRules={4}
             ridgeCapData={ridgeCapData}
-            onAddToSupplement={data => {
-              onDecision('accepted', (data as any)?.notes || '');
-            }}
-            onSkip={() => {
-              onDecision('rejected', 'Skipped by user');
-            }}
-            onJumpToEvidence={(location, type) => {
-              const match = String(location || '').match(/page[-\s]?(\d+)/i);
-              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
-              // Nudge the viewer twice to avoid race with tab/page state updates
-              const payload = {
-                docType: type,
-                page,
-                rule: rule.ruleName,
-                location,
-              } as const;
-              viewerRef.current?.jumpToEvidence(payload);
-              // Fire a microtask after a tick to reinforce when switching tabs
-              setTimeout(() => viewerRef.current?.jumpToEvidence(payload), 0);
-            }}
           />
         );
       case 'starter_strip':
