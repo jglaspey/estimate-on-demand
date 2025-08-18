@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Share, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft,
+  Download,
+  Share,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -151,6 +158,16 @@ export default function JobDetailPage() {
   const [discrepantFields, setDiscrepantFields] = useState<string[]>([]);
   const hasInitializedRef = useRef(false);
   const viewerRef = useRef<ViewerHandle | null>(null);
+
+  // Rule navigation state for review mode
+  const [currentRuleIndex, setCurrentRuleIndex] = useState(0);
+  const availableRules = [
+    'ridge_cap',
+    'drip_edge',
+    'starter_strip',
+    'ice_water_barrier',
+  ];
+  const totalRules = availableRules.length;
 
   // Fetch job data on mount
   useEffect(() => {
@@ -495,6 +512,19 @@ export default function JobDetailPage() {
     setIsReviewMode(true);
   };
 
+  // Rule navigation functions
+  const goToNextRule = () => {
+    setCurrentRuleIndex(prev => (prev + 1) % totalRules);
+  };
+
+  const goToPreviousRule = () => {
+    setCurrentRuleIndex(prev => (prev - 1 + totalRules) % totalRules);
+  };
+
+  const getCurrentRule = () => {
+    return availableRules[currentRuleIndex];
+  };
+
   const renderRuleCard = (rule: RuleAnalysisResult) => {
     const onDecision = (
       decision: 'accepted' | 'rejected' | 'modified',
@@ -638,8 +668,8 @@ export default function JobDetailPage() {
         return (
           <RidgeCapAnalysis
             key={rule.ruleName}
-            ruleNumber={1}
-            totalRules={4}
+            ruleNumber={currentRuleIndex + 1}
+            totalRules={totalRules}
             ridgeCapData={ridgeCapData}
             onJumpToEvidence={(location, type) => {
               console.log('🔍 onJumpToEvidence called:', { location, type });
@@ -861,23 +891,9 @@ export default function JobDetailPage() {
                     />
                     {isReprocessing ? 'Re-Running…' : 'Re-Run'}
                   </Button>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
-                  >
-                    <Share className='h-3.5 w-3.5 mr-1.5' />
-                    Share
-                  </Button>
                   {/* Manual analysis removed - now automatic after document extraction */}
                   {/* Analysis progress removed - now handled automatically */}
-                  <Button
-                    size='sm'
-                    className='h-8 px-3 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900'
-                  >
-                    <Download className='h-3.5 w-3.5 mr-1.5' />
-                    Generate Report
-                  </Button>
+                  {/* Share and Generate Report buttons removed */}
                 </div>
               </div>
             </div>
@@ -940,6 +956,35 @@ export default function JobDetailPage() {
               <Badge className='bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800'>
                 Review Mode
               </Badge>
+
+              <div className='h-6 w-px bg-zinc-200 dark:bg-zinc-700' />
+
+              {/* Rule Navigation */}
+              <div className='flex items-center gap-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={goToPreviousRule}
+                  className='h-8 px-2'
+                  disabled={totalRules <= 1}
+                >
+                  <ChevronLeft className='h-4 w-4' />
+                </Button>
+
+                <span className='text-sm font-medium text-zinc-700 dark:text-zinc-300 px-2'>
+                  Rule {currentRuleIndex + 1} of {totalRules}
+                </span>
+
+                <Button
+                  variant='outline'
+                  size='sm'
+                  onClick={goToNextRule}
+                  className='h-8 px-2'
+                  disabled={totalRules <= 1}
+                >
+                  <ChevronRight className='h-4 w-4' />
+                </Button>
+              </div>
               {/* Demo mode toggle removed - now using real extracted data only */}
             </div>
 
@@ -977,21 +1022,7 @@ export default function JobDetailPage() {
                   />
                   {isReprocessing ? 'Re-Running…' : 'Re-Run'}
                 </Button>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
-                >
-                  <Share className='h-3.5 w-3.5 mr-1.5' />
-                  Share
-                </Button>
-                <Button
-                  size='sm'
-                  className='h-8 px-3 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900'
-                >
-                  <Download className='h-3.5 w-3.5 mr-1.5' />
-                  Generate Report
-                </Button>
+                {/* Share and Generate Report buttons removed */}
               </div>
             </div>
           </div>
@@ -1005,23 +1036,32 @@ export default function JobDetailPage() {
           <div className='h-full overflow-auto'>
             <div className='p-6'>
               <div className='space-y-4'>
-                {/* Always show ridge cap analysis - either from real data or default state */}
-                {renderRuleCard({
-                  ruleName: 'ridge_cap',
-                  status: 'SUPPLEMENT_NEEDED',
-                  confidence: 0.95,
-                  reasoning: 'Analysis in progress...',
-                  costImpact: 0,
-                  estimateQuantity: 'Processing...',
-                  requiredQuantity: 'Processing...',
-                  variance: 'Calculating...',
-                  varianceType: 'shortage',
-                })}
+                {/* Show current rule based on navigation */}
+                {(() => {
+                  const currentRule = getCurrentRule();
 
-                {/* Render additional rules from analysis if available */}
-                {ruleAnalysis
-                  .filter(rule => rule.ruleName !== 'ridge_cap')
-                  .map(rule => renderRuleCard(rule))}
+                  // If we have analysis results for this rule, use them
+                  const analysisRule = ruleAnalysis.find(
+                    rule => rule.ruleName === currentRule
+                  );
+
+                  if (analysisRule) {
+                    return renderRuleCard(analysisRule);
+                  }
+
+                  // Otherwise show default state for current rule
+                  return renderRuleCard({
+                    ruleName: currentRule,
+                    status: 'SUPPLEMENT_NEEDED',
+                    confidence: 0.95,
+                    reasoning: 'Analysis in progress...',
+                    costImpact: 0,
+                    estimateQuantity: 'Processing...',
+                    requiredQuantity: 'Processing...',
+                    variance: 'Calculating...',
+                    varianceType: 'shortage',
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -1033,7 +1073,7 @@ export default function JobDetailPage() {
             <EnhancedDocumentViewer
               ref={viewerRef}
               jobId={jobId}
-              selectedRule={ruleAnalysis[0]?.ruleName || null}
+              selectedRule={getCurrentRule()}
               reloadVersion={reloadVersion}
               busy={isReprocessing}
             />

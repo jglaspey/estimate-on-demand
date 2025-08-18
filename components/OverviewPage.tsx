@@ -8,7 +8,9 @@ import {
   Clock,
   Play,
   Shield,
+  ExternalLink,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +36,19 @@ export function OverviewPage({
   discrepantFields = [],
   validationNotes = [],
 }: OverviewPageProps) {
+  const router = useRouter();
+
+  // Map rule names to URL slugs
+  const getRuleSlug = (ruleName: string) => {
+    const ruleSlugMap: Record<string, string> = {
+      ridge_cap: 'hip-ridge-cap',
+      drip_edge: 'drip-edge-gutter-apron',
+      starter_strip: 'starter-strip',
+      ice_water_barrier: 'ice-water-barrier',
+    };
+    return ruleSlugMap[ruleName] || ruleName;
+  };
+
   const getComplianceStats = () => {
     const compliant = ruleAnalysis.filter(
       rule => rule.status === 'COMPLIANT'
@@ -296,11 +311,12 @@ export function OverviewPage({
                   const statusConfig = getStatusConfig(rule.status);
                   const StatusIcon = statusConfig.icon;
 
+                  const ruleSlug = getRuleSlug(rule.ruleName);
+
                   return (
                     <div
                       key={rule.ruleName}
-                      className={`flex items-center justify-between p-5 rounded-lg border border-zinc-200 transition-colors cursor-pointer dark:border-zinc-700 ${statusConfig.bgClass}`}
-                      onClick={onStartReview}
+                      className={`flex items-center justify-between p-5 rounded-lg border border-zinc-200 transition-colors dark:border-zinc-700 ${statusConfig.bgClass}`}
                     >
                       <div className='flex items-center gap-4 min-w-0 flex-1'>
                         <div
@@ -334,7 +350,17 @@ export function OverviewPage({
                       </div>
 
                       <div className='flex items-center gap-3'>
-                        <ChevronRight className='h-5 w-5 text-zinc-400' />
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          onClick={() =>
+                            router.push(`/job/${jobData.id}/${ruleSlug}`)
+                          }
+                          className='gap-2'
+                        >
+                          View Details
+                          <ExternalLink className='h-3.5 w-3.5' />
+                        </Button>
                       </div>
                     </div>
                   );
