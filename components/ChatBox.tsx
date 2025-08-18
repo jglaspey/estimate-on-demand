@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { useChat } from 'ai/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { TextStreamChatTransport } from 'ai';
 import { Send, MessageCircle, User, Bot, Paperclip } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -17,6 +18,7 @@ interface ChatBoxProps {
 export function ChatBox({ jobId }: ChatBoxProps) {
   const storageKey = useMemo(() => `eod_chat_messages_${jobId}`, [jobId]);
   const initKey = useMemo(() => `eod_chat_initialized_${jobId}`, [jobId]);
+  const initSentRef = useRef(false);
 
   const initialMessages = useMemo(() => {
     if (typeof window === 'undefined') return [];
@@ -29,18 +31,12 @@ export function ChatBox({ jobId }: ChatBoxProps) {
     }
   }, [storageKey]);
 
-  const {
-    messages,
-    input,
-    setInput,
-    handleSubmit,
-    isLoading,
-    append,
-    setMessages,
-  } = useChat({
-    api: `/api/jobs/${jobId}/chat`,
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage, status, setMessages } = useChat({
     id: `job-chat-${jobId}`,
-    initialMessages,
+    transport: new TextStreamChatTransport({ api: `/api/jobs/${jobId}/chat` }),
+    messages: initialMessages as any,
     onFinish: () => {
       try {
         localStorage.setItem(initKey, '1');
@@ -49,6 +45,8 @@ export function ChatBox({ jobId }: ChatBoxProps) {
       }
     },
   });
+
+  const isLoading = status !== 'ready';
 
   // Persist messages
   useEffect(() => {
@@ -64,20 +62,31 @@ export function ChatBox({ jobId }: ChatBoxProps) {
     if (typeof window === 'undefined') return;
     try {
       const already = localStorage.getItem(initKey);
-      if (!already) {
+      if (!already && !initSentRef.current) {
         const INITIAL_PROMPT = `Generate the first reply for user "Storm". Start with: "Welcome Storm, let me tell you about this job." Then state: "It passes X of 4 quick rules." where X is the number of rules with status COMPLIANT among: HIP_RIDGE_CAP, STARTER_STRIP, DRIP_EDGE_GUTTER_APRON, ICE_WATER_BARRIER (match available rule names). Mention the roof material if present (e.g., composite/asphalt). Then write a single concise sentence for each of the four rules describing material/spec, quantities vs required, and compliance result. End with: "What else can I help you with?" Use ONLY the provided context.`;
+        // Prevent duplicate sends in StrictMode and mark as initialized immediately
+        initSentRef.current = true;
+        localStorage.setItem(initKey, '1');
         // Kick off the initial user message to the API (which will respond as assistant)
-        append({ role: 'user', content: INITIAL_PROMPT }).catch(() => {});
+        sendMessage({ text: INITIAL_PROMPT }).catch(() => {});
       }
     } catch {
       // ignore
     }
-  }, [append, initKey]);
+  }, [sendMessage, initKey]);
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as any);
+      handleSubmit();
     }
   };
 
@@ -130,13 +139,33 @@ export function ChatBox({ jobId }: ChatBoxProps) {
                     className={`flex-1 max-w-[80%] ${message.role === 'user' ? 'text-right' : ''}`}
                   >
                     <div
-                      className={`p-3 rounded-lg text-sm ${
+                      className={`p-3 rounded-lg text-sm break-words whitespace-pre-wrap ${
                         message.role === 'user'
                           ? 'bg-blue-500 text-white ml-auto'
                           : 'bg-muted'
                       }`}
                     >
-                      {message.content as any}
+                      {(() => {
+                        const parts = Array.isArray((message as any).parts)
+                          ? (message as any).parts
+                          : [];
+                        // Hide the bootstrapping user prompt from UI (but keep assistant reply)
+                        const text = parts
+                          .filter((p: any) => p && p.type === 'text')
+                          .map((p: any) => String(p.text))
+                          .join('\n');
+                        const isInitUser =
+                          message.role === 'user' &&
+                          text.startsWith(
+                            'Generate the first reply for user "Storm"'
+                          );
+                        if (isInitUser) return null;
+                        return parts
+                          .filter((p: any) => p && p.type === 'text')
+                          .map((p: any, i: number) => (
+                            <div key={`${message.id}-${i}`}>{p.text}</div>
+                          ));
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -164,7 +193,13 @@ export function ChatBox({ jobId }: ChatBoxProps) {
         </ScrollArea>
 
         {/* Input */}
-        <div className='border-t p-4'>
+        <form
+          className='border-t p-4'
+          onSubmit={e => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
           <div className='flex gap-2 mb-3'>
             <div className='flex-1 relative'>
               <Input
@@ -210,7 +245,7 @@ export function ChatBox({ jobId }: ChatBoxProps) {
               </Button>
             ))}
           </div>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );
