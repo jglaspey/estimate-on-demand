@@ -518,12 +518,16 @@ export default function JobDetailPage() {
             onJumpToEvidence={(location, type) => {
               const match = String(location || '').match(/page[-\s]?(\d+)/i);
               const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
-              viewerRef.current?.jumpToEvidence({
+              // Nudge the viewer twice to avoid race with tab/page state updates
+              const payload = {
                 docType: type,
                 page,
                 rule: rule.ruleName,
                 location,
-              });
+              } as const;
+              viewerRef.current?.jumpToEvidence(payload);
+              // Fire a microtask after a tick to reinforce when switching tabs
+              setTimeout(() => viewerRef.current?.jumpToEvidence(payload), 0);
             }}
           />
         );

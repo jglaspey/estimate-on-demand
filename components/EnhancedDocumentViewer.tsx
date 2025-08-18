@@ -135,6 +135,11 @@ export const EnhancedDocumentViewer = forwardRef<
         );
         setCurrentPage(clamped);
         setPendingTarget({ ...t, page: clamped });
+        // Ensure we actually scroll to the target page immediately
+        // (highlight scroll will follow once the mark is rendered)
+        try {
+          scrollToPage(clamped);
+        } catch {}
         // Defer scroll to a post-render effect below
       },
     }),
