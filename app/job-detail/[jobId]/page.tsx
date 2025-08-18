@@ -496,11 +496,15 @@ export default function JobDetailPage() {
         // Use real analysis results or show processing state
         let ridgeCapData: RidgeCapData;
 
-        if (rule.currentSpecification || analysisResults?.ridgeCap) {
+        if (analysisResults?.ridgeCap || rule.currentSpecification) {
           // Analysis complete: use real data from rule analysis
           // Map the rule analysis data to our enhanced RidgeCapData structure
-          const description = rule.currentSpecification?.description || '';
-          const reasoning = rule.reasoning || '';
+          const currentSpec =
+            analysisResults?.ridgeCap?.currentSpecification ||
+            rule.currentSpecification;
+          const description = currentSpec?.description || '';
+          const reasoning =
+            analysisResults?.ridgeCap?.reasoning || rule.reasoning || '';
 
           // Detect roof type from description or reasoning
           const isLaminate =
@@ -508,31 +512,31 @@ export default function JobDetailPage() {
             reasoning.toLowerCase().includes('laminate') ||
             !description.toLowerCase().includes('3-tab');
           const isCutFrom3Tab =
-            rule.currentSpecification?.description
+            currentSpec?.description
               ?.toLowerCase()
               .includes('cut from 3 tab') ||
-            rule.currentSpecification?.description
-              ?.toLowerCase()
-              .includes('cut from 3-tab');
+            currentSpec?.description?.toLowerCase().includes('cut from 3-tab');
           const isPurposeBuilt =
-            rule.currentSpecification?.description
-              ?.toLowerCase()
-              .includes('purpose') ||
-            rule.currentSpecification?.description
+            currentSpec?.description?.toLowerCase().includes('purpose') ||
+            currentSpec?.description
               ?.toLowerCase()
               .includes('standard profile');
-          const isHighProfile = rule.currentSpecification?.description
+          const isHighProfile = currentSpec?.description
             ?.toLowerCase()
             .includes('high profile');
 
           ridgeCapData = {
             estimateQuantity:
+              analysisResults?.ridgeCap?.estimateQuantity ||
               rule.estimateQuantity ||
-              rule.currentSpecification?.quantity ||
+              currentSpec?.quantity ||
               '0 LF',
-            estimateUnitPrice: rule.currentSpecification?.rate || '$0.00',
-            estimateTotal: rule.currentSpecification?.total || '$0.00',
-            requiredQuantity: rule.requiredQuantity || '0 LF',
+            estimateUnitPrice: currentSpec?.rate || '$0.00',
+            estimateTotal: currentSpec?.total || '$0.00',
+            requiredQuantity:
+              analysisResults?.ridgeCap?.requiredQuantity ||
+              rule.requiredQuantity ||
+              '0 LF',
             // Extract ridge and hip from reasoning if available
             ridgeLength: (() => {
               const match = reasoning.match(/Ridges\s*\(([\d.]+)\s*LF\)/i);
@@ -546,10 +550,15 @@ export default function JobDetailPage() {
                 ? parseFloat(match[1])
                 : parseFloat(rule.requiredQuantity || '0') * 0.06;
             })(),
-            variance: rule.variance || '0 LF',
-            varianceAmount: parseFloat(rule.variance || '0'),
-            costImpact: rule.costImpact || 0,
-            confidence: rule.confidence || 0,
+            variance:
+              analysisResults?.ridgeCap?.variance || rule.variance || '0 LF',
+            varianceAmount: parseFloat(
+              analysisResults?.ridgeCap?.variance || rule.variance || '0'
+            ),
+            costImpact:
+              analysisResults?.ridgeCap?.costImpact || rule.costImpact || 0,
+            confidence:
+              analysisResults?.ridgeCap?.confidence || rule.confidence || 0,
             roofType: isLaminate ? 'Laminate Composition' : '3-Tab Shingle',
             ridgeCapType: isCutFrom3Tab
               ? 'cut from 3 tab'
@@ -557,11 +566,14 @@ export default function JobDetailPage() {
                 ? 'high profile'
                 : 'standard profile',
             complianceStatus:
+              (analysisResults?.ridgeCap?.materialStatus as
+                | 'compliant'
+                | 'non-compliant') ||
               (rule.materialStatus as 'compliant' | 'non-compliant') ||
               (rule.status === 'COMPLIANT' ? 'compliant' : 'non-compliant'),
-            lineItemCode: rule.currentSpecification?.code || 'RFG HRSD',
+            lineItemCode: currentSpec?.code || 'RFG HRSD',
             lineItemDescription:
-              rule.currentSpecification?.description ||
+              currentSpec?.description ||
               'Hip/Ridge cap - composition shingles',
             complianceText:
               rule.materialStatus === 'compliant'
@@ -576,7 +588,9 @@ export default function JobDetailPage() {
               : isHighProfile
                 ? 'high-profile'
                 : 'purpose-built',
-            quantityMatch: rule.varianceType === 'adequate',
+            quantityMatch:
+              analysisResults?.ridgeCap?.varianceType === 'adequate' ||
+              rule.varianceType === 'adequate',
             astmCompliance: 'ASTM D3161/D7158',
           };
         } else {
