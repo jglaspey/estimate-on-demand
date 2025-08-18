@@ -39,6 +39,13 @@ Implemented comprehensive ice & water barrier analysis rule following IRC R905.1
 **Branch:** `feature/ice-water-barrier-analysis`  
 **Status:** ✅ Complete - IRC R905.1.2 compliant analysis with automatic coverage calculations
 
+### 08.18 - Ice & Water Barrier UI Refinement
+**File:** [08.18-ice-water-ui-refinement.md](./08.18-ice-water-ui-refinement.md)  
+**Type:** UI/UX  
+**Focus:** Ice & Water Barrier card layout and data mapping  
+
+Refining the Ice & Water Barrier analysis UI using the Drip Edge card’s status pill and summary pattern and Ridge Cap’s tabular presentation. Plan removes all mocked values, binds to analyzer `calculationDetails`, adds a collapsible step-by-step math panel, copyable carrier note, and evidence links into the document viewer. Introduces clear states: Compliant, Partial, Supplement Needed, and Insufficient Data.
+
 ---
 
 ## Usage

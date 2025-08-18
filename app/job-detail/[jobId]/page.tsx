@@ -834,6 +834,20 @@ export default function JobDetailPage() {
             key={rule.ruleName}
             ruleAnalysis={rule}
             onDecision={onDecision}
+            onJumpToEvidence={(location, type) => {
+              if (!viewerRef.current) return;
+              const match = String(location || '').match(/page[-\s]?(\d+)/i);
+              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              const payload = {
+                docType: type === 'report' ? 'roof_report' : type,
+                page,
+                rule: rule.ruleName,
+                location,
+              } as const;
+              try {
+                viewerRef.current.jumpToEvidence(payload);
+              } catch {}
+            }}
           />
         );
       default:

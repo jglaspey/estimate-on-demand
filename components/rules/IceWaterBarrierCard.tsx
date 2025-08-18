@@ -21,11 +21,13 @@ interface IceWaterBarrierCardProps {
     decision: 'accepted' | 'rejected' | 'modified',
     notes?: string
   ) => void;
+  onJumpToEvidence?: (location: string, type: 'estimate' | 'report') => void;
 }
 
 export function IceWaterBarrierCard({
   ruleAnalysis,
   onDecision,
+  onJumpToEvidence,
 }: IceWaterBarrierCardProps) {
   const [notes, setNotes] = useState(ruleAnalysis.userNotes || '');
   const [justificationCopied, setJustificationCopied] = useState(false);
@@ -34,6 +36,10 @@ export function IceWaterBarrierCard({
   // Helper for safe display (no mock values)
   const display = (v?: string | number | null) =>
     v === undefined || v === null || v === '' ? '---' : String(v);
+  const num = (v?: number | null, unit?: string) =>
+    v === undefined || v === null || isNaN(Number(v))
+      ? '---'
+      : `${Number(v).toLocaleString()}${unit ? ` ${unit}` : ''}`;
 
   // Estimate fields from analysis
   const currentCode = display(
@@ -53,21 +59,41 @@ export function IceWaterBarrierCard({
     (ruleAnalysis as any)?.currentSpecification?.total
   );
 
-  // Calculation details
-  const totalEaves = '180 LF';
-  const soffitDepth = '24"';
-  const wallThickness = '6"';
-  const roofPitch = '6/12';
-  const calculatedWidth = '60.4"';
-  const requiredQuantity = '1,167 SF';
-  const requiredTotal = '$2,158.95';
+  // Calculation details (dynamic from analyzer)
+  const calc = (ruleAnalysis as any)?.calculationDetails || {};
+  const totalEaves = num(calc.totalEaves, 'LF');
+  const soffitDepth = display(
+    calc.soffitDepth !== undefined && calc.soffitDepth !== null
+      ? `${calc.soffitDepth}\"`
+      : undefined
+  );
+  const wallThickness = display(
+    calc.wallThickness !== undefined && calc.wallThickness !== null
+      ? `${calc.wallThickness}\"`
+      : undefined
+  );
+  const roofPitch = display(calc.roofPitch);
+  const calculatedWidth = display(
+    calc.requiredWidth !== undefined && calc.requiredWidth !== null
+      ? `${calc.requiredWidth}\"`
+      : undefined
+  );
+  const requiredQuantity = num(calc.calculatedCoverage, 'SF');
+  const unitPrice = (ruleAnalysis as any)?.unitPrice as
+    | number
+    | null
+    | undefined;
   const additionalCost = ruleAnalysis.costImpact;
-
-  const standardJustification = `IRC R905.1.2 requires ice barrier to extend from the roof edge up the roof to a point at least 24 inches inside the exterior wall line. Based on the roof measurements (180 LF eaves, 24" soffit depth, 6" wall thickness, 6/12 pitch), the required coverage is 1,167.2 SF. The current estimate only includes 800 SF.`;
+  const recommendation = display(
+    (ruleAnalysis as any)?.supplementRecommendation
+  );
+  const documentationNote = display((ruleAnalysis as any)?.documentationNote);
 
   const copyJustification = async () => {
     try {
-      await navigator.clipboard.writeText(standardJustification);
+      await navigator.clipboard.writeText(
+        documentationNote === '---' ? '' : documentationNote
+      );
       setJustificationCopied(true);
       setTimeout(() => setJustificationCopied(false), 2000);
     } catch (err) {
@@ -82,6 +108,15 @@ export function IceWaterBarrierCard({
   };
 
   const StatusIcon = getStatusIcon();
+
+  // Determine pill label (Compliant handled earlier)
+  const hasCurrentSpec = Boolean((ruleAnalysis as any)?.currentSpecification);
+  const isInsufficient = ruleAnalysis.status === 'INSUFFICIENT_DATA';
+  const pillLabel = isInsufficient
+    ? 'Insufficient Data'
+    : ruleAnalysis.status === 'SUPPLEMENT_NEEDED' && hasCurrentSpec
+      ? 'Partial'
+      : 'Supplement Needed';
 
   if (ruleAnalysis.status === 'COMPLIANT') {
     return (
@@ -118,48 +153,63 @@ export function IceWaterBarrierCard({
           </div>
           <div>
             <h2 className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>
-              Ice & Water Barrier Analysis
+              Ice & Water Barrier
             </h2>
             <p className='text-sm text-zinc-500 dark:text-zinc-400 mt-1'>
-              Supplement needed
+              IRC R905.1.2 eave coverage analysis
             </p>
           </div>
         </div>
+        <Badge
+          className={`${
+            isInsufficient
+              ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-200'
+              : pillLabel === 'Partial'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+          }`}
+        >
+          {pillLabel}
+        </Badge>
       </div>
 
-      {/* Business Rule Violation */}
-      <div className='rounded-lg border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50'>
+      {/* Summary */}
+      <div className='rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/30'>
         <div className='p-4'>
           <div className='flex items-start gap-3'>
             <X className='h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0' />
             <div className='flex-1'>
-              <h3 className='font-semibold text-red-900 dark:text-red-100 mb-2'>
-                Business Rule Violation
+              <h3 className='font-semibold text-zinc-900 dark:text-zinc-100 mb-2'>
+                Analysis Summary
               </h3>
+              <p className='text-sm text-zinc-600 dark:text-zinc-300 mb-2'>
+                {display((ruleAnalysis as any)?.reasoning)}
+              </p>
               <div className='grid grid-cols-2 gap-4 text-sm'>
                 <div>
-                  <span className='text-red-700 dark:text-red-300'>
-                    Current Coverage:
+                  <span className='text-zinc-500 dark:text-zinc-400'>
+                    Current:
                   </span>
-                  <p className='font-medium text-red-900 dark:text-red-100'>
+                  <p className='font-medium text-zinc-900 dark:text-zinc-100'>
                     {display((ruleAnalysis as any)?.estimateQuantity)}
                   </p>
                 </div>
                 <div>
-                  <span className='text-red-700 dark:text-red-300'>
-                    Required Coverage:
+                  <span className='text-zinc-500 dark:text-zinc-400'>
+                    Required:
                   </span>
-                  <p className='font-medium text-red-900 dark:text-red-100'>
+                  <p className='font-medium text-zinc-900 dark:text-zinc-100'>
                     {display((ruleAnalysis as any)?.requiredQuantity)}
                   </p>
                 </div>
               </div>
-              <div className='mt-3 p-3 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800'>
-                <p className='text-sm font-medium text-red-900 dark:text-red-100'>
-                  Rule: IRC R905.1.2 requires coverage 24&quot; inside exterior
-                  wall line
-                </p>
-              </div>
+              {display((ruleAnalysis as any)?.variance) !== '---' && (
+                <div className='mt-3 p-3 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800'>
+                  <p className='text-sm font-medium text-red-900 dark:text-red-100'>
+                    {display((ruleAnalysis as any)?.variance)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -196,20 +246,40 @@ export function IceWaterBarrierCard({
                 {currentQuantity} × {currentRate}
               </span>
             </div>
-            <div className='text-sm p-2 bg-red-50 border border-red-200 rounded dark:bg-red-950/20 dark:border-red-800'>
-              <span className='text-red-700 dark:text-red-300'>Shortfall:</span>
-              <p className='font-medium text-red-900 dark:text-red-100 mt-1'>
-                367 SF below IRC requirement
-              </p>
-            </div>
+            {display((ruleAnalysis as any)?.variance) !== '---' && (
+              <div className='text-sm p-2 bg-red-50 border border-red-200 rounded dark:bg-red-950/20 dark:border-red-800'>
+                <span className='text-red-700 dark:text-red-300'>
+                  Variance:
+                </span>
+                <p className='font-medium text-red-900 dark:text-red-100 mt-1'>
+                  {display((ruleAnalysis as any)?.variance)}
+                </p>
+              </div>
+            )}
             <div className='flex justify-between items-center pt-3 border-t border-zinc-200 dark:border-zinc-700'>
-              <div className='flex items-center gap-2'>
-                <MapPin className='h-4 w-4 text-blue-600 dark:text-blue-400' />
-                <button className='text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 font-medium flex items-center gap-1'>
-                  Page 2, Line 12
+              {onJumpToEvidence &&
+              Array.isArray((ruleAnalysis as any)?.evidenceReferences) &&
+              (ruleAnalysis as any)?.evidenceReferences.some((r: string) =>
+                /page\s*\d+/i.test(String(r))
+              ) ? (
+                <button
+                  onClick={() => {
+                    const ref = (
+                      (ruleAnalysis as any).evidenceReferences as string[]
+                    ).find((r: string) => /page\s*\d+/i.test(String(r)));
+                    const m = String(ref).match(/page\s*(\d+)/i);
+                    const pageStr = m ? `page ${m[1]}` : '';
+                    if (pageStr) onJumpToEvidence!(pageStr, 'estimate');
+                  }}
+                  className='text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 font-medium flex items-center gap-1'
+                >
+                  <MapPin className='h-4 w-4' />
+                  Estimate evidence
                   <ExternalLink className='h-3 w-3' />
                 </button>
-              </div>
+              ) : (
+                <span className='text-sm text-zinc-400'>Evidence: ---</span>
+              )}
               <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
                 {currentTotal}
               </span>
@@ -287,51 +357,37 @@ export function IceWaterBarrierCard({
             </div>
           )}
 
-          <div className='flex items-center gap-2'>
-            <MapPin className='h-4 w-4 text-emerald-600 dark:text-emerald-400' />
-            <button className='text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 font-medium flex items-center gap-1'>
-              Measurements from Page 1
-              <ExternalLink className='h-3 w-3' />
-            </button>
-          </div>
+          {onJumpToEvidence ? (
+            <div className='flex items-center gap-2'>
+              <MapPin className='h-4 w-4 text-emerald-600 dark:text-emerald-400' />
+              <button
+                disabled={!calc?.totalEaves}
+                onClick={() => onJumpToEvidence('page 1', 'report')}
+                className={`text-sm font-medium flex items-center gap-1 ${calc?.totalEaves ? 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200' : 'text-zinc-400 cursor-not-allowed'}`}
+              >
+                Measurements
+                <ExternalLink className='h-3 w-3' />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {/* Required Correction */}
+      {/* Recommended Action */}
       <div className='rounded-lg border border-emerald-200 bg-white dark:border-emerald-700 dark:bg-zinc-900'>
         <div className='px-4 py-3 border-b border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20'>
           <h3 className='font-semibold text-emerald-900 dark:text-emerald-100'>
-            Required Correction
+            Recommended Action
           </h3>
         </div>
         <div className='p-4'>
           <div className='space-y-3'>
-            <div className='flex justify-between text-sm'>
-              <span className='text-zinc-500 dark:text-zinc-400'>Code:</span>
-              <span className='font-mono text-zinc-900 dark:text-zinc-100'>
-                {currentCode}
-              </span>
+            <div className='text-sm text-zinc-600 dark:text-zinc-300'>
+              {recommendation}
             </div>
-            <div className='text-sm'>
-              <span className='text-zinc-500 dark:text-zinc-400'>
-                Description:
-              </span>
-              <p className='font-medium text-zinc-900 dark:text-zinc-100 mt-1'>
-                {currentDesc}
-              </p>
-            </div>
-            <div className='flex justify-between text-sm'>
-              <span className='text-zinc-500 dark:text-zinc-400'>
-                Quantity & Rate:
-              </span>
-              <span className='font-mono text-zinc-900 dark:text-zinc-100'>
-                {requiredQuantity} × {currentRate}
-              </span>
-            </div>
-            <div className='flex justify-between items-center pt-3 border-t border-zinc-200 dark:border-zinc-700'>
-              <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                {requiredTotal}
-              </span>
+            <div className='text-sm text-zinc-600 dark:text-zinc-400'>
+              {requiredQuantity}{' '}
+              {unitPrice ? `@ $${unitPrice.toFixed(2)}/SF` : ''}
             </div>
           </div>
 
@@ -376,7 +432,7 @@ export function IceWaterBarrierCard({
         <div className='p-4'>
           <div className='bg-blue-50 border border-blue-200 rounded p-3 dark:bg-blue-950/20 dark:border-blue-800'>
             <p className='text-sm text-blue-900 dark:text-blue-100 leading-relaxed'>
-              {standardJustification}
+              {documentationNote}
             </p>
           </div>
         </div>

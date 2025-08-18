@@ -169,6 +169,10 @@ export async function POST(
         materialStatus: results.iceAndWater.materialStatus,
         currentSpecification: results.iceAndWater.currentSpecification,
         calculationDetails: results.iceAndWater.calculationDetails,
+        documentationNote: results.iceAndWater.documentationNote,
+        supplementRecommendation: results.iceAndWater.supplementRecommendation,
+        unitPrice: results.iceAndWater.unitPrice,
+        evidenceReferences: results.iceAndWater.evidenceReferences,
       };
 
       iceWaterUiData = ruleAnalysisResult;
@@ -371,6 +375,10 @@ export async function GET(
         materialStatus: findings?.materialStatus || 'compliant',
         currentSpecification: findings?.currentSpecification || {},
         calculationDetails: findings?.calculationDetails || {},
+        documentationNote: findings?.documentationNote || '',
+        supplementRecommendation: findings?.supplementRecommendation || '',
+        unitPrice: findings?.unitPrice ?? null,
+        evidenceReferences: findings?.evidenceReferences || [],
       };
 
       iceWaterUiData = ruleAnalysisResult;
