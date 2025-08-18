@@ -262,9 +262,18 @@ export class AnalysisWorker {
     const extraction = extractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `🔍 Ridge Cap Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
     // Prepare analysis input with proper type casting
     const analysisInput: RidgeCapAnalysisInput = {
-      lineItems: (extractedData.lineItems as any[]) || [],
+      lineItems: v2LineItems,
       ridgeCapItems: (extractedData.ridgeCapItems as any[]) || [],
       roofMeasurements: (extractedData.roofMeasurements as any) || {
         ridgeLength: null,
@@ -348,17 +357,31 @@ export class AnalysisWorker {
       actualMeasurements
     );
 
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `🔍 Drip Edge Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
     // Prepare analysis input with proper type casting and actual measurements
     const analysisInput: DripEdgeAnalysisInput = {
-      lineItems: (extractedData.lineItems as any[]) || [],
+      lineItems: v2LineItems,
       roofMeasurements: {
         // Use actual extracted measurements
         ridgeLength: actualMeasurements.ridgeLength || null,
-        hipLength: actualMeasurements.hipLength || null,
+        hipsLength:
+          actualMeasurements.hipLength || actualMeasurements.hipsLength || null,
         totalRidgeHip: actualMeasurements.totalRidgeHip || null,
-        confidence: actualMeasurements.confidence || 0.5,
-        sourcePages: actualMeasurements.sourcePages || [],
-        extractedFrom: actualMeasurements.extractedFrom || ('other' as const),
+        // fields below may not exist on the typed RoofMeasurements; include only if present using type cast
+        ...(actualMeasurements.sourcePages
+          ? { sourcePages: actualMeasurements.sourcePages }
+          : {}),
+        ...(actualMeasurements.extractedFrom
+          ? { extractedFrom: actualMeasurements.extractedFrom }
+          : {}),
         // Core measurements for drip edge analysis
         totalArea:
           actualMeasurements.totalArea || actualMeasurements.totalRoofArea || 0,
@@ -392,8 +415,7 @@ export class AnalysisWorker {
         // Additional fields
         roofArea:
           actualMeasurements.roofArea || actualMeasurements.totalArea || 0,
-        hipsLength:
-          actualMeasurements.hipsLength || actualMeasurements.hipLength || 0,
+        // keep only additional fields that exist in our type; hipsLength already mapped above
         soffitDepth: actualMeasurements.soffitDepth || 'Unknown',
         wallThickness: actualMeasurements.wallThickness || 'Unknown',
         totalRoofArea:
@@ -465,14 +487,23 @@ export class AnalysisWorker {
       actualMeasurements
     );
 
+    // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
+    const v2LineItems =
+      ((extractedData as any).v2?.lineItems as any[]) ||
+      ((extractedData as any).lineItems as any[]) ||
+      [];
+    console.log(
+      `❄️ Ice & Water Analysis - Using ${v2LineItems.length} line items from v2 data`
+    );
+
     // Prepare analysis input with proper type casting and actual measurements
     const analysisInput: IceWaterBarrierAnalysisInput = {
-      lineItems: (extractedData.lineItems as any[]) || [],
+      lineItems: v2LineItems,
       roofMeasurements: {
         // Use actual extracted measurements
         ridgeLength: actualMeasurements.ridgeLength || null,
         hipLength:
-          actualMeasurements.hipsLength || actualMeasurements.hipLength || null,
+          actualMeasurements.hipLength || actualMeasurements.hipsLength || null,
         totalRidgeHip: actualMeasurements.totalRidgeHip || null,
         confidence: actualMeasurements.confidence || 0.5,
         sourcePages: actualMeasurements.sourcePages || [],

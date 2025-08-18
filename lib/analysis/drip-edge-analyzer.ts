@@ -174,8 +174,9 @@ export class DripEdgeAnalyzer {
             : parseFloat(String(item.quantity)) || 0;
         const unit =
           typeof item.quantity === 'object' ? item.quantity.unit : 'LF';
-        const unitPrice = item.unitPrice || 0;
-        const total = item.totalPrice || item.rcv || quantity * unitPrice;
+        const unitPrice = (item as any).unitPrice || 0;
+        const total =
+          (item as any).totalPrice || (item as any).rcv || quantity * unitPrice;
 
         dripEdgeItems.push({
           code: item.code || '',
@@ -202,8 +203,9 @@ export class DripEdgeAnalyzer {
             : parseFloat(String(item.quantity)) || 0;
         const unit =
           typeof item.quantity === 'object' ? item.quantity.unit : 'LF';
-        const unitPrice = item.unitPrice || 0;
-        const total = item.totalPrice || item.rcv || quantity * unitPrice;
+        const unitPrice = (item as any).unitPrice || 0;
+        const total =
+          (item as any).totalPrice || (item as any).rcv || quantity * unitPrice;
 
         gutterApronItems.push({
           code: item.code || '',

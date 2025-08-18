@@ -367,7 +367,7 @@ export default function JobDetailPage() {
             if (data.uiData.dripEdge) {
               rules.push({
                 ...data.uiData.dripEdge,
-                ruleName: 'drip_edge_gutter_apron',
+                ruleName: 'drip_edge',
               });
             }
             if (data.uiData.iceAndWater) {
@@ -375,6 +375,57 @@ export default function JobDetailPage() {
                 ...data.uiData.iceAndWater,
                 ruleName: 'ice_water_barrier',
               });
+            }
+
+            // If backend UI data doesn't include all rules yet, call analyze to get full results
+            try {
+              if (!data.uiData.dripEdge || !data.uiData.iceAndWater) {
+                const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
+                  method: 'POST',
+                });
+                if (postRes.ok) {
+                  const analyzed = await postRes.json();
+                  const results = analyzed?.results || {};
+                  const addRule = (rName: string, payload?: any) => {
+                    if (!payload) return;
+                    rules.push({
+                      ruleName: rName,
+                      status: payload.status,
+                      confidence: payload.confidence ?? 0.95,
+                      reasoning: payload.reasoning ?? '',
+                      costImpact: payload.costImpact ?? 0,
+                      // pass through extra fields for cards that know how to use them
+                      ...(payload || {}),
+                    } as any);
+                  };
+                  // Ridge cap (keep existing if already present)
+                  if (
+                    !rules.find(r => r.ruleName === 'ridge_cap') &&
+                    results.ridgeCap
+                  ) {
+                    addRule('ridge_cap', results.ridgeCap);
+                  }
+                  // Drip edge & gutter apron
+                  if (
+                    !rules.find(r => r.ruleName === 'drip_edge') &&
+                    results.dripEdge
+                  ) {
+                    addRule('drip_edge', results.dripEdge);
+                  }
+                  // Ice & Water Barrier
+                  if (
+                    !rules.find(r => r.ruleName === 'ice_water_barrier') &&
+                    results.iceAndWater
+                  ) {
+                    addRule('ice_water_barrier', results.iceAndWater);
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn(
+                'Optional analyze POST failed; continuing with existing UI data',
+                e
+              );
             }
 
             setRuleAnalysis(rules);
