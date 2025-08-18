@@ -23,6 +23,7 @@
     "db:clear": "RUN=1 tsx scripts/clear-db.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.4",
     "@anthropic-ai/sdk": "^0.59.0",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.7",
@@ -55,6 +56,8 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/forms": "^0.5.10",
     "@types/pg": "^8.15.5",
+    "ai": "^5.0.15",
+    "ai-elements": "^1.0.3",
     "canvas": "^3.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
