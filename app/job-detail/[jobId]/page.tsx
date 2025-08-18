@@ -59,6 +59,18 @@ interface RidgeCapData {
   ridgeCapSpecification?: 'purpose-built' | 'high-profile' | 'cut-from-3-tab';
   quantityMatch?: boolean;
   astmCompliance?: string;
+  // Current specification from analysis results
+  currentSpecification?: {
+    code: string;
+    description: string;
+    quantity: string;
+    rate: string;
+    total: string;
+  };
+  // Analysis fields
+  reasoning?: string;
+  materialStatus?: 'compliant' | 'non-compliant';
+  varianceType?: 'shortage' | 'adequate' | 'excess';
 }
 
 interface AnalysisResults {
@@ -647,7 +659,7 @@ export default function JobDetailPage() {
 
               // Jump to evidence in document viewer
               const payload = {
-                docType: type,
+                docType: type === 'report' ? 'roof_report' : type,
                 page,
                 rule: rule.ruleName,
                 location,
