@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   ZoomIn, 
   ZoomOut, 
@@ -16,6 +13,10 @@ import {
   Calculator,
   ExternalLink
 } from 'lucide-react';
+
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface DocumentData {
   id: string;

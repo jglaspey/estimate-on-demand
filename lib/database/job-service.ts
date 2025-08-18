@@ -5,8 +5,9 @@
  * Provides high-level business logic for job lifecycle management
  */
 
-import { prisma, type Job, type JobStatus, type MistralExtraction, type RuleAnalysis, type RuleType } from './client';
 import type { ExtractionResult, ExtractionMetrics } from '../extraction/haiku-extraction-engine';
+
+import { prisma, type Job, type JobStatus, type MistralExtraction, type RuleAnalysis, type RuleType } from './client';
 
 export interface CreateJobData {
   fileName: string;

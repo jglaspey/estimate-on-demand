@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+
 import { useJobPolling } from '@/lib/websocket/PollingProvider';
 
 interface JobProgressTrackerProps {

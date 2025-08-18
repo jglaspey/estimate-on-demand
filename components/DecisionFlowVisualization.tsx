@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { 
   CheckCircle, 
   AlertTriangle,
@@ -11,6 +9,9 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 interface FlowStep {
   id: string;

@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useJobProgress } from '@/lib/hooks/useJobProgress';
 import { 
   ArrowLeft, 
   Upload, 
@@ -17,6 +16,8 @@ import {
   Share,
   Download
 } from 'lucide-react';
+
+import { useJobProgress } from '@/lib/hooks/useJobProgress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';

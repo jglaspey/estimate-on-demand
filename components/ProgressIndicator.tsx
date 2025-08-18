@@ -1,6 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
-import { Badge } from './ui/badge';
 import { 
   Upload, 
   FileText, 
@@ -9,6 +6,10 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Progress } from './ui/progress';
+import { Badge } from './ui/badge';
 
 interface ProgressStep {
   id: string;

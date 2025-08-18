@@ -5,11 +5,15 @@ import {
   Plus,
   ChevronDown,
   CheckCircle,
+  X,
+  Edit,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { Textarea } from './ui/textarea';
 
 interface RidgeCapData {
   // Existing fields
@@ -35,6 +39,9 @@ interface RidgeCapData {
   ridgeCapSpecification?: 'purpose-built' | 'high-profile' | 'cut-from-3-tab';
   quantityMatch?: boolean;
   astmCompliance?: string;
+  // Decision tracking
+  userDecision?: 'accepted' | 'rejected' | 'modified';
+  userNotes?: string;
 }
 
 interface RidgeCapAnalysisProps {
@@ -43,6 +50,7 @@ interface RidgeCapAnalysisProps {
   ridgeCapData?: RidgeCapData;
   showHighlighting?: boolean;
   onJumpToEvidence?: (page: string, type: 'estimate' | 'report') => void;
+  onDecision?: (decision: 'accepted' | 'rejected' | 'modified', notes?: string) => void;
 }
 
 export function RidgeCapAnalysis({
@@ -51,7 +59,22 @@ export function RidgeCapAnalysis({
   ridgeCapData,
   showHighlighting = true,
   onJumpToEvidence,
+  onDecision,
 }: RidgeCapAnalysisProps) {
+  const [notes, setNotes] = useState(ridgeCapData?.userNotes || '');
+  const [justificationCopied, setJustificationCopied] = useState(false);
+
+  // Copy justification to clipboard
+  const copyJustification = async () => {
+    try {
+      await navigator.clipboard.writeText(documentationNote);
+      setJustificationCopied(true);
+      setTimeout(() => setJustificationCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
   // Calculate values with clean fallbacks
   const estimateQty = ridgeCapData?.estimateQuantity || '93.32 LF';
   const requiredQty = ridgeCapData?.requiredQuantity || '93.32 LF';
@@ -270,27 +293,89 @@ export function RidgeCapAnalysis({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className='flex gap-2 pt-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              className='flex-1'
-              onClick={() => {
-                navigator.clipboard.writeText(documentationNote);
-              }}
-            >
-              <Copy className='h-3.5 w-3.5 mr-1.5' />
-              Copy Note
-            </Button>
-            <Button
-              size='sm'
-              className='flex-1 bg-blue-600 hover:bg-blue-700 text-white'
-            >
-              <Plus className='h-3.5 w-3.5 mr-1.5' />
-              Add to Supplement
-            </Button>
-          </div>
+          {/* Decision Section */}
+          {!ridgeCapData?.userDecision ? (
+            <>
+              {/* Notes Section */}
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+                  Additional Notes (Optional)
+                </label>
+                <Textarea
+                  placeholder='Add any custom notes for this supplement...'
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className='min-h-[60px] text-sm border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'
+                />
+              </div>
+
+              {/* Decision Buttons */}
+              <div className='flex gap-2 pt-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='flex-1'
+                  onClick={copyJustification}
+                >
+                  <Copy className='h-3.5 w-3.5 mr-1.5' />
+                  {justificationCopied ? 'Copied!' : 'Copy Note'}
+                </Button>
+                {onDecision && (
+                  <>
+                    <Button
+                      size='sm'
+                      className='flex-1 bg-green-600 hover:bg-green-700 text-white'
+                      onClick={() => onDecision('accepted', notes)}
+                    >
+                      <CheckCircle className='h-3.5 w-3.5 mr-1.5' />
+                      Accept
+                    </Button>
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      className='flex-1 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950'
+                      onClick={() => onDecision('rejected', notes)}
+                    >
+                      <X className='h-3.5 w-3.5 mr-1.5' />
+                      Reject
+                    </Button>
+                    <Button
+                      size='sm'
+                      className='flex-1 bg-blue-600 hover:bg-blue-700 text-white'
+                      onClick={() => onDecision('modified', notes)}
+                    >
+                      <Edit className='h-3.5 w-3.5 mr-1.5' />
+                      Modify
+                    </Button>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Decision Made */
+            <div className='rounded-lg border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/50'>
+                  <CheckCircle className='h-4 w-4 text-indigo-600 dark:text-indigo-400' />
+                </div>
+                <div className='flex-1'>
+                  <p className='text-sm font-semibold text-indigo-900 dark:text-indigo-100'>
+                    Decision: {ridgeCapData.userDecision.charAt(0).toUpperCase() + ridgeCapData.userDecision.slice(1)}
+                  </p>
+                  {ridgeCapData.userNotes && (
+                    <p className='text-sm text-indigo-700 dark:text-indigo-300 mt-1'>
+                      {ridgeCapData.userNotes}
+                    </p>
+                  )}
+                  {ridgeCapData.userDecision === 'accepted' && (
+                    <p className='text-sm text-indigo-700 dark:text-indigo-300 mt-1'>
+                      Added +${costImpact.toFixed(2)} to supplement
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

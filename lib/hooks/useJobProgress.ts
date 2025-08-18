@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+
 import type { PriorityFields } from '@/lib/types/document-extraction';
 
 interface JobProgressState {

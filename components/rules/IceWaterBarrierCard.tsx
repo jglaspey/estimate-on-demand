@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Textarea } from '../ui/textarea';
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -12,6 +9,10 @@ import {
   Plus,
   Calculator
 } from 'lucide-react';
+
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Textarea } from '../ui/textarea';
 import { RuleAnalysisResult } from '../../types';
 
 interface IceWaterBarrierCardProps {

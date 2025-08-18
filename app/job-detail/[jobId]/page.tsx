@@ -516,11 +516,10 @@ export default function JobDetailPage() {
               ?.toLowerCase()
               .includes('cut from 3 tab') ||
             currentSpec?.description?.toLowerCase().includes('cut from 3-tab');
-          const isPurposeBuilt =
-            currentSpec?.description?.toLowerCase().includes('purpose') ||
-            currentSpec?.description
-              ?.toLowerCase()
-              .includes('standard profile');
+          // Detection logic for different ridge cap types (kept for future use)
+          // const isPurposeBuilt =
+          //   currentSpec?.description?.toLowerCase().includes('purpose') ||
+          //   currentSpec?.description?.toLowerCase().includes('standard profile');
           const isHighProfile = currentSpec?.description
             ?.toLowerCase()
             .includes('high profile');
@@ -644,6 +643,7 @@ export default function JobDetailPage() {
               // Fire a microtask after a tick to reinforce when switching tabs
               setTimeout(() => viewerRef.current?.jumpToEvidence(payload), 0);
             }}
+            onDecision={(decision, notes) => onDecision(rule, decision, notes)}
           />
         );
       case 'starter_strip':

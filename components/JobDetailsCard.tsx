@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Edit2, Check, X, FileText, MapPin, Calendar, DollarSign } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Edit2, Check, X, FileText, MapPin, Calendar, DollarSign } from 'lucide-react';
 
 interface JobData {
   id: string;

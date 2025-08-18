@@ -1,9 +1,4 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -15,8 +10,15 @@ import {
   FileText,
   Calculator
 } from 'lucide-react';
+
 import { RuleAnalysisResult } from '@/types';
 import { LineItem } from '@/lib/types/document-extraction';
+
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 
 interface BusinessRuleCardProps {
   ruleAnalysis: RuleAnalysisResult;
