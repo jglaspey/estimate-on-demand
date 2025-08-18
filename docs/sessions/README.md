@@ -2,14 +2,20 @@
 
 This folder contains development session summaries that track progress, decisions, and changes made during each work session on the EOD Insurance Supplement Analysis System.
 
+## Quick Reference
+
+📋 **[SESSION INDEX](./INDEX.md)** - Quick overview of all sessions with brief summaries and status indicators
+
+For detailed session documentation guidelines, continue reading below.
+
 ## File Naming Convention
 
-Files are named using the format: `MMDDYYYY-brief-description.md`
+Files are named using the format: `MM.DD-brief-description.md`
 
 Examples:
-- `08182025-ridge-cap-analysis-ui.md`
-- `08202025-pdf-viewer-improvements.md`
-- `08252025-database-migration.md`
+- `08.18-ridge-cap-analysis-ui.md`
+- `08.20-pdf-viewer-improvements.md`
+- `08.25-database-migration.md`
 
 ## Document Structure
 
@@ -74,6 +80,7 @@ commits:
 5. **Document decisions** - Capture the "why" behind technical choices
 6. **Include validation steps** - Note how changes were tested
 7. **Identify next steps** - Help future sessions understand where to continue
+8. **Update the session index** - Add a brief entry to [INDEX.md](./INDEX.md) for quick reference
 
 ## Session Types
 

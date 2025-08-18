@@ -13,6 +13,11 @@ import {
   RidgeCapAnalysisInput,
   RidgeCapAnalysisResult,
 } from './ridge-cap-analyzer';
+import {
+  dripEdgeAnalyzer,
+  DripEdgeAnalysisInput,
+  DripEdgeAnalysisResult,
+} from './drip-edge-analyzer';
 
 // Progress update interface
 export interface AnalysisProgress {
@@ -37,7 +42,7 @@ export interface AnalysisWorkerConfig {
 export interface BusinessRuleResults {
   ridgeCap: RidgeCapAnalysisResult | null;
   starterStrip: Record<string, unknown> | null; // Future implementation
-  dripEdge: Record<string, unknown> | null; // Future implementation
+  dripEdge: DripEdgeAnalysisResult | null;
   iceAndWater: Record<string, unknown> | null; // Future implementation
 }
 
@@ -98,7 +103,10 @@ export class AnalysisWorker {
         results.ridgeCap = await this.runRidgeCapAnalysis(jobData);
 
         // Save ridge cap analysis to database
-        await this.saveRuleAnalysis('HIP_RIDGE_CAP', results.ridgeCap as unknown as Record<string, unknown>);
+        await this.saveRuleAnalysis(
+          'HIP_RIDGE_CAP',
+          results.ridgeCap as unknown as Record<string, unknown>
+        );
 
         this.updateProgress(
           'ridge_cap',
@@ -145,22 +153,28 @@ export class AnalysisWorker {
         results.starterStrip = null;
       }
 
-      // Step 4: Run Drip Edge Analysis (placeholder)
+      // Step 4: Run Drip Edge Analysis
       this.updateProgress(
         'drip_edge',
         'running',
         80,
-        'Analyzing drip edge coverage...'
+        'Analyzing drip edge & gutter apron coverage...'
       );
 
       try {
-        // Future implementation
         results.dripEdge = await this.runDripEdgeAnalysis(jobData);
+
+        // Save drip edge analysis to database
+        await this.saveRuleAnalysis(
+          'DRIP_EDGE_GUTTER_APRON',
+          results.dripEdge as unknown as Record<string, unknown>
+        );
+
         this.updateProgress(
           'drip_edge',
           'completed',
           90,
-          'Drip edge analysis completed'
+          `Drip edge analysis: ${results.dripEdge.status} - ${results.dripEdge.costImpact > 0 ? `$${results.dripEdge.costImpact.toFixed(2)} supplement` : 'compliant'}`
         );
       } catch (error) {
         this.updateProgress(
@@ -208,7 +222,13 @@ export class AnalysisWorker {
         `❌ Business rule analysis failed for job ${this.jobId}:`,
         error
       );
-      this.updateProgress('analysis', 'failed', 0, 'Analysis failed', error as Error);
+      this.updateProgress(
+        'analysis',
+        'failed',
+        0,
+        'Analysis failed',
+        error as Error
+      );
       throw error;
     }
   }
@@ -220,10 +240,14 @@ export class AnalysisWorker {
     jobData: Record<string, unknown>
   ): Promise<RidgeCapAnalysisResult> {
     const extractions = jobData.mistralExtractions as any[];
-    if (!extractions || !Array.isArray(extractions) || extractions.length === 0) {
+    if (
+      !extractions ||
+      !Array.isArray(extractions) ||
+      extractions.length === 0
+    ) {
       throw new Error('No mistral extractions found in job data');
     }
-    
+
     const extraction = extractions[0];
     const extractedData = extraction.extractedData as Record<string, unknown>;
 
@@ -289,19 +313,59 @@ export class AnalysisWorker {
   }
 
   /**
-   * Run Drip Edge analysis (placeholder for future implementation)
+   * Run Drip Edge & Gutter Apron analysis
    */
   async runDripEdgeAnalysis(
-    _jobData: Record<string, unknown>
-  ): Promise<Record<string, unknown>> {
-    // Simulate analysis time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    jobData: Record<string, unknown>
+  ): Promise<DripEdgeAnalysisResult> {
+    const extractions = jobData.mistralExtractions as any[];
+    if (
+      !extractions ||
+      !Array.isArray(extractions) ||
+      extractions.length === 0
+    ) {
+      throw new Error('No mistral extractions found in job data');
+    }
 
-    return {
-      status: 'COMPLIANT',
-      reasoning: 'Drip edge analysis not yet implemented',
-      costImpact: 0,
+    const extraction = extractions[0];
+    const extractedData = extraction.extractedData as Record<string, unknown>;
+
+    // Prepare analysis input with proper type casting
+    const analysisInput: DripEdgeAnalysisInput = {
+      lineItems: (extractedData.lineItems as any[]) || [],
+      roofMeasurements: (extractedData.roofMeasurements as any) || {
+        ridgeLength: null,
+        hipLength: null,
+        totalRidgeHip: null,
+        confidence: 0.5,
+        sourcePages: [],
+        extractedFrom: 'other' as const,
+        // Add required fields from RoofMeasurements interface
+        totalArea: 0,
+        totalSquares: 0,
+        pitch: 'Unknown',
+        stories: 1,
+        eavesLength: 0,
+        rakesLength: 0,
+        ridgesLength: 0,
+        valleysLength: 0,
+        roofArea: 0,
+        hipsLength: 0,
+        soffitDepth: 'Unknown',
+        wallThickness: 'Unknown',
+        totalRoofArea: 0,
+        numberOfSquares: 0,
+        predominantPitch: 'Unknown',
+        numberOfStories: 1,
+        totalEaves: 0,
+        totalRakes: 0,
+        totalRidges: 0,
+        totalValleys: 0,
+      },
+      jobId: this.jobId,
     };
+
+    return await dripEdgeAnalyzer.analyzeDripEdgeCompliance(analysisInput);
   }
 
   /**
