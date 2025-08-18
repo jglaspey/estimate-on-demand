@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* EOD Insurance App Design System - Professional Theme */
 @custom-variant dark (&:is(.dark *));
@@ -137,7 +137,7 @@
  * Optimized for document review and data presentation
  */
 @layer base {
-  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
     h1 {
       font-size: var(--text-2xl);
       font-weight: var(--font-weight-medium);
@@ -190,4 +190,14 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/* jump-to-evidence highlight */
+@layer base {
+  mark#evidence-target {
+    background: #fde68a;
+    color: inherit;
+    padding: 0 0.15em;
+    border-radius: 2px;
+  }
 }

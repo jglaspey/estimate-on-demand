@@ -12,7 +12,10 @@ import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronC
 import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
 import { SimplifiedRidgeCapAnalysis } from '@/components/SimplifiedRidgeCapAnalysis';
 // import { InteractiveRoofDiagram } from '@/components/InteractiveRoofDiagram';
-import { EnhancedDocumentViewer } from '@/components/EnhancedDocumentViewer';
+import {
+  EnhancedDocumentViewer,
+  type ViewerHandle,
+} from '@/components/EnhancedDocumentViewer';
 import { OverviewPage } from '@/components/OverviewPage';
 // import { StickyFooter } from '@/components/StickyFooter'; // Removed - no longer using rule navigation
 
@@ -130,6 +133,7 @@ export default function JobDetailPage() {
   const [validationNotes, setValidationNotes] = useState<string[]>([]);
   const [discrepantFields, setDiscrepantFields] = useState<string[]>([]);
   const hasInitializedRef = useRef(false);
+  const viewerRef = useRef<ViewerHandle | null>(null);
 
   // Fetch job data on mount
   useEffect(() => {
@@ -512,9 +516,14 @@ export default function JobDetailPage() {
               onDecision('rejected', 'Skipped by user');
             }}
             onJumpToEvidence={(location, type) => {
-              // Handle evidence navigation
-              // In real implementation, this would scroll to or highlight the evidence
-              console.warn('Jump to evidence:', location, type);
+              const match = String(location || '').match(/page[-\s]?(\d+)/i);
+              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              viewerRef.current?.jumpToEvidence({
+                docType: type,
+                page,
+                rule: rule.ruleName,
+                location,
+              });
             }}
           />
         );
@@ -872,6 +881,7 @@ export default function JobDetailPage() {
         <div className='w-2/3 bg-zinc-50 dark:bg-zinc-950 flex'>
           <div className='flex-1 p-6 pb-0 flex flex-col min-h-0'>
             <EnhancedDocumentViewer
+              ref={viewerRef}
               jobId={jobId}
               selectedRule={ruleAnalysis[0]?.ruleName || null}
               reloadVersion={reloadVersion}

@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
   ZoomIn,
@@ -17,6 +24,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -67,12 +75,30 @@ interface DocumentHighlight {
   textMatch?: string; // For highlighting in extracted text
 }
 
-export function EnhancedDocumentViewer({
-  jobId,
-  selectedRule,
-  reloadVersion = 0,
-  busy = false,
-}: EnhancedDocumentViewerProps) {
+export type EvidenceJump = {
+  docType: 'estimate' | 'roof_report';
+  page: number;
+  rule?: string;
+  location?: string;
+  textMatch?: string;
+};
+
+export type ViewerHandle = {
+  jumpToEvidence: (t: EvidenceJump) => void;
+};
+
+export const EnhancedDocumentViewer = forwardRef<
+  ViewerHandle,
+  EnhancedDocumentViewerProps
+>(function EnhancedDocumentViewer(
+  {
+    jobId,
+    selectedRule,
+    reloadVersion = 0,
+    busy = false,
+  }: EnhancedDocumentViewerProps,
+  ref
+) {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -93,6 +119,27 @@ export function EnhancedDocumentViewer({
   const [lastAutoRule, setLastAutoRule] = useState<string | null>(null);
   // Ensure we only set initial doc/page once per mount
   const hasInitializedRef = useRef(false);
+  const [pendingTarget, setPendingTarget] = useState<EvidenceJump | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      jumpToEvidence: (t: EvidenceJump) => {
+        const targetDoc =
+          documents.find(d => d.fileType === t.docType) ?? documents[0];
+        if (targetDoc) setActiveTab(targetDoc.id);
+        setViewMode('extracted');
+        const clamped = Math.min(
+          Math.max(1, t.page),
+          targetDoc?.pageCount ?? t.page
+        );
+        setCurrentPage(clamped);
+        setPendingTarget({ ...t, page: clamped });
+        // Defer scroll to a post-render effect below
+      },
+    }),
+    [documents]
+  );
 
   // Fetch documents and their extracted content
   useEffect(() => {
@@ -284,6 +331,30 @@ export function EnhancedDocumentViewer({
 
   const highlights = getHighlights(selectedRule);
 
+  // Decide which text to highlight on a page
+  const resolveMatch = (pageNumber: number): RegExp | null => {
+    if (!pendingTarget) return null;
+    if (pendingTarget.textMatch) {
+      try {
+        return new RegExp(pendingTarget.textMatch, 'i');
+      } catch {
+        /* ignore invalid regex */
+      }
+    }
+    const rule = pendingTarget.rule ?? selectedRule;
+    const candidate = getHighlights(rule ?? null).find(
+      h => h.page === pageNumber && h.textMatch
+    );
+    if (candidate?.textMatch) {
+      try {
+        return new RegExp(candidate.textMatch, 'i');
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
+  };
+
   // Get all images from all pages of active document for global navigation
   const getAllImagesFromDocument = (document: DocumentData) => {
     const allImages: string[] = [];
@@ -403,6 +474,18 @@ export function EnhancedDocumentViewer({
     scrollContainer.addEventListener('scroll', handleScroll);
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [scrollContainer, viewMode]);
+
+  // After a jumpToEvidence, scroll to the injected mark in the extracted view
+  useEffect(() => {
+    if (!pendingTarget || !scrollContainer || viewMode !== 'extracted') return;
+    const id = requestAnimationFrame(() => {
+      const el = scrollContainer.querySelector(
+        '#evidence-target'
+      ) as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pendingTarget, scrollContainer, viewMode, activeTab, currentPage]);
 
   // Jump to page when navigation buttons are clicked
   const scrollToPage = (pageNumber: number) => {
@@ -714,6 +797,7 @@ export function EnhancedDocumentViewer({
           )}
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
+            rehypePlugins={[rehypeRaw]}
             components={{
               // Custom table rendering for better display
               table: ({ children }) => (
@@ -780,7 +864,16 @@ export function EnhancedDocumentViewer({
               },
             }}
           >
-            {cleanedMarkdown}
+            {(() => {
+              const rx = resolveMatch(page.pageNumber);
+              const highlighted = rx
+                ? cleanedMarkdown.replace(
+                    rx,
+                    m => `<mark id="evidence-target">${m}</mark>`
+                  )
+                : cleanedMarkdown;
+              return highlighted;
+            })()}
           </ReactMarkdown>
         </div>
       );
@@ -1024,8 +1117,16 @@ export function EnhancedDocumentViewer({
     const md = toMarkdownTables(toStructuredMarkdown(text));
     return (
       <div className='prose prose-zinc dark:prose-invert max-w-none text-sm'>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-          {md}
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkBreaks]}
+          rehypePlugins={[rehypeRaw]}
+        >
+          {(() => {
+            const rx = resolveMatch(page.pageNumber);
+            return rx
+              ? md.replace(rx, m => `<mark id="evidence-target">${m}</mark>`)
+              : md;
+          })()}
         </ReactMarkdown>
       </div>
     );
@@ -1465,4 +1566,4 @@ export function EnhancedDocumentViewer({
         )}
     </>
   );
-}
+});
