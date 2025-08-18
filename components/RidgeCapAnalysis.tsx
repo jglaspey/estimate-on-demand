@@ -1,20 +1,15 @@
-import { useState } from 'react';
 import {
   AlertTriangle,
-  HelpCircle,
   ExternalLink,
   Copy,
   Plus,
-  X,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { ValueHighlight } from './ui/value-highlight';
 
 interface RidgeCapData {
   // Existing fields
@@ -47,6 +42,7 @@ interface RidgeCapAnalysisProps {
   totalRules: number;
   ridgeCapData?: RidgeCapData;
   showHighlighting?: boolean;
+  onJumpToEvidence?: (page: string, type: 'estimate' | 'report') => void;
 }
 
 export function RidgeCapAnalysis({
@@ -54,24 +50,16 @@ export function RidgeCapAnalysis({
   totalRules,
   ridgeCapData,
   showHighlighting = true,
+  onJumpToEvidence,
 }: RidgeCapAnalysisProps) {
-  const [showEvidence, setShowEvidence] = useState(false);
-
-  // Helper function to determine if a value is from live data or placeholder
-  const hasLiveData = (value: any) =>
-    value !== undefined && value !== null && value !== '';
-
   // Calculate values with clean fallbacks
   const estimateQty = ridgeCapData?.estimateQuantity || '93.32 LF';
   const requiredQty = ridgeCapData?.requiredQuantity || '93.32 LF';
   const variance = ridgeCapData?.variance || '0.00 LF';
   const costImpact = ridgeCapData?.costImpact || 113.0;
-  const confidence = ridgeCapData?.confidence || 0.99;
   const ridgeLength = ridgeCapData?.ridgeLength || 37.77;
   const hipLength = ridgeCapData?.hipLength || 55.55;
   const unitPrice = ridgeCapData?.estimateUnitPrice || '$1.21';
-  const roofType = ridgeCapData?.roofType || 'Laminate Composition';
-  const ridgeCapType = ridgeCapData?.ridgeCapType || 'cut from 3 tab';
   const isCompliant = ridgeCapData?.complianceStatus === 'compliant';
   const lineItemCode = ridgeCapData?.lineItemCode || 'RFG HRSD';
   const lineItemDescription =
@@ -123,7 +111,7 @@ export function RidgeCapAnalysis({
           {/* Current Specification */}
           <div>
             <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3'>
-              Current Specification
+              Current Estimate Specification
             </div>
             <div className='space-y-2 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg'>
               <div className='flex items-start justify-between'>
@@ -133,40 +121,96 @@ export function RidgeCapAnalysis({
                   </div>
                   <div className='text-xs text-zinc-600 dark:text-zinc-400 mt-1'>
                     • {estimateQty} @ {unitPrice} ={' '}
-                    {ridgeCapData?.estimateTotal || '$112.94'}
+                    {ridgeCapData?.estimateTotal || '$1,147.66'}
                   </div>
                 </div>
+                {onJumpToEvidence && (
+                  <button
+                    onClick={() => onJumpToEvidence('page 4', 'estimate')}
+                    className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 ml-2 whitespace-nowrap'
+                  >
+                    <ExternalLink className='h-3 w-3' />
+                    Estimate p.4
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Required Measurement */}
+          {/* Required Measurement with breakdown */}
           <div>
             <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3'>
-              Required Ridge Cap
+              Required Ridge Cap from Roof Report
             </div>
-            <div className='flex items-center justify-between'>
-              <div>
-                <span className='text-sm text-zinc-600 dark:text-zinc-400'>
-                  Ridge Length from Roof Report:
-                </span>
-                <span className='ml-2 font-semibold text-zinc-900 dark:text-zinc-100'>
-                  {requiredQty}
-                </span>
-              </div>
-              {quantityMatch ? (
-                <div className='flex items-center gap-1 text-green-600 dark:text-green-400'>
-                  <CheckCircle className='h-4 w-4' />
-                  <span className='text-xs font-medium'>Quantity matches</span>
-                </div>
-              ) : (
-                <div className='flex items-center gap-1 text-amber-600 dark:text-amber-400'>
-                  <AlertTriangle className='h-4 w-4' />
-                  <span className='text-xs font-medium'>
-                    Shortage: {variance}
+            <div className='space-y-3'>
+              {/* Ridge and Hip breakdown */}
+              <div className='grid grid-cols-2 gap-4 text-sm'>
+                <div className='flex items-center justify-between'>
+                  <span className='text-zinc-600 dark:text-zinc-400'>
+                    Ridges:
                   </span>
+                  <div className='flex items-center gap-2'>
+                    <span className='font-medium text-zinc-900 dark:text-zinc-100'>
+                      {ridgeLength.toFixed(2)} LF
+                    </span>
+                    {onJumpToEvidence && (
+                      <button
+                        onClick={() => onJumpToEvidence('page 2', 'report')}
+                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                      >
+                        <ExternalLink className='h-3 w-3' />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
+                <div className='flex items-center justify-between'>
+                  <span className='text-zinc-600 dark:text-zinc-400'>
+                    Hips:
+                  </span>
+                  <div className='flex items-center gap-2'>
+                    <span className='font-medium text-zinc-900 dark:text-zinc-100'>
+                      {hipLength.toFixed(2)} LF
+                    </span>
+                    {onJumpToEvidence && (
+                      <button
+                        onClick={() => onJumpToEvidence('page 2', 'report')}
+                        className='text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                      >
+                        <ExternalLink className='h-3 w-3' />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Total with comparison */}
+              <div className='pt-2 border-t border-zinc-200 dark:border-zinc-700'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <span className='text-sm text-zinc-600 dark:text-zinc-400'>
+                      Total Required:
+                    </span>
+                    <span className='ml-2 font-semibold text-zinc-900 dark:text-zinc-100'>
+                      {requiredQty}
+                    </span>
+                  </div>
+                  {quantityMatch ? (
+                    <div className='flex items-center gap-1 text-green-600 dark:text-green-400'>
+                      <CheckCircle className='h-4 w-4' />
+                      <span className='text-xs font-medium'>
+                        Quantity matches
+                      </span>
+                    </div>
+                  ) : (
+                    <div className='flex items-center gap-1 text-amber-600 dark:text-amber-400'>
+                      <AlertTriangle className='h-4 w-4' />
+                      <span className='text-xs font-medium'>
+                        Shortage: {variance}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

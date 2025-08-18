@@ -322,6 +322,23 @@ export default function JobDetailPage() {
           if (data.success && data.uiData) {
             setAnalysisResults(data.uiData);
             console.log('✅ Loaded existing analysis results:', data.uiData);
+
+            // Convert uiData to rule analysis format for display
+            const rules: RuleAnalysisResult[] = [];
+
+            if (data.uiData.ridgeCap) {
+              rules.push({
+                ...data.uiData.ridgeCap,
+                ruleName: 'ridge_cap',
+              });
+            }
+
+            // Add other rules as they become available
+            // if (data.uiData.starterStrip) rules.push(data.uiData.starterStrip);
+            // if (data.uiData.dripEdge) rules.push(data.uiData.dripEdge);
+            // if (data.uiData.iceAndWater) rules.push(data.uiData.iceAndWater);
+
+            setRuleAnalysis(rules);
           }
         }
       } catch (error) {
@@ -479,14 +496,17 @@ export default function JobDetailPage() {
         // Use real analysis results or show processing state
         let ridgeCapData: RidgeCapData;
 
-        if (analysisResults?.ridgeCap || rule.currentSpecification) {
+        if (rule.currentSpecification || analysisResults?.ridgeCap) {
           // Analysis complete: use real data from rule analysis
           // Map the rule analysis data to our enhanced RidgeCapData structure
+          const description = rule.currentSpecification?.description || '';
+          const reasoning = rule.reasoning || '';
+
+          // Detect roof type from description or reasoning
           const isLaminate =
-            rule.currentSpecification?.description
-              ?.toLowerCase()
-              .includes('laminate') ||
-            rule.reasoning?.toLowerCase().includes('laminate');
+            description.toLowerCase().includes('laminate') ||
+            reasoning.toLowerCase().includes('laminate') ||
+            !description.toLowerCase().includes('3-tab');
           const isCutFrom3Tab =
             rule.currentSpecification?.description
               ?.toLowerCase()
@@ -513,8 +533,19 @@ export default function JobDetailPage() {
             estimateUnitPrice: rule.currentSpecification?.rate || '$0.00',
             estimateTotal: rule.currentSpecification?.total || '$0.00',
             requiredQuantity: rule.requiredQuantity || '0 LF',
-            ridgeLength: parseFloat(rule.requiredQuantity || '0') * 0.4 || 0, // Estimate ridge as 40% of total
-            hipLength: parseFloat(rule.requiredQuantity || '0') * 0.6 || 0, // Estimate hip as 60% of total
+            // Extract ridge and hip from reasoning if available
+            ridgeLength: (() => {
+              const match = reasoning.match(/Ridges\s*\(([\d.]+)\s*LF\)/i);
+              return match
+                ? parseFloat(match[1])
+                : parseFloat(rule.requiredQuantity || '0') * 0.94;
+            })(),
+            hipLength: (() => {
+              const match = reasoning.match(/Hips\s*\(([\d.]+)\s*LF\)/i);
+              return match
+                ? parseFloat(match[1])
+                : parseFloat(rule.requiredQuantity || '0') * 0.06;
+            })(),
             variance: rule.variance || '0 LF',
             varianceAmount: parseFloat(rule.variance || '0'),
             costImpact: rule.costImpact || 0,
@@ -585,6 +616,20 @@ export default function JobDetailPage() {
             ruleNumber={1}
             totalRules={4}
             ridgeCapData={ridgeCapData}
+            onJumpToEvidence={(location, type) => {
+              const match = String(location || '').match(/page[-\s]?(\d+)/i);
+              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              // Jump to evidence in document viewer
+              const payload = {
+                docType: type,
+                page,
+                rule: rule.ruleName,
+                location,
+              } as const;
+              viewerRef.current?.jumpToEvidence(payload);
+              // Fire a microtask after a tick to reinforce when switching tabs
+              setTimeout(() => viewerRef.current?.jumpToEvidence(payload), 0);
+            }}
           />
         );
       case 'starter_strip':
