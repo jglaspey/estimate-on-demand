@@ -480,14 +480,29 @@ export const EnhancedDocumentViewer = forwardRef<
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [scrollContainer, viewMode]);
 
-  // After a jumpToEvidence, scroll to the injected mark in the extracted view
+  // After a jumpToEvidence, scroll to the injected mark (or at least the target page)
   useEffect(() => {
     if (!pendingTarget || !scrollContainer || viewMode !== 'extracted') return;
     const id = requestAnimationFrame(() => {
-      const el = scrollContainer.querySelector(
-        '#evidence-target'
-      ) as HTMLElement | null;
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Double RAF to ensure tab switch + markdown render completed
+      const id2 = requestAnimationFrame(() => {
+        const root = scrollContainer;
+        const mark = root.querySelector(
+          '#evidence-target'
+        ) as HTMLElement | null;
+        if (mark) {
+          mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        const pageEl = root.querySelector(
+          `[data-page-number="${pendingTarget.page}"]`
+        ) as HTMLElement | null;
+        if (pageEl)
+          pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      (window as any).__eod_jump_raf2 &&
+        cancelAnimationFrame((window as any).__eod_jump_raf2);
+      (window as any).__eod_jump_raf2 = id2;
     });
     return () => cancelAnimationFrame(id);
   }, [pendingTarget, scrollContainer, viewMode, activeTab, currentPage]);
