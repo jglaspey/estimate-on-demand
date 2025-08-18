@@ -59,13 +59,26 @@ export function DripEdgeGutterApronCard({
   const a: any = ruleAnalysis || {};
   const dripEdgePresent: boolean = Boolean(a.dripEdgePresent);
   const gutterApronPresent: boolean = Boolean(a.gutterApronPresent);
-  const dripEdgeQty: string = a.dripEdgeQuantity || '0 LF';
-  const dripEdgePrice: string = a.dripEdgeUnitPrice || '$0.00';
-  const dripEdgeTotal: string = a.dripEdgeTotal || '$0.00';
-  const requiredRakeLength: string = a.requiredRakeLength || '-';
-  const requiredEaveLength: string = a.requiredEaveLength || '-';
-  const gutterApronPrice: string = a.gutterApronUnitPrice || '$3.15';
-  const additionalCost = ruleAnalysis.costImpact || 0;
+  const display = (v?: string | number | null) =>
+    v === undefined || v === null || v === '' ? '---' : String(v);
+  const dripEdgeQty: string = dripEdgePresent
+    ? display(a.dripEdgeQuantity)
+    : '---';
+  const dripEdgePrice: string = dripEdgePresent
+    ? display(a.dripEdgeUnitPrice)
+    : '---';
+  const dripEdgeTotal: string = dripEdgePresent
+    ? display(a.dripEdgeTotal)
+    : '---';
+  const requiredRakeLength: string = display(a.requiredRakeLength);
+  const requiredEaveLength: string = display(a.requiredEaveLength);
+  const gutterApronPrice: string = gutterApronPresent
+    ? display(a.gutterApronUnitPrice)
+    : display(a.gutterApronUnitPrice); // show provided price if backend supplies it, else '---'
+  const additionalCostValue =
+    typeof ruleAnalysis.costImpact === 'number' && ruleAnalysis.costImpact > 0
+      ? ruleAnalysis.costImpact
+      : undefined;
   const complianceStatus: string | undefined = a.complianceStatus; // e.g., 'partial'
 
   const standardJustification =
@@ -188,7 +201,9 @@ export function DripEdgeGutterApronCard({
                     Recommended: Add Gutter Apron
                   </span>
                   <span className='text-lg font-bold text-blue-600 dark:text-blue-400'>
-                    +${additionalCost.toFixed(2)}
+                    {additionalCostValue
+                      ? `+$${additionalCostValue.toFixed(2)}`
+                      : '---'}
                   </span>
                 </div>
                 <div className='text-xs text-blue-700 dark:text-blue-300 mt-1'>
@@ -255,11 +270,12 @@ export function DripEdgeGutterApronCard({
                     {ruleAnalysis.userNotes}
                   </p>
                 )}
-                {ruleAnalysis.userDecision === 'accepted' && (
-                  <p className='text-sm text-green-700 dark:text-green-300 mt-1'>
-                    Added +${additionalCost.toFixed(2)} to supplement
-                  </p>
-                )}
+                {ruleAnalysis.userDecision === 'accepted' &&
+                  additionalCostValue !== undefined && (
+                    <p className='text-sm text-green-700 dark:text-green-300 mt-1'>
+                      Added +${additionalCostValue.toFixed(2)} to supplement
+                    </p>
+                  )}
               </div>
             </div>
           </div>

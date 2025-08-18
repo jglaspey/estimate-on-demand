@@ -95,22 +95,31 @@ export function RidgeCapAnalysis({
     }
   };
 
-  // Calculate values with clean fallbacks
-  const estimateQty = ridgeCapData?.estimateQuantity || '93.32 LF';
-  const requiredQty = ridgeCapData?.requiredQuantity || '93.32 LF';
-  const variance = ridgeCapData?.variance || '0.00 LF';
-  const costImpact = ridgeCapData?.costImpact || 113.0;
-  const ridgeLength = ridgeCapData?.ridgeLength || 37.77;
-  const hipLength = ridgeCapData?.hipLength || 55.55;
-  const unitPrice = ridgeCapData?.estimateUnitPrice || '$1.21';
+  // Calculate values with clean fallbacks (no mock numbers)
+  const display = (v?: string | number | null, fallback: string = '---') =>
+    v === undefined || v === null || v === ''
+      ? fallback
+      : typeof v === 'number'
+        ? String(v)
+        : v;
+  const estimateQty = display(ridgeCapData?.estimateQuantity);
+  const requiredQty = display(ridgeCapData?.requiredQuantity);
+  const variance = display(ridgeCapData?.variance);
+  const costImpact =
+    typeof ridgeCapData?.costImpact === 'number'
+      ? ridgeCapData!.costImpact
+      : undefined;
+  const ridgeLength =
+    typeof ridgeCapData?.ridgeLength === 'number'
+      ? ridgeCapData!.ridgeLength
+      : 0;
+  const hipLength =
+    typeof ridgeCapData?.hipLength === 'number' ? ridgeCapData!.hipLength : 0;
+  const unitPrice = display(ridgeCapData?.estimateUnitPrice);
   const isCompliant = ridgeCapData?.complianceStatus === 'compliant';
-  const lineItemCode = ridgeCapData?.lineItemCode || 'RFG HRSD';
-  const lineItemDescription =
-    ridgeCapData?.lineItemDescription ||
-    'Hip/Ridge cap - cut from 3 tab - composition shingles';
-  const documentationNote =
-    ridgeCapData?.documentationNote ||
-    'Cut-up 3-tab shingles used as hip & ridge caps are not independently tested or rated for wind resistance under ASTM D3161 or ASTM D7158, and therefore have no assignable wind rating when used in those applications.';
+  const lineItemCode = display(ridgeCapData?.lineItemCode);
+  const lineItemDescription = display(ridgeCapData?.lineItemDescription);
+  const documentationNote = display(ridgeCapData?.documentationNote);
 
   // Enhanced display values
   const roofShingleType = ridgeCapData?.roofShingleType || 'laminate';
@@ -164,7 +173,7 @@ export function RidgeCapAnalysis({
                   </div>
                   <div className='text-xs text-zinc-600 dark:text-zinc-400 mt-1'>
                     • {estimateQty} @ {unitPrice} ={' '}
-                    {ridgeCapData?.estimateTotal || '$1,147.66'}
+                    {display(ridgeCapData?.estimateTotal)}
                   </div>
                 </div>
                 {onJumpToEvidence ? (
@@ -208,7 +217,7 @@ export function RidgeCapAnalysis({
                   </span>
                   <div className='flex items-center gap-2'>
                     <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                      {ridgeLength.toFixed(2)} LF
+                      {ridgeLength ? `${ridgeLength.toFixed(2)} LF` : '---'}
                     </span>
                     {onJumpToEvidence && (
                       <button
@@ -233,7 +242,7 @@ export function RidgeCapAnalysis({
                   </span>
                   <div className='flex items-center gap-2'>
                     <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                      {hipLength.toFixed(2)} LF
+                      {hipLength ? `${hipLength.toFixed(2)} LF` : '---'}
                     </span>
                     {onJumpToEvidence && (
                       <button
@@ -335,7 +344,9 @@ export function RidgeCapAnalysis({
                   • {requiredQty}
                 </div>
                 <div className='text-lg font-bold text-blue-600 dark:text-blue-400'>
-                  Supplement: +${costImpact.toFixed(2)}
+                  {costImpact !== undefined
+                    ? `Supplement: +$${costImpact.toFixed(2)}`
+                    : 'Supplement: ---'}
                 </div>
               </div>
             </div>
@@ -417,11 +428,12 @@ export function RidgeCapAnalysis({
                       {ridgeCapData.userNotes}
                     </p>
                   )}
-                  {ridgeCapData.userDecision === 'accepted' && (
-                    <p className='text-sm text-indigo-700 dark:text-indigo-300 mt-1'>
-                      Added +${costImpact.toFixed(2)} to supplement
-                    </p>
-                  )}
+                  {ridgeCapData.userDecision === 'accepted' &&
+                    costImpact !== undefined && (
+                      <p className='text-sm text-indigo-700 dark:text-indigo-300 mt-1'>
+                        Added +${costImpact.toFixed(2)} to supplement
+                      </p>
+                    )}
                 </div>
               </div>
             </div>

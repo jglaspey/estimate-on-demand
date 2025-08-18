@@ -438,20 +438,30 @@ export default function JobDetailPage() {
               if (postRes.ok) {
                 const fresh = await postRes.json();
                 const ui = fresh?.uiData || {};
+                const keyToRule: Record<string, string> = {
+                  ridgeCap: 'ridge_cap',
+                  dripEdge: 'drip_edge',
+                  starterStrip: 'starter_strip',
+                  iceAndWater: 'ice_water_barrier',
+                };
+
+                // Build in stable UI order based on availableRules
+                const orderedKeys = [
+                  'ridgeCap',
+                  'dripEdge',
+                  'starterStrip',
+                  'iceAndWater',
+                ];
                 const freshRules: RuleAnalysisResult[] = [];
-                if (ui.ridgeCap) {
-                  freshRules.push({ ...ui.ridgeCap, ruleName: 'ridge_cap' });
-                }
-                if (ui.dripEdge) {
-                  freshRules.push({ ...ui.dripEdge, ruleName: 'drip_edge' });
-                }
-                if (ui.iceAndWater) {
-                  freshRules.push({
-                    ...ui.iceAndWater,
-                    ruleName: 'ice_water_barrier',
-                  });
-                }
-                // Overwrite with fresh results so UI reflects latest analysis
+                orderedKeys.forEach(k => {
+                  if ((ui as any)[k]) {
+                    freshRules.push({
+                      ...(ui as any)[k],
+                      ruleName: keyToRule[k],
+                    } as any);
+                  }
+                });
+
                 if (freshRules.length > 0) {
                   setRuleAnalysis(freshRules);
                   setAnalysisResults(ui);

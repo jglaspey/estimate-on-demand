@@ -284,7 +284,7 @@ export async function GET(
     // Map drip edge analysis
     let dripEdgeUiData = null;
     const dripEdgeAnalysis = job.ruleAnalyses.find(
-      a => a.ruleType === 'DRIP_EDGE' || a.ruleType === 'DRIP_EDGE_GUTTER_APRON'
+      a => a.ruleType === 'DRIP_EDGE'
     );
 
     if (dripEdgeAnalysis) {
