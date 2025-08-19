@@ -135,8 +135,8 @@ export default function RealDashboardPage() {
   }, []);
 
   const handleJobSelect = (jobId: string) => {
-    // Navigate to new job detail page with split-pane layout
-    router.push(`/job-detail/${jobId}`);
+    // Navigate to job overview
+    router.push(`/job/${jobId}`);
   };
 
   const handleNewJob = () => {

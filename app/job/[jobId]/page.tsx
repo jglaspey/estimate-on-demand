@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { OverviewPage } from '@/components/OverviewPage';
+import { getAvailableRules } from '@/lib/rules/rule-config';
 import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/types';
 
 interface Job {
@@ -54,7 +55,7 @@ function transformJobData(job: Job): JobData {
     totalEstimateValue: generateEstimateValue(),
     status: transformStatus(job.status),
     createdAt: job.uploadedAt,
-    updatedAt: job.processedAt || job.uploadedAt
+    updatedAt: job.processedAt || job.uploadedAt,
   };
 }
 
@@ -75,7 +76,7 @@ function extractAddress(fileName: string): string {
     '123 Main Street, Dallas, TX 75201',
     '456 Oak Avenue, Houston, TX 77002',
     '789 Pine Drive, Austin, TX 73301',
-    '321 Elm Street, San Antonio, TX 78201'
+    '321 Elm Street, San Antonio, TX 78201',
   ];
   return addresses[Math.floor(Math.random() * addresses.length)];
 }
@@ -87,14 +88,17 @@ function extractCarrier(fileName: string): string {
 }
 
 function generateClaimNumber(jobId: string): string {
-  return jobId.slice(-10).toUpperCase().replace(/[^A-Z0-9]/g, '0');
+  return jobId
+    .slice(-10)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '0');
 }
 
 function generateDateOfLoss(uploadedAt: string): string {
   // Generate date 30-60 days before upload
   const upload = new Date(uploadedAt);
   const daysBack = 30 + Math.floor(Math.random() * 30);
-  const lossDate = new Date(upload.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+  const lossDate = new Date(upload.getTime() - daysBack * 24 * 60 * 60 * 1000);
   return lossDate.toISOString().split('T')[0];
 }
 
@@ -103,12 +107,23 @@ function generateAdjusterId(): string {
 }
 
 function generateAdjusterName(): string {
-  const names = ['Sarah Thompson', 'Mike Rodriguez', 'Jennifer Chen', 'David Wilson'];
+  const names = [
+    'Sarah Thompson',
+    'Mike Rodriguez',
+    'Jennifer Chen',
+    'David Wilson',
+  ];
   return names[Math.floor(Math.random() * names.length)];
 }
 
 function generatePolicyNumber(jobId: string): string {
-  return 'POL-' + jobId.slice(-9).toUpperCase().replace(/[^A-Z0-9]/g, '0');
+  return (
+    'POL-' +
+    jobId
+      .slice(-9)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '0')
+  );
 }
 
 function generateEstimateValue(): number {
@@ -117,11 +132,11 @@ function generateEstimateValue(): number {
 
 function transformStatus(dbStatus: string): JobData['status'] {
   const statusMap: { [key: string]: JobData['status'] } = {
-    'UPLOADED': 'uploading',
-    'EXTRACTING': 'extracting', 
-    'ANALYZING': 'analyzing',
-    'COMPLETED': 'complete',
-    'FAILED': 'reviewing'
+    UPLOADED: 'uploading',
+    EXTRACTING: 'extracting',
+    ANALYZING: 'analyzing',
+    COMPLETED: 'complete',
+    FAILED: 'reviewing',
   };
   return statusMap[dbStatus] || 'reviewing';
 }
@@ -131,7 +146,9 @@ function generateRoofMeasurements(): RoofMeasurements {
   return {
     totalArea: Math.floor(Math.random() * 2000 + 1500),
     totalSquares: Math.floor(Math.random() * 20 + 15),
-    pitch: ['4/12', '5/12', '6/12', '7/12', '8/12'][Math.floor(Math.random() * 5)],
+    pitch: ['4/12', '5/12', '6/12', '7/12', '8/12'][
+      Math.floor(Math.random() * 5)
+    ],
     stories: Math.floor(Math.random() * 2 + 1),
     eavesLength: Math.floor(Math.random() * 100 + 150),
     rakesLength: Math.floor(Math.random() * 50 + 100),
@@ -150,39 +167,55 @@ function generateRoofMeasurements(): RoofMeasurements {
     totalEaves: Math.floor(Math.random() * 100 + 150),
     totalRakes: Math.floor(Math.random() * 50 + 100),
     totalRidges: Math.floor(Math.random() * 40 + 20),
-    totalValleys: Math.floor(Math.random() * 30 + 10)
+    totalValleys: Math.floor(Math.random() * 30 + 10),
   };
 }
 
 // Generate mock rule analysis - in real app this would be from database
 function generateRuleAnalysis(): RuleAnalysisResult[] {
-  const rules = ['ridge_cap', 'starter_strip', 'drip_edge', 'ice_water_barrier'];
-  const statuses: RuleAnalysisResult['status'][] = ['COMPLIANT', 'SUPPLEMENT_NEEDED', 'INSUFFICIENT_DATA'];
-  
+  const rules = [
+    'ridge_cap',
+    'starter_strip',
+    'drip_edge',
+    'ice_water_barrier',
+  ];
+  const statuses: RuleAnalysisResult['status'][] = [
+    'COMPLIANT',
+    'SUPPLEMENT_NEEDED',
+    'INSUFFICIENT_DATA',
+  ];
+
   return rules.map(rule => ({
     ruleName: rule,
     status: statuses[Math.floor(Math.random() * statuses.length)],
     confidence: Math.random() * 0.3 + 0.7, // 70-100%
     reasoning: generateRuleReasoning(rule),
-    costImpact: Math.random() < 0.5 ? 0 : Math.floor(Math.random() * 800 + 200)
+    costImpact: Math.random() < 0.5 ? 0 : Math.floor(Math.random() * 800 + 200),
   }));
 }
 
 function generateRuleReasoning(rule: string): string {
   const reasonings = {
-    ridge_cap: 'Analysis of ridge cap specifications shows standard profile materials meeting ASTM requirements.',
-    starter_strip: 'Universal starter strip coverage verified along all eave edges with proper adhesive backing.',
-    drip_edge: 'Edge flashing coverage meets IRC requirements for both rake and eave protection.',
-    ice_water_barrier: 'Ice and water barrier coverage calculated based on climate zone and roof pitch requirements.'
+    ridge_cap:
+      'Analysis of ridge cap specifications shows standard profile materials meeting ASTM requirements.',
+    starter_strip:
+      'Universal starter strip coverage verified along all eave edges with proper adhesive backing.',
+    drip_edge:
+      'Edge flashing coverage meets IRC requirements for both rake and eave protection.',
+    ice_water_barrier:
+      'Ice and water barrier coverage calculated based on climate zone and roof pitch requirements.',
   };
-  return reasonings[rule as keyof typeof reasonings] || 'Business rule analysis completed.';
+  return (
+    reasonings[rule as keyof typeof reasonings] ||
+    'Business rule analysis completed.'
+  );
 }
 
 export default function JobPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = params.jobId as string;
-  
+
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,7 +223,7 @@ export default function JobPage() {
   useEffect(() => {
     async function fetchJob() {
       if (!jobId) return;
-      
+
       try {
         const response = await fetch(`/api/jobs/${jobId}`);
         if (!response.ok) {
@@ -214,23 +247,28 @@ export default function JobPage() {
   };
 
   const handleStartReview = () => {
-    console.log('Starting business rule review...');
-    // In real app, this would navigate to detailed analysis
-    router.push(`/analysis/${jobId}`);
+    const firstRule = getAvailableRules()[0];
+    if (firstRule) {
+      router.push(`/job/${jobId}/${firstRule.slug}`);
+      return;
+    }
+    router.push(`/job/${jobId}/hip-ridge-cap`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-lg text-zinc-600">Loading job details...</div>
+      <div className='min-h-screen bg-zinc-50 flex items-center justify-center'>
+        <div className='text-lg text-zinc-600'>Loading job details...</div>
       </div>
     );
   }
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="text-lg text-red-600">Error: {error || 'Job not found'}</div>
+      <div className='min-h-screen bg-zinc-50 flex items-center justify-center'>
+        <div className='text-lg text-red-600'>
+          Error: {error || 'Job not found'}
+        </div>
       </div>
     );
   }

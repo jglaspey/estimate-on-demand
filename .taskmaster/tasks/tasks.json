@@ -62,7 +62,7 @@
         "id": 2,
         "title": "Document Upload Interface Implementation",
         "description": "Create a drag-and-drop file upload interface with visual feedback, document previews, and validation as specified in US-001 through US-005.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           1,
           "11"
@@ -188,7 +188,7 @@
         "id": 3,
         "title": "Database Schema and API Routes",
         "description": "Validate workflow assumptions using an iterative, discovery-driven approach to database schema design based on actual data patterns from real documents.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           1
         ],
@@ -253,7 +253,7 @@
             "id": 6,
             "title": "Business Rule Validation",
             "description": "Validate that extracted data supports all 4 business rules and identify any gaps or modifications needed.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               5
             ],
@@ -264,7 +264,7 @@
             "id": 7,
             "title": "Prototype API Implementation",
             "description": "Create prototype API routes for testing the extraction pipeline and data storage with minimal authentication.",
-            "status": "in-progress",
+            "status": "done",
             "dependencies": [
               4
             ],
@@ -284,7 +284,7 @@
             "id": 9,
             "title": "Schema Evolution Documentation",
             "description": "Document the schema evolution process and create a roadmap for transitioning to the final production schema.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               6
             ],
@@ -295,7 +295,7 @@
             "id": 10,
             "title": "Extraction Pipeline Refinement",
             "description": "Refine the extraction pipeline based on testing results to improve accuracy and reliability.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               5,
               6
@@ -1784,11 +1784,25 @@
         ],
         "priority": "low",
         "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Security Hardening for File Storage and Database Access",
+        "description": "Implement comprehensive security measures for file storage and database access, including access controls, encryption, API protection, and tenant isolation to safeguard sensitive insurance documents and PII.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          21
+        ],
+        "priority": "high",
+        "details": "1. File Storage Security:\n   - Implement S3/R2 cloud storage integration to replace local file storage\n   - Configure bucket policies with least privilege access controls\n   - Set up server-side encryption at rest (AES-256)\n   - Implement signed URLs with short expiration for temporary file access\n   - Create file access middleware to verify user/organization permissions\n   - Integrate virus/malware scanning for all uploaded files using ClamAV or cloud service\n   - Implement organized file structure by job/document type (replacing current timestamp naming)\n   - Create file metadata tracking system for enhanced security and auditing\n   - Implement file retention policies with automated enforcement\n   - Add file versioning for complete audit trail\n   - Consider Railway volumes as an alternative cloud storage option\n\n2. Database Security:\n   - Implement Row-Level Security (RLS) policies in PostgreSQL\n   - Create organization/tenant isolation through database schemas or tenant_id columns\n   - Set up database connection pooling with encrypted connections\n   - Implement database query parameterization to prevent SQL injection\n   - Create data access layer with permission checks before query execution\n   - Configure field-level encryption for PII fields (SSN, DOB, etc.)\n\n3. API Route Protection:\n   - Implement JWT validation middleware for all protected routes\n   - Set up role-based access control (RBAC) for API endpoints\n   - Create rate limiting using Redis to prevent abuse (max 100 req/min per IP)\n   - Configure proper CORS settings to restrict cross-origin requests\n   - Implement security headers (CSP, HSTS, X-Content-Type-Options, etc.)\n   - Add request logging and audit trails for sensitive operations\n   - Develop secure file retrieval API with authentication and authorization checks\n\n4. Input Validation & Sanitization:\n   - Implement server-side validation beyond basic type checking\n   - Add content sanitization for all user inputs to prevent XSS\n   - Create file type validation with content inspection (not just extension)\n   - Implement maximum file size limits and chunked upload for large files\n   - Add JSON schema validation for all API request payloads\n\n5. Compliance & Best Practices:\n   - Implement audit logging for all security-relevant events\n   - Create secure document retention and deletion policies\n   - Set up automated security scanning in CI/CD pipeline\n   - Document security controls for compliance with insurance regulations\n   - Implement proper error handling that doesn't leak sensitive information\n   - Create security incident response procedures\n\n6. Integration with Authentication:\n   - Design security components to integrate with future auth system\n   - Create placeholder hooks for user/role information\n   - Implement temporary security measures until auth system is complete\n   - Document integration points for future auth system",
+        "testStrategy": "1. File Storage Security Testing:\n   - Verify S3/R2 integration with mock storage tests\n   - Test file access controls with different user permissions\n   - Validate encryption at rest is properly configured\n   - Verify signed URLs expire correctly and prevent unauthorized access\n   - Test virus scanning with EICAR test files\n   - Validate file access logs capture all relevant metadata\n   - Test organized file structure implementation with various document types\n   - Verify file metadata tracking system captures all required information\n   - Test file retention policies with time-based scenarios\n   - Validate file versioning maintains proper audit trail\n\n2. Database Security Testing:\n   - Test RLS policies with different user contexts\n   - Verify tenant isolation prevents cross-tenant data access\n   - Validate field-level encryption for PII data\n   - Test database connection security with network scanning tools\n   - Perform SQL injection testing against all database queries\n   - Verify query performance with security measures enabled\n\n3. API Security Testing:\n   - Test JWT validation with valid, invalid, and expired tokens\n   - Verify RBAC correctly limits access based on user roles\n   - Test rate limiting by exceeding thresholds\n   - Validate CORS configuration blocks unauthorized origins\n   - Verify security headers using tools like Mozilla Observatory\n   - Test API routes without authentication to confirm proper protection\n   - Test secure file retrieval API with various authentication scenarios\n\n4. Penetration Testing:\n   - Conduct automated security scanning with OWASP ZAP\n   - Perform manual penetration testing of critical endpoints\n   - Test file upload security with malicious file types\n   - Attempt privilege escalation between different user roles\n   - Test for common OWASP Top 10 vulnerabilities\n   - Validate secure handling of error conditions\n\n5. Compliance Testing:\n   - Verify audit logs capture all required information\n   - Test document retention policies with time-based scenarios\n   - Validate PII handling complies with relevant regulations\n   - Verify secure deletion of sensitive information\n   - Test security incident response procedures with simulated incidents\n\n6. Integration Testing:\n   - Verify security components work with mocked auth system\n   - Test transition from temporary to permanent security measures\n   - Validate all integration points are properly documented",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-15T20:00:13.699Z",
+      "updated": "2025-08-19T17:52:29.600Z",
       "description": "Tasks for master context"
     }
   }

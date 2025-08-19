@@ -78,8 +78,8 @@ export default function Upload() {
         throw new Error(result.error || 'Upload failed');
       }
 
-      // Redirect to the job detail page (overview)
-      router.push(`/job-detail/${result.jobId}`);
+      // Redirect to the job overview
+      router.push(`/job/${result.jobId}`);
     } catch (error) {
       console.error('Upload error:', error);
       setUploadError(error instanceof Error ? error.message : 'Upload failed');
@@ -207,7 +207,7 @@ export default function Upload() {
           >
             {isUploading ? 'Uploading...' : 'Start Analysis'}
           </Button>
-          <Button variant="outline" disabled={isUploading}>
+          <Button variant='outline' disabled={isUploading}>
             Save as Draft
           </Button>
         </div>

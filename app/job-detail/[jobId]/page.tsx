@@ -13,6 +13,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getAvailableRules } from '@/lib/rules/rule-config';
 // import { HipRidgeCapCard } from '@/components/rules/HipRidgeCapCard'; // Unused - using RidgeCapAnalysis instead
 import { StarterStripCard } from '@/components/rules/StarterStripCard';
 import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
@@ -614,7 +615,13 @@ export default function JobDetailPage() {
   // Rule navigation removed - now showing actual analysis results only
 
   const handleStartReview = () => {
-    setIsReviewMode(true);
+    const firstRule = getAvailableRules()[0];
+    if (firstRule) {
+      router.push(`/job/${jobId}/${firstRule.slug}`);
+      return;
+    }
+    // Fallback: if config is missing, default to ridge cap
+    router.push(`/job/${jobId}/hip-ridge-cap`);
   };
 
   // Rule navigation functions
