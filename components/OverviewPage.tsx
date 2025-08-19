@@ -282,33 +282,49 @@ export function OverviewPage({
                     return titles[ruleName as keyof typeof titles] || ruleName;
                   };
 
-                  const getStatusConfig = (status: string) => {
-                    switch (status) {
-                      case 'COMPLIANT':
-                        return {
-                          icon: CheckCircle,
-                          iconColor: 'text-emerald-600 dark:text-emerald-400',
-                          bgClass:
-                            'hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border-l-4 border-l-emerald-400',
-                        };
-                      case 'SUPPLEMENT_NEEDED':
-                        return {
-                          icon: AlertTriangle,
-                          iconColor: 'text-red-600 dark:text-red-400',
-                          bgClass:
-                            'hover:bg-red-50 dark:hover:bg-red-950/20 border-l-4 border-l-red-400',
-                        };
-                      default:
-                        return {
-                          icon: Clock,
-                          iconColor: 'text-amber-600 dark:text-amber-400',
-                          bgClass:
-                            'hover:bg-amber-50 dark:hover:bg-amber-950/20 border-l-4 border-l-amber-400',
-                        };
+                  const getStatusConfig = (ruleObj: RuleAnalysisResult) => {
+                    const status = ruleObj.status;
+                    const isIceWaterPartial =
+                      ruleObj.ruleName === 'ice_water_barrier' &&
+                      status === 'SUPPLEMENT_NEEDED' &&
+                      Boolean(ruleObj.currentSpecification);
+
+                    if (status === 'COMPLIANT') {
+                      return {
+                        icon: CheckCircle,
+                        iconColor: 'text-emerald-600 dark:text-emerald-400',
+                        bgClass:
+                          'hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border-l-4 border-l-emerald-400',
+                      };
                     }
+
+                    if (isIceWaterPartial) {
+                      return {
+                        icon: AlertTriangle,
+                        iconColor: 'text-amber-600 dark:text-amber-400',
+                        bgClass:
+                          'hover:bg-amber-50 dark:hover:bg-amber-950/20 border-l-4 border-l-amber-400',
+                      };
+                    }
+
+                    if (status === 'SUPPLEMENT_NEEDED') {
+                      return {
+                        icon: AlertTriangle,
+                        iconColor: 'text-red-600 dark:text-red-400',
+                        bgClass:
+                          'hover:bg-red-50 dark:hover:bg-red-950/20 border-l-4 border-l-red-400',
+                      };
+                    }
+
+                    return {
+                      icon: Clock,
+                      iconColor: 'text-amber-600 dark:text-amber-400',
+                      bgClass:
+                        'hover:bg-amber-50 dark:hover:bg-amber-950/20 border-l-4 border-l-amber-400',
+                    };
                   };
 
-                  const statusConfig = getStatusConfig(rule.status);
+                  const statusConfig = getStatusConfig(rule);
                   const StatusIcon = statusConfig.icon;
 
                   const ruleSlug = getRuleSlug(rule.ruleName);
@@ -333,9 +349,18 @@ export function OverviewPage({
                           />
                         </div>
                         <div className='min-w-0 flex-1'>
-                          <h3 className='font-semibold text-zinc-900 dark:text-zinc-100 mb-1'>
-                            {getRuleTitle(rule.ruleName)}
-                          </h3>
+                          <div className='flex items-center gap-2 mb-1'>
+                            <h3 className='font-semibold text-zinc-900 dark:text-zinc-100'>
+                              {getRuleTitle(rule.ruleName)}
+                            </h3>
+                            {rule.ruleName === 'ice_water_barrier' &&
+                              rule.status === 'SUPPLEMENT_NEEDED' &&
+                              Boolean(rule.currentSpecification) && (
+                                <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300'>
+                                  Partial
+                                </Badge>
+                              )}
+                          </div>
                           <p className='text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2'>
                             {rule.reasoning}
                           </p>
