@@ -9,6 +9,8 @@ import {
   Play,
   Shield,
   ExternalLink,
+  FileText,
+  BarChart3,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -72,28 +74,92 @@ export function OverviewPage({
   const stats = getComplianceStats();
   const supplementTotal = getSupplementTotal();
 
+  // Get status badge configuration
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'uploading':
+        return {
+          label: 'Uploading',
+          color:
+            'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800',
+          icon: Clock,
+        };
+      case 'extracting':
+        return {
+          label: 'Extracting Data',
+          color:
+            'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+          icon: FileText,
+        };
+      case 'analyzing':
+        return {
+          label: 'Analyzing',
+          color:
+            'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800',
+          icon: BarChart3,
+        };
+      case 'reviewing':
+        return {
+          label: 'Ready for Review',
+          color:
+            'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800',
+          icon: AlertTriangle,
+        };
+      case 'complete':
+        return {
+          label: 'Complete',
+          color:
+            'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+          icon: CheckCircle,
+        };
+      default:
+        return {
+          label: 'Processing',
+          color:
+            'bg-zinc-50 text-zinc-700 border-zinc-200 dark:bg-zinc-950/50 dark:text-zinc-300 dark:border-zinc-800',
+          icon: Clock,
+        };
+    }
+  };
+
+  // Get button configuration based on status
+  const getButtonConfig = (status: string) => {
+    switch (status) {
+      case 'uploading':
+      case 'extracting':
+      case 'analyzing':
+        return { label: 'Processing...', disabled: true };
+      case 'reviewing':
+        return { label: 'Start Review', disabled: false };
+      case 'complete':
+        return { label: 'View Report', disabled: false };
+      default:
+        return { label: 'Continue Review', disabled: false };
+    }
+  };
+
+  const statusConfig = getStatusConfig(jobData.status);
+  const buttonConfig = getButtonConfig(jobData.status);
+  const StatusIcon = statusConfig.icon;
+
+  // Mock document list - in real app this would come from props or API
+  const documents = [
+    { name: 'Estimate', pages: 11, type: 'estimate' },
+    { name: 'Roof Report', pages: 12, type: 'roof_report' },
+  ];
+
   return (
     <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 pb-32 bg-zinc-50 dark:bg-zinc-950'>
       {/* Consolidated Header Section */}
       <div className='mb-8'>
-        <div className='flex items-start justify-between mb-6'>
-          <div>
-            <h1 className='text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2'>
-              {jobData.customerName}
-            </h1>
-            <div className='flex items-center gap-2 text-zinc-500 dark:text-zinc-400'>
-              <MapPin className='h-4 w-4' />
-              <span>{jobData.propertyAddress}</span>
-            </div>
+        <div className='mb-6'>
+          <h1 className='text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-2'>
+            {jobData.customerName}
+          </h1>
+          <div className='flex items-center gap-2 text-zinc-500 dark:text-zinc-400'>
+            <MapPin className='h-4 w-4' />
+            <span>{jobData.propertyAddress}</span>
           </div>
-
-          <Button
-            onClick={onStartReview}
-            className='h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700'
-          >
-            <Play className='mr-2 h-5 w-5' />
-            Start Review
-          </Button>
         </div>
 
         {/* Single consolidated insurance & claim info section */}
@@ -205,15 +271,47 @@ export function OverviewPage({
 
           {/* Analysis Status */}
           <div className='rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900'>
-            <div className='flex items-center gap-3 mb-4'>
-              <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30'>
-                <Shield className='h-5 w-5 text-emerald-600 dark:text-emerald-400' />
+            <div className='flex items-center justify-between mb-4'>
+              <div className='flex items-center gap-3'>
+                <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30'>
+                  <Shield className='h-5 w-5 text-emerald-600 dark:text-emerald-400' />
+                </div>
+                <h3 className='font-semibold text-zinc-900 dark:text-zinc-100'>
+                  Analysis Status
+                </h3>
               </div>
-              <h3 className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                Analysis Status
-              </h3>
+              <Badge className={statusConfig.color}>
+                <StatusIcon className='w-3 h-3 mr-1.5' />
+                {statusConfig.label}
+              </Badge>
             </div>
-            <div className='space-y-3 text-sm'>
+
+            {/* Document List */}
+            <div className='mb-4 pb-4 border-b border-zinc-200 dark:border-zinc-700'>
+              <h4 className='text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2'>
+                📄 Document Evidence
+              </h4>
+              <div className='space-y-2'>
+                {documents.map((doc, index) => (
+                  <div
+                    key={index}
+                    className='flex items-center justify-between text-sm'
+                  >
+                    <div className='flex items-center gap-2'>
+                      <FileText className='h-4 w-4 text-zinc-400' />
+                      <span className='text-zinc-700 dark:text-zinc-300'>
+                        {doc.name}
+                      </span>
+                    </div>
+                    <span className='text-zinc-500 dark:text-zinc-400'>
+                      {doc.pages} pages
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className='space-y-3 text-sm mb-4'>
               <div className='flex justify-between'>
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Issues Found:
@@ -230,16 +328,17 @@ export function OverviewPage({
                   {stats.compliant}
                 </span>
               </div>
-              <div className='flex justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700'>
-                <span className='text-zinc-500 dark:text-zinc-400'>
-                  Status:
-                </span>
-                <Badge className='bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'>
-                  <CheckCircle className='w-3 h-3 mr-1.5' />
-                  Complete
-                </Badge>
-              </div>
             </div>
+
+            {/* Action Button */}
+            <Button
+              onClick={onStartReview}
+              disabled={buttonConfig.disabled}
+              className='w-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              <Play className='mr-2 h-4 w-4' />
+              {buttonConfig.label}
+            </Button>
           </div>
         </div>
       </div>
@@ -259,13 +358,7 @@ export function OverviewPage({
                     Review supplement recommendations and compliance issues
                   </p>
                 </div>
-                <Button
-                  onClick={onStartReview}
-                  className='bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700'
-                >
-                  <Play className='mr-2 h-4 w-4' />
-                  Start Review
-                </Button>
+                {/* Start Review button moved to Analysis Status card */}
               </div>
             </div>
 

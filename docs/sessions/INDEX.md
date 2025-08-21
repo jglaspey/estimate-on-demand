@@ -44,7 +44,18 @@ Implemented comprehensive ice & water barrier analysis rule following IRC R905.1
 **Type:** UI/UX  
 **Focus:** Ice & Water Barrier card layout and data mapping  
 
-Refining the Ice & Water Barrier analysis UI using the Drip Edge card’s status pill and summary pattern and Ridge Cap’s tabular presentation. Plan removes all mocked values, binds to analyzer `calculationDetails`, adds a collapsible step-by-step math panel, copyable carrier note, and evidence links into the document viewer. Introduces clear states: Compliant, Partial, Supplement Needed, and Insufficient Data.
+Refining the Ice & Water Barrier analysis UI using the Drip Edge card's status pill and summary pattern and Ridge Cap's tabular presentation. Plan removes all mocked values, binds to analyzer `calculationDetails`, adds a collapsible step-by-step math panel, copyable carrier note, and evidence links into the document viewer. Introduces clear states: Compliant, Partial, Supplement Needed, and Insufficient Data.
+
+### 08.20 - Route Migration & Analysis Status Enhancement
+**File:** [08.20-ice-water-barrier-refinement.md](./08.20-ice-water-barrier-refinement.md)  
+**Type:** Feature Development & UI Enhancement  
+**Focus:** URL Structure & Analysis Status Card  
+
+Successfully migrated from `/job-detail/` to `/job/` route for cleaner URLs while preserving perfect UI. Enhanced Analysis Status card with document list, moved status badge to header, and implemented dynamic action button based on job status. Removed duplicate Start Review buttons and added proper status color coding.
+
+**Key Improvements:** Route simplification, document evidence display, dynamic status/button management, live status tracking  
+**Branch:** `main`  
+**Status:** ✅ Complete - Clean URL structure with enhanced status visualization
 
 ---
 
