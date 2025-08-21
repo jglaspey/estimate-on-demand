@@ -68,6 +68,17 @@ Fixed critical "Processing..." button issue that prevented users from starting r
 **Branch:** `main`  
 **Status:** ✅ Complete - Build validated, downloads functional
 
+### 08.21 - Frontend Fixes and Refinements
+**File:** [08.21-frontend-fixes-refinements.md](./08.21-frontend-fixes-refinements.md)  
+**Type:** Feature Development & UI/UX  
+**Focus:** Document Viewer & Type Detection  
+
+Fixed multiple document display issue and enhanced document type detection system. Removed mock data injection, added deduplication, made TabsList dynamic, and implemented intelligent image-based fallback detection for roof reports vs estimates.
+
+**Key Fixes:** Document viewer showing single documents, roof report misidentification, image-based detection fallback  
+**Branch:** `main`  
+**Status:** ✅ Complete - Build validated, all issues resolved
+
 ---
 
 ## Usage

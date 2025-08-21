@@ -590,7 +590,7 @@
         "id": 7,
         "title": "Business Rule Analyzer Implementation",
         "description": "Implement the four business rule analyzers (Ridge Cap, Starter Strip, Drip Edge, Ice & Water Barrier) with logic flows as specified in section 5.",
-        "details": "1. Create base RuleAnalyzer class with common functionality\n2. Implement RidgeCapAnalyzer with specified logic flow\n3. Create StarterStripAnalyzer with coverage calculation\n4. Implement DripEdgeAnalyzer with perimeter calculations\n5. Create IceWaterBarrierAnalyzer with code compliance checks\n6. Implement cost calculation for each rule recommendation\n7. Add confidence scoring for analysis results\n8. Create evidence collection for supporting recommendations\n9. Implement status determination logic\n10. Add user decision tracking and modification support",
+        "details": "1. Create base RuleAnalyzer class with common functionality\n2. Implement RidgeCapAnalyzer with specified logic flow\n3. Create StarterStripAnalyzer with coverage calculation\n4. Implement DripEdgeAnalyzer with perimeter calculations\n5. Create IceWaterBarrierAnalyzer with code compliance checks\n6. Implement cost calculation for each rule recommendation\n7. Add confidence scoring for analysis results\n8. Create evidence collection for supporting recommendations\n9. Implement status determination logic\n10. Add user decision tracking and modification support\n<info added on 2025-08-21T18:00:05.822Z>\n## System-Level Design: Evidence-First Architecture\n\nAll business rule analyzers will adopt an evidence-first architecture where:\n- Analyzers compute only, outputting normalized RuleResult objects with EvidenceRef[] arrays and explanations\n- A RuleRegistry will describe presentation requirements and required evidence types\n- Evidence scope limited to 'estimate' and 'roof_report' documents for the next 6-12 months (photos/notes out-of-scope)\n\nAcceptance criteria:\n- Left panel shows evidence chips with correct page references\n- Right viewer jumps to and highlights text in Extracted view\n- Page-jump fallback when viewing PDF\n- Missing values display as '---'\n\nImplementation deliverables are tracked in subtasks 7.10-7.13:\n- Evidence Locator Service\n- Standardized RuleResult + EvidenceRef schema\n- UI unification with EvidenceStack\n- Ridge Cap retrofit to standard\n</info added on 2025-08-21T18:00:05.822Z>",
         "testStrategy": "1. Test each analyzer with various input scenarios\n2. Verify cost calculations are accurate\n3. Validate evidence collection functionality\n4. Test with edge cases and incomplete data\n5. Verify status determination logic\n6. Test user decision tracking\n7. Validate performance under load",
         "priority": "high",
         "dependencies": [
@@ -615,8 +615,8 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.",
-            "status": "done",
+            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.\n<info added on 2025-08-21T18:00:56.051Z>\nRetrofit RidgeCapAnalyzer to use the standardized evidence system instead of default page-4 behavior. Implement EvidenceRef generation for estimate specifications (code, description, quantity, rate, total) and roof report ridge/hip measurements. Use EvidenceLocator with page number and text matching parameters to ensure reliable document references. \n\nConfigure evidence chips to link directly to the correct document pages with proper highlighting in the Extracted view. Implement normalization of measurements and costs to enable accurate compliance/variance calculations. Display placeholder indicators ('---') when evidence is missing or cannot be located. Ensure all evidence is properly categorized and indexed for consistent retrieval across the system.\n</info added on 2025-08-21T18:00:56.051Z>",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -637,8 +637,8 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement eave and rake edge detection algorithms. Add local building code compliance validation based on property location. Calculate material requirements based on perimeter measurements. Include specialized evidence collection for drip edge recommendations with reference to local code requirements.",
-            "status": "done",
+            "details": "Implement eave and rake edge detection algorithms. Add local building code compliance validation based on property location. Calculate material requirements based on perimeter measurements. Include specialized evidence collection for drip edge recommendations with reference to local code requirements.\n<info added on 2025-08-21T18:01:02.210Z>\nRefactor DripEdgeAnalyzer to emit standardized RuleResult objects containing separate measurements for drip edge linear footage versus rake linear footage, and gutter-apron linear footage versus eave linear footage. Implement EvidenceRef system that links each measurement to its source documentation. Create EvidenceLocator queries that capture both page number and text snippet context. Update UI to display measurement values as interactive chips that enable jump-to-evidence functionality when clicked. Ensure all measurement values are properly backed by evidence references. Implement highlighting functionality that visually indicates the relevant sections in source documents. For cases where measurements cannot be determined, render \"---\" placeholder instead of empty values or zeros.\n</info added on 2025-08-21T18:01:02.210Z>",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -648,8 +648,8 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement climate zone determination based on property location. Add logic for detecting ice damming risk factors. Include code compliance validation for different jurisdictions. Calculate coverage area and material requirements. Implement specialized evidence collection with climate data references.",
-            "status": "done",
+            "details": "Implement climate zone determination based on property location. Add logic for detecting ice damming risk factors. Include code compliance validation for different jurisdictions. Calculate coverage area and material requirements. Implement specialized evidence collection with climate data references.\n<info added on 2025-08-21T18:01:10.409Z>\nRefactor IceWaterBarrierAnalyzer to implement standardized output format with consistent evidence references. Output should include EvidenceRef objects linking to code-required eave/valley coverage documentation and ice & water barrier line item presence/quantity in the estimate. Include exact code citation text matches for compliance verification. Implement data absence handling with \"---\" placeholder when information is unavailable. Ensure UI integration allows users to navigate directly between estimate and roof report pages through interactive chips. Add functionality for extracted text highlighting in source documents to visually validate evidence. Update confidence scoring algorithm to reflect evidence quality and completeness.\n</info added on 2025-08-21T18:01:10.409Z>",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -674,7 +674,7 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.",
+            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.\n<info added on 2025-08-21T18:01:17.015Z>\nAlign evidence collection with the EvidenceLocator component. Implement EvidenceRef data structure to store metadata including document type, page number, text match, extracted value, and confidence score. Add tagging system for evidence categorization (primary, supporting, conflicting). Integrate with the EvidenceLocator to enable bidirectional navigation between rule cards and source documents. Implement plain-English explanation generator that references specific evidence points using natural language templates. Ensure all displayed values on rule cards have corresponding EvidenceRef objects that can be traced back to source documents. Add highlighting functionality that activates when users navigate from a rule card to source evidence. Implement acceptance criteria validation to verify every rule recommendation has proper evidence backing with complete metadata and navigation capabilities.\n</info added on 2025-08-21T18:01:17.015Z>",
             "status": "in-progress",
             "testStrategy": ""
           },
@@ -706,7 +706,50 @@
               "7.2",
               "7.4",
               "7.5",
-              "7.6"
+              "7.6",
+              "7.10,7.11,7.12,7.13"
+            ],
+            "parentTaskId": 7
+          },
+          {
+            "id": 10,
+            "title": "Evidence Locator Service (index, queries, page/text match)",
+            "description": "Build shared EvidenceLocator with page-index, regex/number-unit queries, and API to return EvidenceRef {docType, page, textMatch, value, score}. Scope: estimate + roof_report.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 7
+          },
+          {
+            "id": 11,
+            "title": "Standardized RuleResult + EvidenceRef schema",
+            "description": "Define normalized RuleResult and EvidenceRef types; update analyzers to emit evidence and normalized fields without UI coupling.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [
+              "7.10"
+            ],
+            "parentTaskId": 7
+          },
+          {
+            "id": 12,
+            "title": "UI unification: EvidenceStack + chips + jump-to-evidence highlighting",
+            "description": "Refactor rule cards to render EvidenceStack with clickable chips; make viewer highlight text in Extracted view and page-jump fallback.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [
+              "7.10"
+            ],
+            "parentTaskId": 7
+          },
+          {
+            "id": 13,
+            "title": "Ridge Cap (7.2) retrofit to standard + reanalysis",
+            "description": "Revisit RidgeCapAnalyzer and card to use EvidenceLocator; compute/specify correct evidence pages; remove static page-4 behavior.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [
+              "7.10,7.11,7.12"
             ],
             "parentTaskId": 7
           }
@@ -1866,7 +1909,7 @@
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-20T22:31:54.949Z",
+      "updated": "2025-08-21T17:58:09.114Z",
       "description": "Tasks for master context"
     }
   }

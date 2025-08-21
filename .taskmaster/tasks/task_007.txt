@@ -80,3 +80,27 @@ Implement decision state management (Accept/Edit/Reject). Add justification fiel
 ### Details:
 
 
+## 10. Evidence Locator Service (index, queries, page/text match) [pending]
+### Dependencies: None
+### Description: Build shared EvidenceLocator with page-index, regex/number-unit queries, and API to return EvidenceRef {docType, page, textMatch, value, score}. Scope: estimate + roof_report.
+### Details:
+
+
+## 11. Standardized RuleResult + EvidenceRef schema [pending]
+### Dependencies: None
+### Description: Define normalized RuleResult and EvidenceRef types; update analyzers to emit evidence and normalized fields without UI coupling.
+### Details:
+
+
+## 12. UI unification: EvidenceStack + chips + jump-to-evidence highlighting [pending]
+### Dependencies: None
+### Description: Refactor rule cards to render EvidenceStack with clickable chips; make viewer highlight text in Extracted view and page-jump fallback.
+### Details:
+
+
+## 13. Ridge Cap (7.2) retrofit to standard + reanalysis [pending]
+### Dependencies: None
+### Description: Revisit RidgeCapAnalyzer and card to use EvidenceLocator; compute/specify correct evidence pages; remove static page-4 behavior.
+### Details:
+
+

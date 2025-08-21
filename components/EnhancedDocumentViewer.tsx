@@ -1181,7 +1181,15 @@ export const EnhancedDocumentViewer = forwardRef<
             >
               {/* Document Tabs */}
               <div className='px-6 pb-4'>
-                <TabsList className='grid w-full grid-cols-2 h-12'>
+                <TabsList
+                  className={`grid w-full h-12 ${
+                    documents.length === 1
+                      ? 'grid-cols-1'
+                      : documents.length === 2
+                        ? 'grid-cols-2'
+                        : 'grid-cols-3'
+                  }`}
+                >
                   {documents.map(doc => {
                     const docInfo = getDocumentInfo(doc);
                     const DocIcon = docInfo.icon;

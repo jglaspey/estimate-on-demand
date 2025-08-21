@@ -78,15 +78,83 @@ export async function GET(
                 wordCount: 0,
                 confidence: null as any,
                 dimensions: { width: null as any, height: null as any },
+                images: [],
               },
             ];
+
+      // Improved document type detection
+      const determineFileType = (
+        fileName: string
+      ): 'estimate' | 'roof_report' => {
+        const name = fileName.toLowerCase();
+
+        // Strong roof report indicators
+        const roofIndicators = [
+          'roof',
+          'report',
+          'eagleview',
+          'hover',
+          'measurements',
+          'aerial',
+          'satellite',
+          'diagram',
+          'sketch',
+        ];
+
+        // Strong estimate indicators
+        const estimateIndicators = [
+          'estimate',
+          'xactimate',
+          'symbility',
+          'customer_copy',
+          'final_draft',
+          'quote',
+          'bid',
+        ];
+
+        const hasRoofIndicator = roofIndicators.some(indicator =>
+          name.includes(indicator)
+        );
+        const hasEstimateIndicator = estimateIndicators.some(indicator =>
+          name.includes(indicator)
+        );
+
+        // If both or neither, use additional heuristics
+        if (hasRoofIndicator && !hasEstimateIndicator) return 'roof_report';
+        if (hasEstimateIndicator && !hasRoofIndicator) return 'estimate';
+
+        // Fallback: Use image count heuristic
+        // Roof reports have many images (aerial photos, diagrams, measurements)
+        // Estimates have few images (mostly logos, maybe a few photos)
+        let totalImages = 0;
+        doc.pages.forEach(page => {
+          // Count from imageCount field in raw page data
+          const imageCountField = page.imageCount || 0;
+
+          // Count from extractedContent images (excluding logos)
+          const ec: any = page.extractedContent || {};
+          const pageImages =
+            ec?.assets?.pageImages ||
+            ec?.processing_metadata?.page_images ||
+            [];
+          const validImages = Array.isArray(pageImages)
+            ? pageImages.filter(
+                (img: any) =>
+                  typeof img === 'string' && !img.toLowerCase().includes('logo')
+              )
+            : [];
+
+          totalImages += Math.max(imageCountField, validImages.length);
+        });
+
+        // Roof reports typically have many images (8+), estimates have few (< 8)
+        return totalImages >= 8 ? 'roof_report' : 'estimate';
+      };
 
       return {
         id: doc.id,
         fileName: doc.fileName,
-        fileType: doc.fileName.toLowerCase().includes('roof')
-          ? 'roof_report'
-          : 'estimate',
+        fileType: determineFileType(doc.fileName),
         filePath: normalizedPath,
         pageCount: doc.pageCount || mappedPages.length || 1,
         status: doc.status,
@@ -94,47 +162,16 @@ export async function GET(
       };
     });
 
-    // If no roof report found, add a mock one for demo purposes
-    const hasRoofReport = transformedDocuments.some(
-      doc => doc.fileType === 'roof_report'
+    // Remove duplicates by fileName and fileType
+    const uniqueDocuments = transformedDocuments.filter(
+      (doc, index, array) =>
+        index ===
+        array.findIndex(
+          d => d.fileName === doc.fileName && d.fileType === doc.fileType
+        )
     );
-    if (!hasRoofReport) {
-      transformedDocuments.push({
-        id: 'mock-roof-report',
-        fileName: 'EagleView_Roof_Report.pdf',
-        fileType: 'roof_report',
-        filePath: null, // No actual PDF, just extracted text
-        pageCount: 12,
-        status: 'COMPLETED',
-        pages: [
-          {
-            pageNumber: 1,
-            content: {
-              title: 'EagleView Roof Report',
-              type: 'roof_measurements',
-            },
-            rawText:
-              'EAGLEVIEW ROOF REPORT\n\nProperty Address: 8002 KILPATRICK PKWY, BENNINGTON, NE 68007-3289\n\nROOF MEASUREMENTS\nTotal Roof Area: 2,450 SF\nSquares: 24.5\nPredominant Pitch: 6/12\nTotal Eaves: 180 LF\nTotal Rakes: 120 LF\nTotal Ridges/Hips: 119 ft\n  - Ridges: 26 ft\n  - Hips: 93 ft\nSoffit Depth: 24"',
-            wordCount: 45,
-            confidence: 0.98,
-            dimensions: { width: 612, height: 792 },
-            images: [],
-          },
-          {
-            pageNumber: 2,
-            content: { measurements: 'detailed' },
-            rawText:
-              'DETAILED MEASUREMENTS\n\nRIDGE AND HIP BREAKDOWN:\nRidge Length: 26 LF\nHip Length: 93 LF\nTotal Ridge/Hip: 119 LF\n\nEAVE MEASUREMENTS:\nTotal Eaves: 180 LF\nRequires universal starter strip\n\nRAKE MEASUREMENTS:\nTotal Rakes: 120 LF\nDrip edge required\n\nICE & WATER BARRIER:\nBased on IRC R905.1.2\nEave width: 60.4"\nRequired coverage: 180 LF × 60.4" ÷ 12 = 1,167 SF',
-            wordCount: 78,
-            confidence: 0.96,
-            dimensions: { width: 612, height: 792 },
-            images: [],
-          },
-        ],
-      });
-    }
 
-    return NextResponse.json({ documents: transformedDocuments });
+    return NextResponse.json({ documents: uniqueDocuments });
   } catch (error) {
     console.error('Error fetching documents:', error);
     return NextResponse.json(
