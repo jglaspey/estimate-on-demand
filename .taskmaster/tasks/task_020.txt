@@ -1,6 +1,6 @@
 # Task ID: 20
 # Title: Optimize Two-Page Job Workflow System
-# Status: in-progress
+# Status: done
 # Dependencies: 6, 7, 19, 18
 # Priority: medium
 # Description: Refine and optimize the two-page job workflow system, including the Job Detail Page and Review Page, focusing on data integration, layout optimization, user workflow, business rule analysis, and information architecture.
@@ -80,6 +80,20 @@
     - Ensure comprehensive field coverage for all dynamic content in the Ridge Cap Analysis
     - Connect the visual highlighting system to the actual database ridge cap analysis results
     - Map extraction pipeline outputs to the ridgeCapData interface
+<info added on 2025-08-15T02:38:44.473Z>
+11. Document Extraction and UI Improvements:
+    - Implemented embedded image extraction via Mistral OCR without Poppler dependency
+    - Added persistence for per-page images with exposure via /uploads route
+    - Enhanced Extracted view to render images above markdown and inline
+    - Improved Re-Run UX with button disabling, spinner animation, skeleton loaders, and auto-refresh
+    - Modified smart-extraction-service.ts to request and process embedded images
+    - Created new static file serving route for uploads
+    - Enhanced EnhancedDocumentViewer component to support and display extracted images
+    - Implemented polling mechanism to monitor job processing status
+    - Added reprocessing endpoint to handle document re-extraction
+    - Removed Poppler/pdf-to-image dependency in favor of Mistral OCR images
+    - Implemented proper error handling and fallback logic for OCR processing
+</info added on 2025-08-15T02:38:44.473Z>
 
 # Test Strategy:
 1. User Interface Testing:
@@ -202,7 +216,7 @@
 ### Details:
 
 
-## 8. UI Refinement - Review Page [to-do]
+## 8. UI Refinement - Review Page [done]
 ### Dependencies: None
 ### Description: Enhance the Review Page split-pane interface with better space utilization, responsive behavior, and improved document viewer controls.
 ### Details:
@@ -219,25 +233,25 @@ Successfully enhanced the Review Page with split-pane layout matching the protot
 The app is now running on http://localhost:3003 with all review functionality implemented.
 </info added on 2025-08-14T16:57:39.737Z>
 
-## 9. Business Rule Integration [to-do]
+## 9. Business Rule Integration [done]
 ### Dependencies: None
 ### Description: Connect business rule analyzers to the UI, implement confidence score visualization, and enhance evidence presentation with direct document references.
 ### Details:
 
 
-## 10. Performance Optimization [to-do]
+## 10. Performance Optimization [done]
 ### Dependencies: None
 ### Description: Implement code splitting, optimize component rendering, reduce unnecessary re-renders, and add performance monitoring for both pages.
 ### Details:
 
 
-## 11. User Experience Enhancements [to-do]
+## 11. User Experience Enhancements [done]
 ### Dependencies: None
 ### Description: Add keyboard shortcuts, improve navigation aids, implement breadcrumbs, and enhance accessibility across the workflow system.
 ### Details:
 
 
-## 12. Final Testing and Documentation [to-do]
+## 12. Final Testing and Documentation [done]
 ### Dependencies: None
 ### Description: Conduct comprehensive testing across all components and document the optimized workflow system, including any known limitations and future enhancement opportunities.
 ### Details:
@@ -295,7 +309,7 @@ The app is now running on http://localhost:3003 with all review functionality im
 4. Updated icons and colors to reflect actual state
 
 ## 18. Field Mapping Fixes [done]
-### Dependencies: 20.14
+### Dependencies: None
 ### Description: Fix field mappings in OverviewPage component and update data interfaces to match UI expectations.
 ### Details:
 1. Fixed field mappings for claimRep and estimator in OverviewPage component
@@ -315,7 +329,7 @@ The app is now running on http://localhost:3003 with all review functionality im
 7. Fixed import issues and component references
 8. Implemented field-level data detection using hasLiveData helper function
 
-## 20. Ridge Cap Analysis Database Integration [to-do]
+## 20. Ridge Cap Analysis Database Integration [done]
 ### Dependencies: 20.19
 ### Description: Connect the Ridge Cap Analysis visual highlighting system to actual database extraction results and map pipeline outputs to the ridgeCapData interface.
 ### Details:
@@ -326,4 +340,71 @@ The app is now running on http://localhost:3003 with all review functionality im
 5. Add confidence scoring for ridge cap analysis fields
 6. Optimize data fetching to minimize loading times
 7. Implement proper state management for extraction results
+
+## 21. Implement Enhanced Skeleton Loading System [done]
+### Dependencies: None
+### Description: Create an improved skeleton loading system for the Job Detail Page that provides better visual feedback during data loading and ensures smooth transitions between loading and populated states.
+### Details:
+1. Create reusable skeleton components for different content types (text fields, cards, tables)
+2. Implement progressive skeleton replacement as data loads section by section
+3. Add subtle animations to skeleton loaders to indicate loading activity
+4. Ensure proper sizing and spacing of skeleton elements to match actual content
+5. Implement fade transitions between skeleton and actual content
+6. Add timing logic to prevent flickering for fast-loading content
+7. Create fallback states for failed data loading
+8. Ensure accessibility compliance with proper ARIA attributes
+
+## 22. Optimize Split-Pane Interface for Review Page [done]
+### Dependencies: None
+### Description: Enhance the split-pane interface on the Review Page to improve space utilization, responsiveness, and user interaction with document viewing and business rules panels.
+### Details:
+1. Implement resizable split-pane with draggable divider
+2. Add minimum width constraints for both panels to ensure usability
+3. Create responsive breakpoints for different screen sizes
+4. Implement collapsible panels with expand/collapse controls
+5. Add keyboard shortcuts for panel resizing and navigation
+6. Implement state persistence for user's preferred panel sizes
+7. Optimize document viewer with better zoom and navigation controls
+8. Add synchronized scrolling between document view and rule references
+9. Implement smooth animations for panel resizing
+
+## 23. Enhance Business Rules Analysis Visualization [done]
+### Dependencies: None
+### Description: Improve the presentation and interaction with business rules analysis, focusing on confidence score visualization, evidence presentation, and rule relationships.
+### Details:
+1. Design and implement improved confidence score visualization with color-coded indicators
+2. Create expandable evidence panels with direct document references
+3. Implement visual representation of rule dependencies and relationships
+4. Add detailed explanations for each rule decision with supporting evidence
+5. Create improved tooltips and contextual help for complex rule interpretations
+6. Implement filtering and sorting options for business rules
+7. Add collapsible sections for different rule categories
+8. Implement highlighting system to connect rules with relevant document sections
+
+## 24. Optimize Data Fetching and State Management [done]
+### Dependencies: None
+### Description: Refine data fetching patterns and state management to reduce loading times, implement progressive loading, and ensure proper field persistence throughout the workflow.
+### Details:
+1. Audit all dynamic fields to ensure proper data binding and persistence
+2. Implement data fetching optimizations with request batching and prioritization
+3. Add progressive loading for large documents and data sets
+4. Implement field-level validation with clear error states
+5. Enhance caching strategy for frequently accessed data
+6. Implement optimistic UI updates for better perceived performance
+7. Create a central state management solution for consistent data access
+8. Add retry mechanisms for failed data fetching
+9. Implement data prefetching for anticipated user actions
+
+## 25. Integrate Ridge Cap Analysis with Database [done]
+### Dependencies: None
+### Description: Connect the Ridge Cap Analysis visual highlighting system to actual database extraction results and implement the data mapping between extraction pipeline outputs and the UI components.
+### Details:
+1. Implement data fetching from extraction pipeline results in the database
+2. Create mappers to transform extraction data to the ridgeCapData interface format
+3. Connect visual highlighting system to toggle between placeholder and live data
+4. Implement automatic transition from red to green highlighting as data is populated
+5. Add validation logic for extraction results with appropriate error handling
+6. Implement confidence scoring display for ridge cap analysis fields
+7. Create fallback mechanisms for missing or low-confidence data
+8. Add refresh capability to update extraction results on demand
 

@@ -1,0 +1,75 @@
+# Task ID: 23
+# Title: Debug and Fix WebSocket Server Initialization Warnings
+# Status: pending
+# Dependencies: 18
+# Priority: low
+# Description: Investigate and resolve WebSocket server initialization warnings appearing in terminal logs during development that indicate "WebSocket server not initialized" when emitting job progress events.
+# Details:
+1. Diagnostic Investigation:
+   - Capture and analyze terminal logs showing the "WebSocket server not initialized" warnings
+   - Identify the specific code paths that trigger these warnings
+   - Review the WebSocket server initialization sequence in the codebase
+   - Check for race conditions between Next.js App Router initialization and WebSocket server setup
+
+2. Root Cause Analysis:
+   - Examine the WebSocket server initialization timing relative to Next.js 15 App Router lifecycle
+   - Verify if the warnings occur during development hot-reloading or also in production builds
+   - Check for any middleware or server components that might be interfering with WebSocket initialization
+   - Review Socket.IO or native WebSocket configuration for compatibility with Next.js 15
+
+3. Implementation Fixes:
+   - Modify the WebSocket server initialization to ensure proper sequencing with Next.js lifecycle events
+   - Implement a more robust initialization check before emitting events
+   - Add a connection state management system to track WebSocket server readiness
+   - Create a queuing mechanism for events attempted before server initialization
+   - Update the job progress event emission logic to handle server not-ready states gracefully
+
+4. Code Refactoring:
+   - Refactor WebSocket initialization to use Next.js 15 App Router compatible patterns
+   - Move WebSocket server setup to appropriate lifecycle hooks or server components
+   - Implement proper error handling and fallback mechanisms
+   - Add detailed logging for WebSocket server state transitions
+   - Create a connection status indicator for development debugging
+
+5. Documentation Updates:
+   - Document the correct initialization sequence for WebSocket server in the codebase
+   - Add comments explaining the timing considerations for WebSocket events
+   - Update developer documentation with troubleshooting information for WebSocket-related issues
+
+# Test Strategy:
+1. Warning Reproduction Testing:
+   - Create a test environment that reliably reproduces the WebSocket initialization warnings
+   - Document the exact sequence of actions that trigger the warnings
+   - Verify the warnings appear consistently under the same conditions
+
+2. Fix Verification Testing:
+   - Confirm the absence of "WebSocket server not initialized" warnings after implementing fixes
+   - Test the WebSocket server initialization across multiple development server restarts
+   - Verify proper initialization during hot module reloading scenarios
+   - Test with various client connection timings (immediate connection vs. delayed connection)
+
+3. Event Handling Testing:
+   - Test job progress event emission at different points in the application lifecycle
+   - Verify events are properly queued or handled when attempted before server initialization
+   - Confirm clients receive all events after connection is established
+   - Test with multiple simultaneous clients to ensure broadcast functionality works correctly
+
+4. Edge Case Testing:
+   - Test server recovery after intentional crashes or restarts
+   - Verify behavior when network connectivity is intermittent
+   - Test with slow client connections to ensure proper timeout handling
+   - Validate behavior when maximum client connections are reached
+
+5. Integration Testing:
+   - Verify the job progress tracking UI correctly displays updates after fixes
+   - Test the complete job workflow to ensure real-time updates function properly
+   - Confirm that no new warnings or errors are introduced by the changes
+   - Validate that the fixes work consistently across different browsers and devices
+
+# Subtasks:
+## 1. Implement Extraction Testing Suite [pending]
+### Dependencies: None
+### Description: Create comprehensive testing suite for the extraction pipeline. Include unit tests for Claude extractors, integration tests for Mistral OCR pipeline, end-to-end tests for full document processing workflow, mock data fixtures for consistent testing, and performance benchmarks for extraction timing.
+### Details:
+
+

@@ -1,0 +1,171 @@
+# Task ID: 22
+# Title: Fix Extraction Service Data Pipeline Bug
+# Status: done
+# Dependencies: 21, 18
+# Priority: medium
+# Description: Fix the critical data pipeline bug in the extraction service where Claude extractors receive metadata JSON instead of actual document text, causing extraction failures. Also address the blank left panel issue by fixing the data flow between analysisResults and ruleAnalysis array.
+# Details:
+1. Locate and modify the data pipeline code in smart-extraction-service.ts:
+   - Find line 184 where the issue occurs: `fullText.pages.map(p => p.markdownText)`
+   - Replace with corrected code: `fullText.pages.map(p => p.rawText || p.markdownText || '')`
+   - This ensures the extraction service properly passes document text to Claude extractors
+   - Add comments explaining the fallback logic for future maintainability
+
+2. Implement additional error handling and logging:
+   - Add validation to check if text content exists before sending to Claude
+   - Implement detailed logging of the text being sent to extractors
+   - Create error handling for cases where both rawText and markdownText are missing
+   - Add telemetry to track successful extraction rates
+
+3. Verify text extraction format compatibility:
+   - Ensure rawText format is compatible with Claude extractors
+   - Check if any preprocessing is needed for rawText vs markdownText
+   - Document any format differences for future reference
+
+4. Update unit tests:
+   - Modify existing tests to account for the new fallback logic
+   - Add test cases for different text content scenarios
+   - Create regression tests to prevent similar issues
+
+5. Document the fix:
+   - Update relevant documentation about the extraction pipeline
+   - Add comments in code explaining the issue and solution
+   - Create a knowledge base entry for future troubleshooting
+
+6. Implement dual-extraction validation system:
+   - Set up validation between different extraction methods
+   - Configure system to compare results for accuracy
+
+7. Fix blank left panel issue:
+   - Address the data flow problem between analysisResults and ruleAnalysis array
+   - Connect real analysisResults to ruleAnalysis UI instead of using mock data
+   - Ensure proper data propagation to the UI components
+
+# Test Strategy:
+1. Unit Testing:
+   - Create unit tests for the modified code in smart-extraction-service.ts
+   - Test with documents having only rawText, only markdownText, both, or neither
+   - Verify correct fallback behavior in all scenarios
+   - Mock Claude API calls to validate correct text is being passed
+
+2. Integration Testing:
+   - Test the complete extraction pipeline with real documents
+   - Verify Claude extractors receive the correct document text
+   - Confirm extraction results match expected output:
+     - Ridge Cap: 129.17 LF @ .15 = .61 (from estimate)
+     - Required: 131 LF (from roof report)
+     - Analysis: ~2 LF shortage identified
+   - Test the dual-extraction validation system with various document types
+   - Verify data flow between analysisResults and ruleAnalysis array
+
+3. End-to-End Testing:
+   - Test the full workflow from document upload to analysis display
+   - Verify extracted data appears correctly in the UI
+   - Confirm business rules are applied correctly to the extracted data
+   - Test with various document formats and layouts
+   - Verify left panel displays correct data from analysisResults
+
+4. Regression Testing:
+   - Ensure the fix doesn't break other parts of the extraction pipeline
+   - Verify all extractors (Line Item Extractor, Measurement Extractor) work correctly
+   - Test with previously problematic documents to confirm the fix resolves the issue
+   - Confirm NextJS 15 params issues are resolved
+   - Verify Prisma enums are working correctly
+
+5. Performance Testing:
+   - Measure extraction time before and after the fix
+   - Verify no significant performance degradation
+   - Test with large documents to ensure stability
+
+# Subtasks:
+## 1. Modify Data Pipeline Code in smart-extraction-service.ts [done]
+### Dependencies: None
+### Description: Fix the core issue where Claude extractors receive metadata JSON instead of actual document text by updating the text extraction logic in smart-extraction-service.ts.
+### Details:
+1. Locate line 184 in smart-extraction-service.ts where the issue occurs
+2. Replace `fullText.pages.map(p => p.markdownText)` with `fullText.pages.map(p => p.rawText || p.markdownText || '')`
+3. Add comments explaining the fallback logic: '// Prioritize rawText if available, fall back to markdownText, or use empty string if both are missing'
+4. Ensure the change is properly integrated with the surrounding code context
+5. Verify the modified code compiles without errors
+
+## 2. Implement Input Validation and Error Handling [done]
+### Dependencies: 22.1
+### Description: Add robust validation and error handling to prevent sending invalid data to Claude extractors and improve troubleshooting capabilities.
+### Details:
+1. Before sending text to Claude, add validation to check if the extracted text content exists and is not empty
+2. Implement a guard clause that logs an error and handles the case where both rawText and markdownText are missing
+3. Add detailed logging that captures the document ID and the first 100 characters of text being sent to extractors
+4. Create a custom error type 'ExtractionTextError' for cases where text extraction fails
+5. Add telemetry by implementing a counter for successful vs. failed extractions
+
+## 3. Verify Text Format Compatibility with Claude Extractors [done]
+### Dependencies: 22.1, 22.2
+### Description: Ensure the extracted text format (rawText vs markdownText) is compatible with Claude extractors and implement any necessary preprocessing.
+### Details:
+1. Compare sample outputs of rawText and markdownText to identify format differences
+2. Determine if any preprocessing is needed for rawText before sending to Claude (e.g., removing special characters, normalizing whitespace)
+3. If needed, implement a preprocessText function that standardizes the text format
+4. Add a comment documenting the format differences between rawText and markdownText
+5. Update the extraction pipeline to use the preprocessText function if implemented
+
+## 4. Update Unit Tests for New Fallback Logic [done]
+### Dependencies: 22.1, 22.2, 22.3
+### Description: Modify existing tests and create new ones to verify the fixed extraction pipeline works correctly with different text content scenarios.
+### Details:
+1. Update existing unit tests to account for the new fallback logic
+2. Create new test cases for scenarios where: only rawText exists, only markdownText exists, both exist, or neither exists
+3. Add regression tests that simulate the original bug scenario to prevent recurrence
+4. Test error handling by mocking scenarios where extraction should fail
+5. Verify telemetry is correctly tracking successful and failed extractions
+
+## 5. Document the Fix and Update Knowledge Base [done]
+### Dependencies: 22.1, 22.2, 22.3, 22.4
+### Description: Create comprehensive documentation about the bug, its solution, and update relevant documentation to prevent similar issues in the future.
+### Details:
+1. Update the extraction service documentation to explain the text extraction pipeline
+2. Create a knowledge base entry describing the issue, root cause, and solution
+3. Add inline code comments explaining the fallback logic and why it's necessary
+4. Document the format differences between rawText and markdownText for future reference
+5. Update any relevant architecture diagrams to accurately reflect the data flow
+
+## 6. Implement Dual-Extraction Validation System [done]
+### Dependencies: 22.1, 22.2, 22.3
+### Description: Set up a validation system that compares results from different extraction methods to improve accuracy and reliability.
+### Details:
+1. Design and implement a dual-extraction validation system that runs extractions through multiple methods
+2. Create a comparison algorithm to identify discrepancies between extraction results
+3. Implement confidence scoring based on agreement between extraction methods
+4. Add configuration options to enable/disable validation for different document types
+5. Create logging for validation results to help identify extraction issues
+
+## 7. Fix NextJS 15 Params Issues [done]
+### Dependencies: None
+### Description: Address compatibility issues with NextJS 15 parameter handling that may be affecting the extraction service.
+### Details:
+1. Identify specific NextJS 15 params issues affecting the extraction service
+2. Update route handlers to use the correct parameter format for NextJS 15
+3. Modify any affected API endpoints to ensure compatibility
+4. Test all routes to verify parameters are correctly passed and received
+5. Document the changes for future NextJS upgrades
+
+## 8. Fix Prisma Enum Handling [done]
+### Dependencies: None
+### Description: Resolve issues with Prisma enum handling that may be affecting data storage and retrieval in the extraction pipeline.
+### Details:
+1. Identify specific Prisma enum issues in the codebase
+2. Update Prisma schema definitions to ensure proper enum handling
+3. Modify any affected database queries to use the correct enum values
+4. Run migrations if necessary to update the database schema
+5. Test database operations to verify enums are correctly stored and retrieved
+
+## 9. Fix Blank Left Panel Data Flow Issue [done]
+### Dependencies: None
+### Description: Address the root cause of the blank left panel by fixing the data flow between analysisResults and ruleAnalysis array.
+### Details:
+1. Analyze the data flow between analysisResults and ruleAnalysis array components
+2. Identify where the connection is breaking in the current implementation
+3. Modify the code to properly connect real analysisResults data to the ruleAnalysis UI
+4. Remove any mock data being used and replace with actual data from the extraction pipeline
+5. Add logging to track data flow for future debugging
+6. Implement error handling for cases where data might be missing or malformed
+

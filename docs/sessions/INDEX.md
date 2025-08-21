@@ -57,6 +57,17 @@ Successfully migrated from `/job-detail/` to `/job/` route for cleaner URLs whil
 **Branch:** `main`  
 **Status:** ✅ Complete - Clean URL structure with enhanced status visualization
 
+### 08.21 - Overview UI Fixes and Download Functionality
+**File:** [08.21-overview-ui-fixes.md](./08.21-overview-ui-fixes.md)  
+**Type:** Bugfix & UI/UX  
+**Focus:** Overview Page Functionality  
+
+Fixed critical "Processing..." button issue that prevented users from starting reviews when jobs had ANALYSIS_READY status. Enhanced Analysis Status card with consistent iconography (Play icon for Ready for Review), removed unnecessary document icon, and added functional PDF download buttons with new API endpoint for secure document retrieval.
+
+**Key Files Changed:** `app/job/[jobId]/page.tsx`, `components/OverviewPage.tsx`, `app/api/jobs/[jobId]/documents/[docType]/download/route.ts`  
+**Branch:** `main`  
+**Status:** ✅ Complete - Build validated, downloads functional
+
 ---
 
 ## Usage
@@ -81,4 +92,4 @@ When completing a development session:
 
 ---
 
-*Last Updated: August 18, 2025*
+*Last Updated: August 21, 2025*

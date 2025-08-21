@@ -316,7 +316,7 @@
           1,
           2
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -324,7 +324,7 @@
             "description": "Integrate PDF.js library and implement the basic DocumentViewer component with modal overlay functionality.",
             "dependencies": [],
             "details": "1. Research and select appropriate PDF.js version\n2. Set up PDF.js with webpack/bundler configuration\n3. Create basic DocumentViewer component structure\n4. Implement modal overlay with proper z-index handling\n5. Add loading states for PDF processing\n6. Create basic error handling for failed PDF loads\n7. Test with various PDF document types",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -335,7 +335,7 @@
               "4.1"
             ],
             "details": "1. Create page navigation controls (prev/next/goto page)\n2. Implement page number indicator and total pages display\n3. Add zoom in/out buttons with percentage display\n4. Implement zoom to fit width/page options\n5. Create split-screen layout with PDF viewer on left\n6. Add thumbnail navigation sidebar (optional)\n7. Test navigation with multi-page documents of varying sizes",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -347,7 +347,7 @@
               "4.2"
             ],
             "details": "1. Create text layer for highlighting over PDF rendering\n2. Implement click-to-highlight functionality\n3. Add dynamic text highlighting linked to form fields\n4. Create highlight color options and styles\n5. Implement highlight persistence between page navigation\n6. Add highlight removal functionality\n7. Test highlighting with various text formats and PDF structures",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -360,7 +360,7 @@
               "4.3"
             ],
             "details": "1. Implement lazy loading of PDF pages\n2. Optimize rendering performance for large documents\n3. Add caching mechanisms for viewed pages\n4. Implement worker threads for PDF processing when appropriate\n5. Optimize highlight rendering for documents with many highlights\n6. Add debouncing for zoom and navigation actions\n7. Benchmark and optimize memory usage",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -373,7 +373,7 @@
               "4.3"
             ],
             "details": "1. Add keyboard navigation support for all controls\n2. Implement focus management within the viewer\n3. Add ARIA attributes for screen reader compatibility\n4. Create keyboard shortcuts for common actions\n5. Ensure proper tab order throughout the component\n6. Add high contrast mode support\n7. Test with screen readers and keyboard-only navigation",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -387,7 +387,7 @@
               "4.4"
             ],
             "details": "1. Implement basic responsive view for mobile devices\n2. Create collapsible controls for small screens\n3. Optimize touch interactions for mobile use\n4. Implement responsive split-screen layout\n5. Add orientation change handling\n6. Create mobile-specific navigation patterns\n7. Test across various device sizes and orientations",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -403,7 +403,7 @@
           3,
           4
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -411,7 +411,7 @@
             "description": "Research and evaluate different LLM options (Claude, GPT-4, etc.) for document processing capabilities, comparing features, costs, and performance metrics.",
             "dependencies": [],
             "details": "1. Create evaluation criteria for LLM selection (accuracy, cost, API reliability, etc.)\n2. Test sample documents with different LLM providers\n3. Compare vision capabilities for document processing\n4. Analyze rate limits and pricing structures\n5. Document findings and make final recommendation",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -422,7 +422,7 @@
               "5.1"
             ],
             "details": "1. Implement PDF to image conversion with appropriate resolution\n2. Create preprocessing steps for image enhancement\n3. Implement document type detection\n4. Add metadata extraction from document properties\n5. Set up caching for processed documents to improve performance",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -433,7 +433,7 @@
               "5.1"
             ],
             "details": "1. Define schema for policy information extraction\n2. Create schema for coverage details\n3. Design schema for property information\n4. Implement validation rules for each field\n5. Document schema specifications for team reference",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -446,7 +446,7 @@
               "5.3"
             ],
             "details": "1. Create LLM service wrapper class\n2. Implement retry logic with exponential backoff\n3. Add request timeout handling\n4. Set up API key rotation for reliability\n5. Implement request batching for efficiency\n6. Add detailed logging for API interactions\n<info added on 2025-08-14T23:08:12.413Z>\n7. Handle Claude Files API and Mistral Files signed URLs with resilient retry/backoff (429/5xx)\n8. Implement idempotent uploads (hash-based dedupe)\n9. Add fallback mechanisms for file uploads (base64 inline or direct data: URL)\n10. Mask sensitive URLs in logs to prevent credential leakage\n</info added on 2025-08-14T23:08:12.413Z>",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -458,7 +458,7 @@
               "5.4"
             ],
             "details": "1. Design confidence score algorithm based on LLM output\n2. Implement field-level confidence calculation\n3. Create document-level aggregate confidence metrics\n4. Set up confidence thresholds for automatic vs. manual review\n5. Add visual indicators for confidence levels in the UI",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -469,7 +469,7 @@
               "5.4"
             ],
             "details": "1. Set up WebSocket server for real-time communication\n2. Create event system for extraction progress updates\n3. Implement client-side WebSocket connection\n4. Add reconnection logic for dropped connections\n5. Create UI components for displaying extraction progress",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -481,7 +481,7 @@
               "5.5"
             ],
             "details": "1. Implement error classification system\n2. Create fallback extraction strategies for common failures\n3. Add manual override capabilities for failed extractions\n4. Implement partial extraction handling\n5. Create error reporting and analytics",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -494,7 +494,7 @@
               "5.7"
             ],
             "details": "1. Set up usage tracking for API calls\n2. Implement cost allocation by job/client\n3. Create budget alerts and limits\n4. Optimize extraction pipeline for performance\n5. Implement caching strategies to reduce API calls\n6. Add performance monitoring and reporting",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -511,7 +511,7 @@
           5,
           "11"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -519,7 +519,7 @@
             "description": "Create the foundational JobDashboard component with fixed header, scrollable content area, and persistent sidebar navigation.",
             "dependencies": [],
             "details": "1. Create JobDashboard container component\n2. Implement fixed header with job title and status indicators\n3. Build scrollable content area with proper overflow handling\n4. Create persistent sidebar with navigation links\n5. Implement responsive layout for different screen sizes\n6. Add loading skeleton states for initial render",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -530,7 +530,7 @@
               "6.1"
             ],
             "details": "1. Create form field components with edit/view modes\n2. Implement inline editing with save/cancel states\n3. Add confidence score indicators for extracted fields\n4. Create visual styling for different confidence levels\n5. Implement source location linking between form fields and PDF\n6. Add tooltips for field explanations and editing instructions",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -542,7 +542,7 @@
               "6.2"
             ],
             "details": "1. Establish WebSocket connection with the backend\n2. Create message handlers for different update types\n3. Implement progressive field population as data arrives\n4. Add animations for newly populated fields\n5. Handle connection errors and reconnection logic\n6. Implement fallback polling mechanism for WebSocket failures",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -555,7 +555,7 @@
               "6.3"
             ],
             "details": "1. Define state management structure for the dashboard\n2. Implement loading states with progress indicators\n3. Create active state for ongoing extraction\n4. Add complete state with success indicators\n5. Implement error states with recovery options\n6. Create state transitions with appropriate animations",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -566,7 +566,7 @@
               "6.2"
             ],
             "details": "1. Define validation rules for different field types\n2. Implement client-side validation for edited fields\n3. Create inline error messages with clear instructions\n4. Add visual indicators for invalid fields\n5. Implement form-level validation before submission\n6. Create validation summary for multiple errors",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -581,7 +581,7 @@
               "6.5"
             ],
             "details": "1. Implement responsive design breakpoints for different screen sizes\n2. Optimize rendering performance with virtualization for large datasets\n3. Add lazy loading for dashboard components\n4. Implement debouncing for frequent state updates\n5. Add performance monitoring for critical user interactions\n6. Create compressed view modes for mobile devices",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -597,7 +597,7 @@
           3,
           5
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -605,7 +605,7 @@
             "description": "Design and implement the base RuleAnalyzer class with common functionality that will be inherited by all specific rule analyzers.",
             "dependencies": [],
             "details": "Implement abstract methods for analysis, evidence collection, confidence scoring, and cost calculation. Include shared utility methods for data validation, status determination, and result formatting. Define interfaces for rule analyzer components and establish the inheritance hierarchy.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -616,7 +616,7 @@
               "7.1"
             ],
             "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -627,7 +627,7 @@
               "7.1"
             ],
             "details": "Implement perimeter calculation for roof edges requiring starter strip. Add logic to detect existing starter strip from document data. Include material quantity calculations based on roof dimensions. Implement specialized evidence collection and confidence scoring for starter strip recommendations.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -638,7 +638,7 @@
               "7.1"
             ],
             "details": "Implement eave and rake edge detection algorithms. Add local building code compliance validation based on property location. Calculate material requirements based on perimeter measurements. Include specialized evidence collection for drip edge recommendations with reference to local code requirements.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -649,7 +649,7 @@
               "7.1"
             ],
             "details": "Implement climate zone determination based on property location. Add logic for detecting ice damming risk factors. Include code compliance validation for different jurisdictions. Calculate coverage area and material requirements. Implement specialized evidence collection with climate data references.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -664,7 +664,7 @@
               "7.5"
             ],
             "details": "Implement material cost lookup from pricing database. Add labor cost estimation based on installation complexity. Include markup calculations and tax considerations. Create detailed line item breakdown for each recommendation. Implement cost comparison between different material options.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -675,7 +675,7 @@
               "7.1"
             ],
             "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -692,8 +692,23 @@
               "7.7"
             ],
             "details": "Implement decision state management (Accept/Edit/Reject). Add justification field for user notes. Create modification history tracking. Implement recalculation triggers when parameters are modified. Add decision export functionality for reporting. Create notification system for pending decisions.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Standardize Business Rule Implementation",
+            "description": "Ensure all business rules are consistently implemented across the codebase. Remove one-off implementations from previous design iterations, consolidate rule logic into unified architecture, standardize data structures and interfaces, and ensure all four rules (Ridge Cap, Starter Strip, Drip Edge, Ice & Water) follow the same patterns for extraction, analysis, and UI presentation.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.4",
+              "7.5",
+              "7.6"
+            ],
+            "parentTaskId": 7
           }
         ]
       },
@@ -701,7 +716,7 @@
         "id": 8,
         "title": "Business Rule UI Components",
         "description": "Integrate and adapt existing BusinessRuleCard components with status indicators, evidence panels, and decision controls as specified in US-011 through US-016.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           6,
           7,
@@ -716,7 +731,7 @@
             "id": 1,
             "title": "BusinessRuleCard Component Integration",
             "description": "Integrate the existing BusinessRuleCard.tsx component with the application's state management and data flow",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "- Review existing BusinessRuleCard.tsx implementation\n- Connect component to application state management\n- Configure props and interfaces to match backend data structure\n- Test responsive behavior with application layout\n- Document integration points and usage patterns\n- Ensure accessibility features are properly configured",
             "testStrategy": ""
@@ -725,7 +740,7 @@
             "id": 2,
             "title": "Status Indicators Configuration",
             "description": "Configure and connect visual status indicators for different rule states (pending, accepted, rejected, etc.)",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1
             ],
@@ -736,7 +751,7 @@
             "id": 3,
             "title": "Evidence Panel Integration",
             "description": "Connect the evidence section with source document references, highlighting, and plain English explanations",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1
             ],
@@ -747,7 +762,7 @@
             "id": 4,
             "title": "Decision Controls Integration",
             "description": "Wire up decision buttons (Accept/Edit/Reject) with confirmation dialogs and notes field",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2
@@ -759,7 +774,7 @@
             "id": 5,
             "title": "Cost Calculator Integration",
             "description": "Connect cost calculator showing line item pricing changes and financial impact",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               3
@@ -771,7 +786,7 @@
             "id": 6,
             "title": "Specialized Rule Card Integration",
             "description": "Integrate specialized rule components (HipRidgeCapCard, StarterStripCard, DripEdgeGutterApronCard, IceWaterBarrierCard)",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -786,7 +801,7 @@
             "id": 7,
             "title": "Animation and Transition Testing",
             "description": "Test and optimize animations and transitions for card interactions and state changes",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -802,7 +817,7 @@
             "id": 8,
             "title": "Integration Testing with Backend",
             "description": "Perform comprehensive testing of all business rule components with real backend data",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               1,
               2,
@@ -834,7 +849,9 @@
             "id": 1,
             "title": "Summary Dashboard Implementation",
             "description": "Create a summary dashboard that displays all decisions and total impact with a clean, intuitive interface.",
-            "dependencies": [],
+            "dependencies": [
+              "9.8"
+            ],
             "details": "1. Design dashboard layout with decision summary section\n2. Implement total impact calculation logic\n3. Create visual components for impact metrics\n4. Add filtering capabilities by decision type\n5. Implement responsive design for various screen sizes\n6. Add data refresh functionality\n7. Create loading states for dashboard components",
             "status": "pending",
             "testStrategy": ""
@@ -844,31 +861,10 @@
             "title": "PDF Report Generation",
             "description": "Implement PDF report generation with professional formatting, including headers, footers, and branded elements.",
             "dependencies": [
-              "9.1"
+              "9.1",
+              "9.8"
             ],
             "details": "1. Integrate PDF generation library\n2. Design professional report template with company branding\n3. Implement dynamic content population from decision data\n4. Add headers, footers, and page numbering\n5. Create table of contents generation\n6. Implement image and chart embedding\n7. Add digital signature support\n8. Optimize for print quality",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Excel Report Functionality",
-            "description": "Develop Excel report generation with detailed calculations, formulas, and multiple worksheets for comprehensive analysis.",
-            "dependencies": [
-              "9.1"
-            ],
-            "details": "1. Integrate Excel generation library\n2. Create worksheet templates for different data categories\n3. Implement formula generation for calculations\n4. Add conditional formatting for data visualization\n5. Create pivot table templates for data analysis\n6. Implement chart generation from decision data\n7. Add metadata and documentation sheets",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Word Report with Templates",
-            "description": "Create Word report generation with customizable templates, allowing users to select different formats and content sections.",
-            "dependencies": [
-              "9.1"
-            ],
-            "details": "1. Integrate Word document generation library\n2. Design multiple report templates with different styles\n3. Create template selection interface\n4. Implement dynamic content population based on template\n5. Add support for custom fields and sections\n6. Create template preview functionality\n7. Implement template caching for performance",
             "status": "pending",
             "testStrategy": ""
           },
@@ -879,7 +875,8 @@
             "dependencies": [
               "9.2",
               "9.3",
-              "9.4"
+              "9.4",
+              "9.8"
             ],
             "details": "1. Create unified download manager service\n2. Implement browser-compatible file download triggers\n3. Add progress tracking with WebSockets\n4. Create download history tracking\n5. Implement retry mechanism for failed downloads\n6. Add support for large file handling\n7. Create download cancellation functionality",
             "status": "pending",
@@ -906,6 +903,15 @@
             "details": "1. Create validation rules for all data types\n2. Implement validation pipeline before report generation\n3. Add error and warning notification system\n4. Create data correction suggestions\n5. Implement validation report with issues list\n6. Add validation bypass with confirmation for edge cases\n7. Create validation logging for audit purposes",
             "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Interview Client for Report Specifications",
+            "description": "Conduct client interview to determine exact specifications and requirements for report generation. Gather information on preferred formats, required sections, branding requirements, data presentation preferences, and any compliance or industry-specific formatting needs. Document all requirements for implementation.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 9
           }
         ]
       },
@@ -930,7 +936,7 @@
             "description": "Set up the Railway platform with the necessary configuration for hosting the application and connecting to PostgreSQL database.",
             "dependencies": [],
             "details": "1. Create Railway project and configure resources\n2. Set up PostgreSQL database instance on Railway\n3. Configure connection pooling for database\n4. Set up production environment variables\n5. Configure domain settings and DNS",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -941,7 +947,7 @@
               "10.1"
             ],
             "details": "1. Set up database schema in production\n2. Configure automated backups with point-in-time recovery\n3. Implement database migration strategy\n4. Set up database user roles and permissions\n5. Configure connection security for database access",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -953,17 +959,6 @@
               "10.2"
             ],
             "details": "1. Set up application logging with structured log format\n2. Implement error tracking and alerting system\n3. Configure performance monitoring tools\n4. Set up dashboard for system metrics\n5. Configure alert thresholds and notification channels",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Security Configuration",
-            "description": "Implement security measures for the production environment including SSL, security headers, and access controls.",
-            "dependencies": [
-              "10.1"
-            ],
-            "details": "1. Set up SSL certificates for secure connections\n2. Configure security headers (CSP, HSTS, etc.)\n3. Implement rate limiting for API endpoints\n4. Set up firewall rules and access controls\n5. Configure authentication for production environment",
             "status": "pending",
             "testStrategy": ""
           },
@@ -1002,7 +997,7 @@
         "description": "Design comprehensive UI/UX wireframes and interactive prototypes for all user workflows including Document Upload, Data Extraction, Business Rule Analysis, and Report Generation phases with component specifications and visual design system.",
         "details": "1. Create user flow diagrams for all major workflows:\n   - Document Upload process with validation states\n   - Data Extraction with real-time feedback\n   - Business Rule Analysis with decision points\n   - Report Generation with export options\n\n2. Design wireframes for all key screens:\n   - Upload interface with drag-and-drop area and file previews\n   - Job Dashboard with extraction progress indicators\n   - Business Rule cards with expandable evidence panels\n   - Decision interface with accept/reject controls\n   - Report summary with visualization options\n\n3. Develop interactive prototypes using Figma or Adobe XD:\n   - Include all state transitions and animations\n   - Create clickable navigation between screens\n   - Simulate loading states and progress indicators\n   - Demonstrate error handling and validation feedback\n\n4. Define component specifications:\n   - Document component hierarchy and nesting\n   - Specify props/inputs for each component\n   - Define state management requirements\n   - Document event handlers and callbacks\n\n5. Create visual design system:\n   - Color palette with primary, secondary, and accent colors\n   - Typography scale with heading and body text styles\n   - Form element styles (inputs, buttons, dropdowns)\n   - Data visualization components (charts, graphs)\n   - Status indicators and badges\n\n6. Design responsive layouts:\n   - Desktop-first approach with breakpoints for smaller screens\n   - Define grid system and spacing guidelines\n   - Ensure critical workflows function on tablet devices\n\n7. Document interaction patterns:\n   - Define hover, active, and focus states\n   - Document transitions and animations\n   - Specify loading indicators and progress feedback\n   - Define error and success state visuals\n\n8. Create accessibility guidelines:\n   - Color contrast requirements\n   - Keyboard navigation patterns\n   - Screen reader considerations\n   - Focus management guidelines",
         "testStrategy": "1. Conduct internal design reviews:\n   - Review wireframes against user stories and requirements\n   - Verify all required screens and states are represented\n   - Ensure design system consistency across all screens\n   - Check component specifications for completeness\n\n2. Perform usability testing with prototype:\n   - Create test scenarios covering all major workflows\n   - Recruit 5-7 testers representing target users\n   - Record sessions and collect qualitative feedback\n   - Measure task completion rates and time-on-task\n\n3. Validate accessibility compliance:\n   - Test color contrast with accessibility tools\n   - Verify keyboard navigation works for all interactions\n   - Review screen reader compatibility\n   - Check focus management across interactive elements\n\n4. Technical feasibility review:\n   - Review with development team for implementation concerns\n   - Identify any technically challenging interactions\n   - Validate state management approach with developers\n   - Ensure responsive layouts are practical to implement\n\n5. Stakeholder presentation and feedback:\n   - Present prototypes to project stakeholders\n   - Collect feedback on visual design and interactions\n   - Document requested changes and prioritize revisions\n   - Obtain final approval before development begins",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           1
         ],
@@ -1014,7 +1009,7 @@
             "description": "Create comprehensive user flow diagrams for all major workflows in the application",
             "dependencies": [],
             "details": "- Design Document Upload process flow with validation states\n- Map Data Extraction workflow with real-time feedback points\n- Create Business Rule Analysis flow with decision points\n- Design Report Generation flow with export options\n- Include error handling paths and recovery flows\n- Document user entry and exit points\n- Validate flows with stakeholders",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1025,7 +1020,7 @@
               "11.1"
             ],
             "details": "- Create Upload interface with drag-and-drop area and file previews\n- Design Job Dashboard with extraction progress indicators\n- Develop Business Rule cards with expandable evidence panels\n- Design Decision interface with accept/reject controls\n- Create Report summary with visualization options\n- Include all states (empty, loading, error, success)\n- Ensure consistency across all screens",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1036,7 +1031,7 @@
               "11.2"
             ],
             "details": "- Create clickable navigation between all screens\n- Simulate loading states and progress indicators\n- Demonstrate error handling and validation feedback\n- Include all micro-interactions and transitions\n- Set up realistic data scenarios\n- Create shareable prototype links for stakeholder review\n- Document prototype usage instructions",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1047,7 +1042,7 @@
               "11.2"
             ],
             "details": "- Document component hierarchy and nesting relationships\n- Specify props/inputs for each component\n- Define state management requirements\n- Document event handlers and callbacks\n- Create component naming conventions\n- Specify reusable vs. specific components\n- Include implementation notes for developers",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1058,7 +1053,7 @@
               "11.2"
             ],
             "details": "- Define color palette with primary, secondary, and accent colors\n- Create typography scale with heading and body text styles\n- Design form element styles (inputs, buttons, dropdowns)\n- Develop data visualization components (charts, graphs)\n- Create status indicators and badges\n- Document spacing and layout guidelines\n- Create exportable design tokens for development",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1070,18 +1065,7 @@
               "11.5"
             ],
             "details": "- Implement desktop-first approach with breakpoints for smaller screens\n- Define grid system and spacing guidelines\n- Ensure critical workflows function on tablet devices\n- Document responsive behavior for each component\n- Create mobile-specific interaction patterns where needed\n- Test designs at various viewport sizes\n- Document breakpoint specifications for developers",
-            "status": "pending",
-            "testStrategy": ""
-          },
-          {
-            "id": 7,
-            "title": "Accessibility Guidelines Documentation",
-            "description": "Create comprehensive accessibility guidelines to ensure WCAG compliance",
-            "dependencies": [
-              "11.5"
-            ],
-            "details": "- Define color contrast requirements with examples\n- Document keyboard navigation patterns\n- Specify screen reader considerations for all components\n- Create focus management guidelines\n- Document aria attributes for custom components\n- Include text alternatives for non-text content\n- Create testing checklist for accessibility compliance",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -1104,7 +1088,7 @@
         "id": 13,
         "title": "Prototype Integration Strategy",
         "description": "Analyze existing front-end mockup, plan migration to production codebase, identify Tailwind version compatibility, and create integration roadmap for incorporating the complete React prototype into the project structure.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           1,
           11
@@ -1119,7 +1103,7 @@
             "description": "Analyze and document the existing front-end mockup's component structure, architecture, and state management approach to create a comprehensive inventory of components.",
             "dependencies": [],
             "details": "Create a detailed component inventory spreadsheet with the following columns: Component Name, Purpose, Reusability Score (1-5), Dependencies, State Management Approach, and Notes. Include a component tree diagram showing hierarchy and relationships. Document the data flow patterns between components and identify any global state management solutions used (Context API, Redux, etc.). Note any performance optimizations or custom hooks implemented.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Review component inventory with development team to ensure completeness. Validate component dependencies are correctly mapped. Verify all state management patterns are accurately documented."
           },
           {
@@ -1130,7 +1114,7 @@
               "13.1"
             ],
             "details": "Extract Tailwind configuration files from both prototype and production codebases. Document version differences and list all breaking changes between versions. Identify custom Tailwind configurations, plugins, and extensions used in the prototype. Create a migration guide for updating Tailwind classes if needed. Test sample components from the prototype with the production Tailwind configuration to identify styling issues.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Apply production Tailwind configuration to key prototype components and verify visual consistency. Document any class name changes required for compatibility."
           },
           {
@@ -1142,7 +1126,7 @@
               "13.2"
             ],
             "details": "For each component in the prototype inventory, identify the corresponding location in the production architecture. Document required TypeScript type definitions for proper integration. Create a component migration priority list based on dependencies and business value. Identify any architectural patterns in the prototype that differ from production standards and document adaptation strategies. Note any components that need significant refactoring to match production code quality standards.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Review component mapping with senior developers to validate architectural decisions. Test sample component migrations to verify integration approach."
           },
           {
@@ -1154,7 +1138,7 @@
               "13.3"
             ],
             "details": "Compare API interfaces used in the prototype with available endpoints in production. Document data transformation requirements to match prototype component expectations. Identify missing API endpoints needed for prototype functionality. Create adapter functions for reconciling differences between prototype data structures and production API responses. Document authentication and authorization requirements for API calls.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create mock implementations of adapter functions and test with prototype components. Verify data transformations maintain component functionality."
           },
           {
@@ -1167,7 +1151,7 @@
               "13.4"
             ],
             "details": "Create a step-by-step migration plan for copying prototype UI components to the main /components directory. Document required changes to component imports and dependencies. Outline process for replacing the basic jobs page with the sophisticated OverviewPage dashboard. Create implementation tasks for integrating business rule cards and interactive components. Document Tailwind CSS compatibility fixes needed during integration. Include estimated effort for each task and suggested developer assignments.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Create a staging environment to test integrated components before production deployment. Develop integration tests for key user flows across migrated components."
           },
           {
@@ -1180,7 +1164,7 @@
               "13.5"
             ],
             "details": "Document Prisma schema extensions needed to support prototype data requirements. Create migration scripts for adding new fields to existing tables. Design data transformation functions for mapping existing data to new schema. Outline API route updates needed to return complete data structures matching prototype expectations. Create a testing strategy for validating schema changes with real data. Include rollback procedures in case of migration issues.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test schema migrations on a copy of production data. Verify API routes return data structures compatible with prototype components. Create integration tests for frontend/backend data flow."
           },
           {
@@ -1192,24 +1176,10 @@
               "13.6"
             ],
             "details": "Document current extraction pipeline issues, including Mistral API \"Unexpected token 'S'\" errors. Create implementation plan for adding Claude Vision as a backup extraction method. Design improved error handling and user feedback mechanisms. Outline changes needed to ensure extraction results populate the new data structure. Create a monitoring strategy for extraction pipeline performance and reliability. Include A/B testing approach to compare extraction methods.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test extraction pipeline with diverse document samples. Verify error handling captures and reports issues appropriately. Validate extraction results populate new data structures correctly."
           }
         ]
-      },
-      {
-        "id": 14,
-        "title": "PDF to Image Conversion and Vision Model Testing",
-        "description": "Fix PDF to image conversion issues and implement alternative methods, then test various vision models (Claude Sonnet 4, Haiku 3.5, Gemini Flash, GPT-5-mini) to compare extraction accuracy against direct PDF and text-based approaches. This is part of the extraction pipeline research under the Database Schema and API Routes task.",
-        "status": "pending",
-        "dependencies": [
-          4,
-          2
-        ],
-        "priority": "medium",
-        "details": "1. Diagnose current pdf2pic library issues:\n   - Identify specific failure modes and error patterns\n   - Document environment dependencies and version conflicts\n   - Test with various PDF types to isolate problematic scenarios\n\n2. Implement alternative PDF to image conversion methods:\n   - Integrate pdf-lib for PDF parsing and manipulation\n   - Set up HTML5 Canvas for rendering PDF pages as images\n   - Implement server-side fallback using Puppeteer or similar headless browser\n   - Create utility functions for controlling resolution, format, and quality\n   - Add error handling with graceful degradation to alternative methods\n\n3. Create standardized test dataset:\n   - Compile representative sample of project-relevant PDFs\n   - Include various complexities: text-heavy, diagram-rich, form-based\n   - Create ground truth extraction data for accuracy comparison\n\n4. Implement vision model testing framework:\n   - Set up API connections to Claude Sonnet 4, Haiku 3.5, Gemini Flash, and GPT-5-mini\n   - Create standardized prompts for extraction tasks\n   - Implement parallel testing to ensure consistent comparison\n   - Build metrics collection for accuracy, processing time, and token usage\n\n5. Develop comparison methodology:\n   - Define metrics for extraction accuracy (precision, recall, F1 score)\n   - Create visualization of results across models and methods\n   - Implement cost analysis based on API pricing and processing requirements\n   - Design hybrid approach combining strengths of different methods\n\n6. Optimize conversion pipeline:\n   - Implement caching for converted images to improve performance\n   - Add progressive loading for multi-page documents\n   - Create compression options for bandwidth optimization\n   - Implement batch processing for large documents",
-        "testStrategy": "1. PDF Conversion Testing:\n   - Test conversion with various PDF types (text-heavy, image-heavy, forms)\n   - Verify image quality and resolution meets requirements for vision models\n   - Measure conversion performance and resource usage\n   - Test error handling with malformed or password-protected PDFs\n   - Validate multi-page handling and pagination\n\n2. Vision Model Accuracy Testing:\n   - Create benchmark suite with ground truth data for extraction tasks\n   - Measure precision and recall for each model across different document types\n   - Compare extraction accuracy between direct PDF text extraction and vision-based approaches\n   - Test with varying image qualities to determine minimum viable resolution\n   - Evaluate model performance on text vs. diagram/table extraction\n\n3. Integration Testing:\n   - Verify converted images display correctly in the PDF viewer component\n   - Test end-to-end workflow from PDF upload through conversion to extraction\n   - Validate that highlighting and annotation features work with converted images\n   - Test performance under load with large multi-page documents\n\n4. Comparative Analysis:\n   - Generate comprehensive report comparing all models and approaches\n   - Document cost-benefit analysis of each approach\n   - Create decision matrix for selecting optimal extraction method based on document type\n   - Validate findings with sample documents not in the training set",
-        "subtasks": []
       },
       {
         "id": 15,
@@ -1230,11 +1200,10 @@
         "description": "Investigate and resolve critical errors in the document extraction pipeline, including Mistral API \"Unexpected token 'S'\" errors and \"Invalid 'prisma.document.create'\" database issues to ensure reliable document processing.",
         "details": "1. Diagnose Mistral API \"Unexpected token 'S'\" errors:\n   - Review API call implementation and response handling\n   - Capture and analyze raw API responses to identify malformed JSON\n   - Check for potential encoding issues or unexpected response formats\n   - Implement proper response validation before JSON parsing\n\n2. Fix JSON parsing issues:\n   - Add robust error handling around JSON.parse() operations\n   - Implement try/catch blocks with detailed error logging\n   - Create sanitization functions to handle unexpected characters in responses\n   - Add response validation to ensure proper structure before processing\n\n3. Debug Prisma database errors:\n   - Review \"Invalid 'prisma.document.create'\" error traces\n   - Validate schema compliance of document objects before database insertion\n   - Check for missing required fields or invalid data types\n   - Ensure proper error handling for database operations\n\n4. Enhance error logging and monitoring:\n   - Implement structured logging for extraction pipeline failures\n   - Add context-rich error messages with document IDs and processing stage\n   - Create error categorization system to group similar failures\n   - Set up alerting for critical extraction failures\n\n5. Implement fallback mechanisms:\n   - Create retry logic with exponential backoff for API failures\n   - Implement alternative extraction paths when primary method fails\n   - Add circuit breaker pattern to prevent cascading failures\n   - Create queue system for failed documents to retry processing later\n\n6. Test extraction pipeline:\n   - Create test suite with sample documents representing different formats\n   - Implement integration tests for the complete extraction flow\n   - Add unit tests for individual components of the pipeline\n   - Create stress tests to identify performance bottlenecks\n\n7. Ensure database schema compliance:\n   - Validate extraction results against Prisma schema requirements\n   - Implement data transformation layer to normalize API responses\n   - Add pre-save validation to catch schema violations\n   - Create data migration utilities for handling schema changes",
         "testStrategy": "1. Error Reproduction Testing:\n   - Create a test environment that reproduces both the Mistral API and Prisma database errors\n   - Document exact steps and conditions that trigger each error\n   - Verify error patterns match those observed in production\n\n2. API Response Validation:\n   - Test API response handling with mocked responses containing the problematic \"S\" token\n   - Verify proper handling of malformed JSON responses\n   - Test with various error conditions from the Mistral API\n   - Validate retry logic works correctly for temporary API failures\n\n3. Database Operation Testing:\n   - Create test cases for document creation with valid and invalid data\n   - Verify proper validation before database operations\n   - Test error handling for database constraint violations\n   - Validate transaction rollback works correctly on failure\n\n4. End-to-End Pipeline Testing:\n   - Test complete extraction pipeline with sample documents\n   - Verify documents flow through all processing stages correctly\n   - Validate successful extraction results in proper database entries\n   - Test error handling at each stage of the pipeline\n\n5. Logging and Monitoring Validation:\n   - Verify all errors are properly logged with sufficient context\n   - Test error categorization system with various failure types\n   - Validate alerts are triggered for critical failures\n   - Ensure logs contain enough information for debugging\n\n6. Performance and Reliability Testing:\n   - Test extraction pipeline with high volume of documents\n   - Measure success rate and processing time\n   - Verify system stability under load\n   - Test recovery from various failure scenarios\n\n7. Regression Testing:\n   - Verify fixes don't introduce new issues in the extraction pipeline\n   - Test with previously successful documents to ensure continued functionality\n   - Validate all business rules still work with fixed extraction pipeline",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           3,
-          5,
-          14
+          5
         ],
         "priority": "high",
         "subtasks": []
@@ -1331,7 +1300,7 @@
         "description": "Create a job detail page with a split-pane interface that displays business rules analysis on the left and a document viewer on the right, integrating production-ready components from the front-end-mockup directory.",
         "details": "1. Component Integration:\n   - Import and integrate production-ready components from the front-end-mockup/ directory\n   - Ensure components follow the established project structure and coding standards\n   - Refactor components as needed to work with the current state management approach\n\n2. Split-Pane Layout Implementation:\n   - Create a responsive SplitPaneLayout component with resizable panels\n   - Implement drag handle for adjusting panel widths with minimum width constraints\n   - Add keyboard accessibility for panel resizing (arrow keys with modifier)\n   - Save user's preferred panel configuration to localStorage for persistence\n\n3. JobDetailsCard Implementation:\n   - Integrate the JobDetailsCard component for displaying insurance and customer information\n   - Connect to the data store to populate fields with real extraction data\n   - Implement collapsible sections for better space management\n   - Add edit functionality with proper validation for correcting extracted information\n\n4. BusinessRuleCard Components:\n   - Integrate all four BusinessRuleCard components (Ridge Cap, Starter Strip, Drip Edge, Ice & Water Barrier)\n   - Implement status indicators showing rule analysis progress/results\n   - Add interactive elements for user decision tracking\n   - Create expandable evidence sections showing supporting documentation\n\n5. ContextualDocumentViewer Integration:\n   - Implement PDF viewer with pagination, zoom, and rotation controls\n   - Add highlighting functionality to connect extracted data with source locations\n   - Create bidirectional navigation between form fields and document locations\n   - Implement caching strategy for improved performance with large documents\n\n6. Mistral OCR Data Integration:\n   - Create data adapters to transform Mistral OCR extraction data to component-compatible format\n   - Implement loading states for asynchronous data fetching\n   - Add error handling for missing or malformed extraction data\n   - Create fallback UI states for incomplete data scenarios\n\n7. Performance Optimization:\n   - Implement virtualization for large document rendering\n   - Use React.memo and useMemo for expensive component calculations\n   - Optimize re-renders with proper state management\n   - Add progressive loading for large documents\n\n8. Accessibility Considerations:\n   - Ensure proper keyboard navigation throughout the interface\n   - Add ARIA attributes for screen reader compatibility\n   - Implement focus management for modal dialogs and expandable sections\n   - Test with screen readers and keyboard-only navigation",
         "testStrategy": "1. Component Integration Testing:\n   - Verify all components from front-end-mockup directory are properly integrated\n   - Test component styling matches UI mockups across different screen sizes\n   - Validate component behavior matches expected functionality\n   - Ensure no console errors or warnings are present\n\n2. Split-Pane Layout Testing:\n   - Test resizing functionality with mouse drag operations\n   - Verify minimum width constraints prevent panels from becoming too small\n   - Test keyboard accessibility for panel resizing\n   - Confirm panel configuration persists across page refreshes\n   - Test responsive behavior on different screen sizes\n\n3. Data Integration Testing:\n   - Verify JobDetailsCard correctly displays insurance and customer information\n   - Test all four BusinessRuleCard components with various data scenarios\n   - Validate ContextualDocumentViewer properly displays PDF documents\n   - Test with both complete and partial data sets to verify fallback behaviors\n\n4. Interaction Testing:\n   - Verify bidirectional navigation between form fields and document locations\n   - Test highlighting functionality in the document viewer\n   - Validate user decision tracking in business rule components\n   - Test expandable sections and modal dialogs\n\n5. Performance Testing:\n   - Measure and verify initial load time is under 2 seconds for typical documents\n   - Test with large documents (50+ pages) to verify performance\n   - Validate smooth scrolling and zooming in document viewer\n   - Measure memory usage during extended use sessions\n\n6. Cross-Browser Testing:\n   - Test functionality in Chrome, Firefox, Safari, and Edge\n   - Verify consistent appearance across browsers\n   - Validate PDF rendering works correctly in all supported browsers\n\n7. Accessibility Testing:\n   - Test with screen readers (NVDA, VoiceOver) to verify proper announcements\n   - Verify keyboard navigation works throughout the interface\n   - Test focus management in modal dialogs and expandable sections\n   - Validate color contrast meets WCAG AA standards\n\n8. Integration Testing:\n   - Verify the page integrates correctly with the WebSocket system for real-time updates\n   - Test navigation between job dashboard and job detail page\n   - Validate proper state management when switching between multiple jobs",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           13,
           7,
@@ -1344,7 +1313,7 @@
         "id": 20,
         "title": "Optimize Two-Page Job Workflow System",
         "description": "Refine and optimize the two-page job workflow system, including the Job Detail Page and Review Page, focusing on data integration, layout optimization, user workflow, business rule analysis, and information architecture.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           6,
           7,
@@ -1422,7 +1391,7 @@
             "id": 8,
             "title": "UI Refinement - Review Page",
             "description": "Enhance the Review Page split-pane interface with better space utilization, responsive behavior, and improved document viewer controls.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [],
             "details": "<info added on 2025-08-14T16:57:39.737Z>\nSuccessfully enhanced the Review Page with split-pane layout matching the prototype. Implemented:\n1. Enhanced Document Viewer component with PDF/extracted text toggle capability\n2. Split-pane layout with business rules panel (left) and document viewer (right)\n3. Integration with real database document pages (extractedContent and rawText)\n4. Measurement comparison panel for Ridge Cap analysis\n5. Sticky footer with supplement impact calculations and rule navigation\n6. Evidence highlighting in extracted text view\n7. Proper spacing and layout matching the prototype design\n\nThe app is now running on http://localhost:3003 with all review functionality implemented.\n</info added on 2025-08-14T16:57:39.737Z>",
             "testStrategy": ""
@@ -1431,7 +1400,7 @@
             "id": 9,
             "title": "Business Rule Integration",
             "description": "Connect business rule analyzers to the UI, implement confidence score visualization, and enhance evidence presentation with direct document references.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -1440,7 +1409,7 @@
             "id": 10,
             "title": "Performance Optimization",
             "description": "Implement code splitting, optimize component rendering, reduce unnecessary re-renders, and add performance monitoring for both pages.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -1449,7 +1418,7 @@
             "id": 11,
             "title": "User Experience Enhancements",
             "description": "Add keyboard shortcuts, improve navigation aids, implement breadcrumbs, and enhance accessibility across the workflow system.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -1458,7 +1427,7 @@
             "id": 12,
             "title": "Final Testing and Documentation",
             "description": "Conduct comprehensive testing across all components and document the optimized workflow system, including any known limitations and future enhancement opportunities.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -1515,9 +1484,7 @@
             "title": "Field Mapping Fixes",
             "description": "Fix field mappings in OverviewPage component and update data interfaces to match UI expectations.",
             "status": "done",
-            "dependencies": [
-              14
-            ],
+            "dependencies": [],
             "details": "1. Fixed field mappings for claimRep and estimator in OverviewPage component\n2. Added missing estimator field to JobData interface\n3. Updated roof measurements object structure to match UI expectations",
             "testStrategy": "1. Verify all fields display correctly with actual data\n2. Test with various data scenarios to ensure proper mapping\n3. Validate interface compliance across components"
           },
@@ -1536,7 +1503,7 @@
             "id": 20,
             "title": "Ridge Cap Analysis Database Integration",
             "description": "Connect the Ridge Cap Analysis visual highlighting system to actual database extraction results and map pipeline outputs to the ridgeCapData interface.",
-            "status": "to-do",
+            "status": "done",
             "dependencies": [
               19
             ],
@@ -1549,7 +1516,7 @@
             "description": "Create an improved skeleton loading system for the Job Detail Page that provides better visual feedback during data loading and ensures smooth transitions between loading and populated states.",
             "dependencies": [],
             "details": "1. Create reusable skeleton components for different content types (text fields, cards, tables)\n2. Implement progressive skeleton replacement as data loads section by section\n3. Add subtle animations to skeleton loaders to indicate loading activity\n4. Ensure proper sizing and spacing of skeleton elements to match actual content\n5. Implement fade transitions between skeleton and actual content\n6. Add timing logic to prevent flickering for fast-loading content\n7. Create fallback states for failed data loading\n8. Ensure accessibility compliance with proper ARIA attributes",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "1. Test skeleton appearance across different screen sizes\n2. Verify smooth transitions between loading and loaded states\n3. Test with simulated slow network conditions\n4. Validate accessibility with screen readers\n5. Verify skeleton components match the dimensions of actual content"
           },
           {
@@ -1558,7 +1525,7 @@
             "description": "Enhance the split-pane interface on the Review Page to improve space utilization, responsiveness, and user interaction with document viewing and business rules panels.",
             "dependencies": [],
             "details": "1. Implement resizable split-pane with draggable divider\n2. Add minimum width constraints for both panels to ensure usability\n3. Create responsive breakpoints for different screen sizes\n4. Implement collapsible panels with expand/collapse controls\n5. Add keyboard shortcuts for panel resizing and navigation\n6. Implement state persistence for user's preferred panel sizes\n7. Optimize document viewer with better zoom and navigation controls\n8. Add synchronized scrolling between document view and rule references\n9. Implement smooth animations for panel resizing",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "1. Test resizing behavior across different screen sizes\n2. Verify minimum width constraints prevent unusable layouts\n3. Test keyboard shortcuts for panel manipulation\n4. Validate state persistence across page refreshes\n5. Test synchronized scrolling accuracy\n6. Verify performance during panel resizing"
           },
           {
@@ -1567,7 +1534,7 @@
             "description": "Improve the presentation and interaction with business rules analysis, focusing on confidence score visualization, evidence presentation, and rule relationships.",
             "dependencies": [],
             "details": "1. Design and implement improved confidence score visualization with color-coded indicators\n2. Create expandable evidence panels with direct document references\n3. Implement visual representation of rule dependencies and relationships\n4. Add detailed explanations for each rule decision with supporting evidence\n5. Create improved tooltips and contextual help for complex rule interpretations\n6. Implement filtering and sorting options for business rules\n7. Add collapsible sections for different rule categories\n8. Implement highlighting system to connect rules with relevant document sections",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "1. Test visualization accuracy with various confidence scores\n2. Verify expandable panels work correctly\n3. Test document reference linking accuracy\n4. Validate filtering and sorting functionality\n5. Test tooltip and help content for clarity\n6. Verify highlighting system correctly identifies relevant document sections"
           },
           {
@@ -1576,7 +1543,7 @@
             "description": "Refine data fetching patterns and state management to reduce loading times, implement progressive loading, and ensure proper field persistence throughout the workflow.",
             "dependencies": [],
             "details": "1. Audit all dynamic fields to ensure proper data binding and persistence\n2. Implement data fetching optimizations with request batching and prioritization\n3. Add progressive loading for large documents and data sets\n4. Implement field-level validation with clear error states\n5. Enhance caching strategy for frequently accessed data\n6. Implement optimistic UI updates for better perceived performance\n7. Create a central state management solution for consistent data access\n8. Add retry mechanisms for failed data fetching\n9. Implement data prefetching for anticipated user actions",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "1. Test data loading performance with various network conditions\n2. Verify field persistence across page navigation\n3. Test error handling with simulated API failures\n4. Validate caching effectiveness for repeated data requests\n5. Measure and compare loading times before and after optimization\n6. Test optimistic UI updates with delayed network responses"
           },
           {
@@ -1585,7 +1552,7 @@
             "description": "Connect the Ridge Cap Analysis visual highlighting system to actual database extraction results and implement the data mapping between extraction pipeline outputs and the UI components.",
             "dependencies": [],
             "details": "1. Implement data fetching from extraction pipeline results in the database\n2. Create mappers to transform extraction data to the ridgeCapData interface format\n3. Connect visual highlighting system to toggle between placeholder and live data\n4. Implement automatic transition from red to green highlighting as data is populated\n5. Add validation logic for extraction results with appropriate error handling\n6. Implement confidence scoring display for ridge cap analysis fields\n7. Create fallback mechanisms for missing or low-confidence data\n8. Add refresh capability to update extraction results on demand",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "1. Test data mapping accuracy with various extraction results\n2. Verify visual highlighting correctly reflects data state\n3. Test with complete, partial, and missing extraction data\n4. Validate error handling for malformed extraction results\n5. Test refresh functionality for updated extraction data\n6. Verify confidence score display accuracy"
           }
         ]
@@ -1622,7 +1589,7 @@
             "title": "Implement Claude extractors (line-items & measurements)",
             "description": "Create `lib/extraction/claude-extractors.ts` with two pure parsers: estimate line-items, roof report measurements. Operate only on OCR text; return strict JSON. Include unit tests for common patterns.",
             "details": "- Functions: extractEstimateLineItems(text), extractRoofReportMeasurements(text)\n- Deterministic prompts, temperature 0, JSON-only responses\n- Validate with zod schemas; map to MistralExtraction.extractedData\n- Capture sourcePages and classifiers (roofType, ridgeCapType)",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               2,
               3,
@@ -1635,7 +1602,7 @@
             "title": "Wire extractors into Phase 2 orchestrator",
             "description": "Invoke line-item and measurement extractors after saving OCR pages; merge results and upsert into latest MistralExtraction.extractedData. Persist provenance and page sources.",
             "details": "- Update smart-extraction-service.ts: call extractors per doc type with concurrency 4–6\n- Merge per the mapDatabaseToRidgeCapData expectations\n- Store processing_metadata: {method, model, version, pages, timings}\n- Unit tests against fixture OCR text",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               2,
               3,
@@ -1783,7 +1750,17 @@
           18
         ],
         "priority": "low",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Extraction Testing Suite",
+            "description": "Create comprehensive testing suite for the extraction pipeline. Include unit tests for Claude extractors, integration tests for Mistral OCR pipeline, end-to-end tests for full document processing workflow, mock data fixtures for consistent testing, and performance benchmarks for extraction timing.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 23
+          }
+        ]
       },
       {
         "id": 24,
@@ -1795,14 +1772,101 @@
           21
         ],
         "priority": "high",
-        "details": "1. File Storage Security:\n   - Implement S3/R2 cloud storage integration to replace local file storage\n   - Configure bucket policies with least privilege access controls\n   - Set up server-side encryption at rest (AES-256)\n   - Implement signed URLs with short expiration for temporary file access\n   - Create file access middleware to verify user/organization permissions\n   - Integrate virus/malware scanning for all uploaded files using ClamAV or cloud service\n   - Implement organized file structure by job/document type (replacing current timestamp naming)\n   - Create file metadata tracking system for enhanced security and auditing\n   - Implement file retention policies with automated enforcement\n   - Add file versioning for complete audit trail\n   - Consider Railway volumes as an alternative cloud storage option\n\n2. Database Security:\n   - Implement Row-Level Security (RLS) policies in PostgreSQL\n   - Create organization/tenant isolation through database schemas or tenant_id columns\n   - Set up database connection pooling with encrypted connections\n   - Implement database query parameterization to prevent SQL injection\n   - Create data access layer with permission checks before query execution\n   - Configure field-level encryption for PII fields (SSN, DOB, etc.)\n\n3. API Route Protection:\n   - Implement JWT validation middleware for all protected routes\n   - Set up role-based access control (RBAC) for API endpoints\n   - Create rate limiting using Redis to prevent abuse (max 100 req/min per IP)\n   - Configure proper CORS settings to restrict cross-origin requests\n   - Implement security headers (CSP, HSTS, X-Content-Type-Options, etc.)\n   - Add request logging and audit trails for sensitive operations\n   - Develop secure file retrieval API with authentication and authorization checks\n\n4. Input Validation & Sanitization:\n   - Implement server-side validation beyond basic type checking\n   - Add content sanitization for all user inputs to prevent XSS\n   - Create file type validation with content inspection (not just extension)\n   - Implement maximum file size limits and chunked upload for large files\n   - Add JSON schema validation for all API request payloads\n\n5. Compliance & Best Practices:\n   - Implement audit logging for all security-relevant events\n   - Create secure document retention and deletion policies\n   - Set up automated security scanning in CI/CD pipeline\n   - Document security controls for compliance with insurance regulations\n   - Implement proper error handling that doesn't leak sensitive information\n   - Create security incident response procedures\n\n6. Integration with Authentication:\n   - Design security components to integrate with future auth system\n   - Create placeholder hooks for user/role information\n   - Implement temporary security measures until auth system is complete\n   - Document integration points for future auth system",
-        "testStrategy": "1. File Storage Security Testing:\n   - Verify S3/R2 integration with mock storage tests\n   - Test file access controls with different user permissions\n   - Validate encryption at rest is properly configured\n   - Verify signed URLs expire correctly and prevent unauthorized access\n   - Test virus scanning with EICAR test files\n   - Validate file access logs capture all relevant metadata\n   - Test organized file structure implementation with various document types\n   - Verify file metadata tracking system captures all required information\n   - Test file retention policies with time-based scenarios\n   - Validate file versioning maintains proper audit trail\n\n2. Database Security Testing:\n   - Test RLS policies with different user contexts\n   - Verify tenant isolation prevents cross-tenant data access\n   - Validate field-level encryption for PII data\n   - Test database connection security with network scanning tools\n   - Perform SQL injection testing against all database queries\n   - Verify query performance with security measures enabled\n\n3. API Security Testing:\n   - Test JWT validation with valid, invalid, and expired tokens\n   - Verify RBAC correctly limits access based on user roles\n   - Test rate limiting by exceeding thresholds\n   - Validate CORS configuration blocks unauthorized origins\n   - Verify security headers using tools like Mozilla Observatory\n   - Test API routes without authentication to confirm proper protection\n   - Test secure file retrieval API with various authentication scenarios\n\n4. Penetration Testing:\n   - Conduct automated security scanning with OWASP ZAP\n   - Perform manual penetration testing of critical endpoints\n   - Test file upload security with malicious file types\n   - Attempt privilege escalation between different user roles\n   - Test for common OWASP Top 10 vulnerabilities\n   - Validate secure handling of error conditions\n\n5. Compliance Testing:\n   - Verify audit logs capture all required information\n   - Test document retention policies with time-based scenarios\n   - Validate PII handling complies with relevant regulations\n   - Verify secure deletion of sensitive information\n   - Test security incident response procedures with simulated incidents\n\n6. Integration Testing:\n   - Verify security components work with mocked auth system\n   - Test transition from temporary to permanent security measures\n   - Validate all integration points are properly documented",
+        "details": "1. File Storage Security:\n   - Implement S3/R2 cloud storage integration to replace local file storage\n   - Configure bucket policies with least privilege access controls\n   - Set up server-side encryption at rest (AES-256)\n   - Implement signed URLs with short expiration for temporary file access\n   - Create file access middleware to verify user/organization permissions\n   - Integrate virus/malware scanning for all uploaded files using ClamAV or cloud service\n   - Implement organized file structure by job/document type (replacing current timestamp naming)\n   - Create file metadata tracking system for enhanced security and auditing\n   - Implement file retention policies with automated enforcement\n   - Add file versioning for complete audit trail\n   - Configure Railway volumes as an alternative cloud storage option with appropriate security settings\n\n2. Database Security:\n   - Implement Row-Level Security (RLS) policies in PostgreSQL\n   - Create organization/tenant isolation through database schemas or tenant_id columns\n   - Set up database connection pooling with encrypted connections\n   - Implement database query parameterization to prevent SQL injection\n   - Create data access layer with permission checks before query execution\n   - Configure field-level encryption for PII fields (SSN, DOB, etc.)\n   - Configure Railway database security settings including backup policies and access controls\n\n3. API Route Protection:\n   - Implement JWT validation middleware for all protected routes\n   - Set up role-based access control (RBAC) for API endpoints\n   - Create rate limiting using Redis to prevent abuse (max 100 req/min per IP)\n   - Configure proper CORS settings to restrict cross-origin requests\n   - Implement security headers (CSP, HSTS, X-Content-Type-Options, etc.)\n   - Add request logging and audit trails for sensitive operations\n   - Develop secure file retrieval API with authentication and authorization checks\n\n4. Input Validation & Sanitization:\n   - Implement server-side validation beyond basic type checking\n   - Add content sanitization for all user inputs to prevent XSS\n   - Create file type validation with content inspection (not just extension)\n   - Implement maximum file size limits and chunked upload for large files\n   - Add JSON schema validation for all API request payloads\n\n5. Compliance & Best Practices:\n   - Implement audit logging for all security-relevant events\n   - Create secure document retention and deletion policies\n   - Set up automated security scanning in CI/CD pipeline\n   - Document security controls for compliance with insurance regulations\n   - Implement proper error handling that doesn't leak sensitive information\n   - Create security incident response procedures\n   - Ensure Railway compliance with data protection requirements for insurance documents\n\n6. Integration with Authentication:\n   - Design security components to integrate with future auth system\n   - Create placeholder hooks for user/role information\n   - Implement temporary security measures until auth system is complete\n   - Document integration points for future auth system\n\n7. Railway-Specific Security Configuration:\n   - Configure Railway environment variables securely with encryption for sensitive values\n   - Set up Railway volume security for file storage with proper access controls\n   - Implement Railway networking security with private networking where applicable\n   - Configure Railway SSL/TLS settings for all services\n   - Implement Railway access controls and team permissions with least privilege principle\n   - Configure Railway audit logging for security events\n   - Set up Railway backup and disaster recovery procedures",
+        "testStrategy": "1. File Storage Security Testing:\n   - Verify S3/R2 integration with mock storage tests\n   - Test file access controls with different user permissions\n   - Validate encryption at rest is properly configured\n   - Verify signed URLs expire correctly and prevent unauthorized access\n   - Test virus scanning with EICAR test files\n   - Validate file access logs capture all relevant metadata\n   - Test organized file structure implementation with various document types\n   - Verify file metadata tracking system captures all required information\n   - Test file retention policies with time-based scenarios\n   - Validate file versioning maintains proper audit trail\n   - Test Railway volume security configuration for file storage\n\n2. Database Security Testing:\n   - Test RLS policies with different user contexts\n   - Verify tenant isolation prevents cross-tenant data access\n   - Validate field-level encryption for PII data\n   - Test database connection security with network scanning tools\n   - Perform SQL injection testing against all database queries\n   - Verify query performance with security measures enabled\n   - Test Railway database security settings and backup procedures\n\n3. API Security Testing:\n   - Test JWT validation with valid, invalid, and expired tokens\n   - Verify RBAC correctly limits access based on user roles\n   - Test rate limiting by exceeding thresholds\n   - Validate CORS configuration blocks unauthorized origins\n   - Verify security headers using tools like Mozilla Observatory\n   - Test API routes without authentication to confirm proper protection\n   - Test secure file retrieval API with various authentication scenarios\n\n4. Penetration Testing:\n   - Conduct automated security scanning with OWASP ZAP\n   - Perform manual penetration testing of critical endpoints\n   - Test file upload security with malicious file types\n   - Attempt privilege escalation between different user roles\n   - Test for common OWASP Top 10 vulnerabilities\n   - Validate secure handling of error conditions\n   - Test Railway networking security with network scanning tools\n\n5. Compliance Testing:\n   - Verify audit logs capture all required information\n   - Test document retention policies with time-based scenarios\n   - Validate PII handling complies with relevant regulations\n   - Verify secure deletion of sensitive information\n   - Test security incident response procedures with simulated incidents\n   - Validate Railway compliance with data protection requirements\n\n6. Integration Testing:\n   - Verify security components work with mocked auth system\n   - Test transition from temporary to permanent security measures\n   - Validate all integration points are properly documented\n\n7. Railway-Specific Security Testing:\n   - Verify secure configuration of Railway environment variables\n   - Test Railway volume security with unauthorized access attempts\n   - Validate Railway private networking configuration\n   - Test Railway SSL/TLS configuration with SSL scanning tools\n   - Verify Railway access controls and team permissions\n   - Test Railway audit logging captures all security events\n   - Validate Railway backup and disaster recovery procedures",
         "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Review Process UI Refinements and Header Enhancement",
+        "description": "Improve the document review interface with enhanced visual hierarchy, refined header information display, better rule step visualization, and optimized interaction patterns to create a more intuitive and professional review workflow.",
+        "details": "1. Header Enhancement:\n   - Redesign the review page header to display contextual information including document name, job ID, and current review stage\n   - Implement collapsible/sticky header that remains accessible while scrolling through document\n   - Add progress indicators showing completed steps and remaining tasks in the review workflow\n   - Include quick-access action buttons for common tasks (save, approve, reject, request clarification)\n\n2. Visual Hierarchy Improvements:\n   - Refactor CSS to establish clearer visual distinction between primary content, supporting information, and actions\n   - Implement consistent spacing, typography, and color system for review interface elements\n   - Create visual grouping of related information with card-based components and subtle separators\n   - Enhance contrast for critical information and action items\n\n3. Rule Step Visualization:\n   - Design and implement a step indicator component showing progress through the rule review workflow\n   - Create visual differentiation between completed, current, and upcoming rule review steps\n   - Add micro-animations for transitions between steps to provide visual feedback\n   - Implement tooltips with contextual help for each rule step\n\n4. Interaction Pattern Refinements:\n   - Optimize click/tap targets for better usability on both desktop and mobile\n   - Implement keyboard shortcuts for common review actions\n   - Add confirmation dialogs for critical actions with clear, concise messaging\n   - Create smooth transitions between different states of the review process\n   - Implement \"undo\" functionality for accidental actions\n\n5. Contextual Information Display:\n   - Design and implement information panels that show relevant context based on current review step\n   - Create expandable/collapsible sections for detailed information to reduce visual clutter\n   - Add tooltips and help text for technical terms and complex concepts\n   - Implement visual indicators for fields with high/low confidence scores\n\n6. Integration with Existing Components:\n   - Ensure compatibility with the DocumentViewer component for highlighting relevant sections\n   - Coordinate with BusinessRuleCard components to maintain consistent styling and behavior\n   - Align with the JobDashboard component for seamless workflow transitions",
+        "testStrategy": "1. User Interface Testing:\n   - Conduct comprehensive visual inspection across different screen sizes (mobile, tablet, desktop)\n   - Verify all UI elements render correctly in different browsers (Chrome, Firefox, Safari, Edge)\n   - Test responsive behavior of header and rule visualization components\n   - Validate that all interactive elements have appropriate hover/focus/active states\n\n2. Usability Testing:\n   - Conduct task-based testing with sample review workflows to measure completion time and error rates\n   - Test keyboard navigation and shortcuts for accessibility compliance\n   - Verify that all interactive elements have sufficient contrast and appropriate sizing\n   - Test with screen readers to ensure accessibility for visually impaired users\n\n3. Functional Testing:\n   - Verify that header information accurately reflects current document and review state\n   - Test collapsible/sticky header behavior during scrolling\n   - Validate that progress indicators correctly update as users move through the workflow\n   - Test all action buttons and confirm they trigger the expected behaviors\n   - Verify that rule step visualization accurately reflects the current state of the review process\n\n4. Integration Testing:\n   - Test integration with DocumentViewer to ensure highlighting functionality works correctly\n   - Verify compatibility with BusinessRuleCard components\n   - Test workflow transitions between JobDashboard and the enhanced review interface\n   - Validate that contextual information displays correctly based on the current review step\n\n5. Performance Testing:\n   - Measure and optimize render times for the enhanced UI components\n   - Test scrolling performance with the sticky header\n   - Verify that animations and transitions run smoothly on target devices",
+        "status": "pending",
+        "dependencies": [
+          4,
+          6,
+          8,
+          20
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Search Functionality to Document Viewer",
+            "description": "Implement search capabilities within the enhanced document viewer, allowing users to search for text within PDFs, highlight search results, navigate between search matches, and display search result count. Include keyboard shortcuts for search (Ctrl/Cmd+F) and navigation between results.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 25
+          },
+          {
+            "id": 2,
+            "title": "Migrate from Radix UI to Tailwind Catalyst Components",
+            "description": "Remove all Radix UI dependencies and migrate to pure Tailwind Catalyst components. This includes replacing Radix primitives with Catalyst equivalents, updating import statements, ensuring consistent styling with Tailwind utilities, and removing Radix packages from package.json.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 25
+          },
+          {
+            "id": 3,
+            "title": "Performance Optimization for Split-Pane Interface",
+            "description": "Implement virtualization for large document rendering, use React.memo and useMemo for expensive component calculations, optimize re-renders with proper state management, and add progressive loading for large documents (from Task 19.7)",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 25
+          },
+          {
+            "id": 4,
+            "title": "Accessibility Implementation for Job Detail Interface",
+            "description": "Ensure proper keyboard navigation throughout the interface, add ARIA attributes for screen reader compatibility, implement focus management for modal dialogs and expandable sections, and test with screen readers and keyboard-only navigation (from Task 19.8)",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 25
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "title": "Comprehensive Documentation for EOD Insurance Supplement Automation System",
+        "description": "Create comprehensive documentation for the EOD Insurance Supplement Automation System, including accessibility guidelines, production environment documentation, API documentation, user guides, system architecture documentation, deployment procedures, troubleshooting guides, and security documentation.",
+        "details": "1. Accessibility Documentation:\n   - Create WCAG 2.1 AA compliance guidelines specific to the application\n   - Document keyboard navigation patterns throughout the application\n   - Provide color contrast requirements and verification methods\n   - Include screen reader compatibility guidelines and testing procedures\n   - Document accessible form implementation standards\n\n2. Production Environment Documentation:\n   - Incorporate and expand on production environment details from Task 10\n   - Document Railway deployment configuration and environment variables\n   - Detail PostgreSQL database setup, access controls, and maintenance\n   - Document monitoring and logging systems configuration\n   - Include backup and recovery procedures\n   - Detail SSL certificate management and renewal process\n\n3. API Documentation:\n   - Create comprehensive OpenAPI/Swagger documentation for all endpoints\n   - Include authentication requirements, request/response formats, and status codes\n   - Document rate limiting and security considerations\n   - Provide example requests and responses for each endpoint\n   - Include error handling and troubleshooting guidance\n   - Document WebSocket API events and message formats\n\n4. User Guides:\n   - Create administrator guide with system configuration instructions\n   - Develop end-user guide for document upload and review processes\n   - Document business rule analyzer functionality and interpretation\n   - Create guide for report generation and export features\n   - Include video tutorials for key workflows\n   - Provide FAQ section addressing common user questions\n\n5. System Architecture Documentation:\n   - Create high-level architecture diagrams showing system components\n   - Document data flow between components\n   - Detail technology stack with version requirements\n   - Include database schema documentation and entity relationships\n   - Document integration points with external systems\n   - Provide infrastructure diagrams for production environment\n\n6. Deployment Procedures:\n   - Document CI/CD pipeline configuration and workflow\n   - Create step-by-step deployment instructions for new releases\n   - Include rollback procedures for failed deployments\n   - Document environment-specific configuration requirements\n   - Detail post-deployment verification procedures\n   - Include maintenance window recommendations\n\n7. Troubleshooting Guides:\n   - Create troubleshooting decision trees for common issues\n   - Document log analysis procedures for identifying problems\n   - Include database troubleshooting guidance\n   - Provide WebSocket connection troubleshooting steps\n   - Document performance optimization techniques\n   - Include contact information for escalation procedures\n\n8. Security Documentation:\n   - Document authentication and authorization mechanisms\n   - Detail data encryption methods for storage and transmission\n   - Include file storage security measures and access controls\n   - Document database security configuration\n   - Provide security incident response procedures\n   - Include compliance documentation for relevant standards",
+        "testStrategy": "1. Accessibility Documentation Verification:\n   - Conduct review with accessibility expert to verify WCAG compliance guidance\n   - Test keyboard navigation instructions with actual implementation\n   - Verify screen reader compatibility instructions with NVDA and JAWS\n   - Validate color contrast requirements against WebAIM standards\n   - Test all documented accessibility features with actual implementation\n\n2. Production Environment Documentation Testing:\n   - Verify Railway deployment instructions by performing a test deployment\n   - Validate database configuration instructions against actual production setup\n   - Test backup and recovery procedures in staging environment\n   - Verify monitoring setup instructions by implementing in test environment\n   - Validate SSL certificate management procedures\n\n3. API Documentation Testing:\n   - Verify all endpoints are accurately documented by testing against implementation\n   - Test example requests to ensure they return expected responses\n   - Validate error handling documentation with intentional error triggering\n   - Review documentation with API developers to ensure completeness\n   - Test WebSocket event documentation against actual implementation\n\n4. User Guide Verification:\n   - Conduct user testing with documentation to verify clarity and completeness\n   - Have new users follow guides to complete key tasks and provide feedback\n   - Review guides with product team to ensure accuracy\n   - Test video tutorials to ensure they match current UI and functionality\n   - Verify FAQ answers are accurate and comprehensive\n\n5. System Architecture Documentation Testing:\n   - Review architecture diagrams with development team for accuracy\n   - Validate technology stack documentation against actual implementation\n   - Verify database schema documentation matches production database\n   - Test data flow documentation by tracing sample transactions\n   - Review integration documentation with relevant stakeholders\n\n6. Deployment Procedures Testing:\n   - Perform test deployment following documented procedures\n   - Test rollback procedures in staging environment\n   - Verify CI/CD pipeline documentation by triggering test builds\n   - Validate environment configuration instructions across development, staging, and production\n   - Test post-deployment verification procedures\n\n7. Troubleshooting Guide Verification:\n   - Simulate common issues to verify troubleshooting steps\n   - Test log analysis procedures with sample logs containing known issues\n   - Verify database troubleshooting guidance with test scenarios\n   - Test WebSocket troubleshooting steps with intentionally created connection issues\n   - Review escalation procedures with support team\n\n8. Security Documentation Testing:\n   - Review authentication documentation with security team\n   - Verify encryption documentation against actual implementation\n   - Test file storage security measures documentation with access attempts\n   - Validate database security configuration documentation\n   - Review compliance documentation against relevant standards requirements",
+        "status": "pending",
+        "dependencies": [
+          10,
+          18,
+          24
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Accessibility Guidelines Documentation",
+            "description": "Create comprehensive accessibility guidelines to ensure WCAG compliance across all UI components and workflows (originally from Task 11.7)",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 26
+          },
+          {
+            "id": 2,
+            "title": "Production Environment Documentation",
+            "description": "Create comprehensive documentation for production environment maintenance, monitoring, and troubleshooting procedures (originally from Task 10.6)",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 26
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-19T17:52:29.600Z",
+      "updated": "2025-08-20T22:31:54.949Z",
       "description": "Tasks for master context"
     }
   }

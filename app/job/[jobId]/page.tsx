@@ -494,6 +494,7 @@ export default function JobDetailPage() {
       UPLOADED: 'uploading',
       TEXT_EXTRACTED: 'extracting',
       ANALYZING: 'analyzing',
+      ANALYSIS_READY: 'reviewing', // Ready for review
       REVIEWING: 'reviewing',
       COMPLETED: 'complete',
     };

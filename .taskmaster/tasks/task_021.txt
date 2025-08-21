@@ -82,7 +82,7 @@
 - Env gates for enabling Files API and thresholds
 - Unit tests with mocked HTTP
 
-## 2. Implement Claude extractors (line-items & measurements) [pending]
+## 2. Implement Claude extractors (line-items & measurements) [done]
 ### Dependencies: 21.2, 21.3, 21.5
 ### Description: Create `lib/extraction/claude-extractors.ts` with two pure parsers: estimate line-items, roof report measurements. Operate only on OCR text; return strict JSON. Include unit tests for common patterns.
 ### Details:
@@ -91,7 +91,7 @@
 - Validate with zod schemas; map to MistralExtraction.extractedData
 - Capture sourcePages and classifiers (roofType, ridgeCapType)
 
-## 3. Wire extractors into Phase 2 orchestrator [pending]
+## 3. Wire extractors into Phase 2 orchestrator [done]
 ### Dependencies: 21.2, 21.3, 21.5
 ### Description: Invoke line-item and measurement extractors after saving OCR pages; merge results and upsert into latest MistralExtraction.extractedData. Persist provenance and page sources.
 ### Details:

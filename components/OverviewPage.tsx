@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FileText,
   BarChart3,
+  Download,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -39,6 +40,40 @@ export function OverviewPage({
   validationNotes = [],
 }: OverviewPageProps) {
   const router = useRouter();
+
+  // Handle document download
+  const handleDownload = async (docType: string, docName: string) => {
+    try {
+      // Fetch the document from the API
+      const response = await fetch(
+        `/api/jobs/${jobData.id}/documents/${docType}/download`
+      );
+
+      if (!response.ok) {
+        console.error('Download failed:', response.statusText);
+        return;
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${docName}.pdf`;
+
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
 
   // Map rule names to URL slugs
   const getRuleSlug = (ruleName: string) => {
@@ -103,7 +138,7 @@ export function OverviewPage({
           label: 'Ready for Review',
           color:
             'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800',
-          icon: AlertTriangle,
+          icon: Play,
         };
       case 'complete':
         return {
@@ -289,7 +324,7 @@ export function OverviewPage({
             {/* Document List */}
             <div className='mb-4 pb-4 border-b border-zinc-200 dark:border-zinc-700'>
               <h4 className='text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2'>
-                📄 Document Evidence
+                Document Evidence
               </h4>
               <div className='space-y-2'>
                 {documents.map((doc, index) => (
@@ -303,9 +338,18 @@ export function OverviewPage({
                         {doc.name}
                       </span>
                     </div>
-                    <span className='text-zinc-500 dark:text-zinc-400'>
-                      {doc.pages} pages
-                    </span>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-zinc-500 dark:text-zinc-400'>
+                        {doc.pages} pages
+                      </span>
+                      <button
+                        onClick={() => handleDownload(doc.type, doc.name)}
+                        className='p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors'
+                        title={`Download ${doc.name}`}
+                      >
+                        <Download className='h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400' />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

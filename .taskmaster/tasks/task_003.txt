@@ -1,6 +1,6 @@
 # Task ID: 3
 # Title: Database Schema and API Routes
-# Status: in-progress
+# Status: done
 # Dependencies: 1
 # Priority: high
 # Description: Validate workflow assumptions using an iterative, discovery-driven approach to database schema design based on actual data patterns from real documents.
@@ -302,7 +302,7 @@ REFOCUSED SCHEMA DESIGN: MISTRAL-CENTRIC EXTRACTION STRATEGY
 6. Document reliability metrics and limitations
 7. Refine extraction pipeline based on findings
 
-## 6. Business Rule Validation [pending]
+## 6. Business Rule Validation [done]
 ### Dependencies: 3.5
 ### Description: Validate that extracted data supports all 4 business rules and identify any gaps or modifications needed.
 ### Details:
@@ -314,7 +314,7 @@ REFOCUSED SCHEMA DESIGN: MISTRAL-CENTRIC EXTRACTION STRATEGY
 6. Create test cases for each business rule
 7. Refine extraction to support all rules
 
-## 7. Prototype API Implementation [in-progress]
+## 7. Prototype API Implementation [done]
 ### Dependencies: 3.4
 ### Description: Create prototype API routes for testing the extraction pipeline and data storage with minimal authentication.
 ### Details:
@@ -377,7 +377,7 @@ REMAINING ISSUES:
 6. Add logging for database operations
 7. Create a database initialization script
 
-## 9. Schema Evolution Documentation [pending]
+## 9. Schema Evolution Documentation [done]
 ### Dependencies: 3.6
 ### Description: Document the schema evolution process and create a roadmap for transitioning to the final production schema.
 ### Details:
@@ -389,7 +389,7 @@ REMAINING ISSUES:
 6. Document data migration strategies
 7. Create schema validation tests
 
-## 10. Extraction Pipeline Refinement [pending]
+## 10. Extraction Pipeline Refinement [done]
 ### Dependencies: 3.5, 3.6
 ### Description: Refine the extraction pipeline based on testing results to improve accuracy and reliability.
 ### Details:

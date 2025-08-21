@@ -27,7 +27,7 @@
 
 # Subtasks:
 ## 1. Summary Dashboard Implementation [pending]
-### Dependencies: None
+### Dependencies: 9.8
 ### Description: Create a summary dashboard that displays all decisions and total impact with a clean, intuitive interface.
 ### Details:
 1. Design dashboard layout with decision summary section
@@ -39,7 +39,7 @@
 7. Create loading states for dashboard components
 
 ## 2. PDF Report Generation [pending]
-### Dependencies: 9.1
+### Dependencies: 9.1, 9.8
 ### Description: Implement PDF report generation with professional formatting, including headers, footers, and branded elements.
 ### Details:
 1. Integrate PDF generation library
@@ -51,32 +51,8 @@
 7. Add digital signature support
 8. Optimize for print quality
 
-## 3. Excel Report Functionality [pending]
-### Dependencies: 9.1
-### Description: Develop Excel report generation with detailed calculations, formulas, and multiple worksheets for comprehensive analysis.
-### Details:
-1. Integrate Excel generation library
-2. Create worksheet templates for different data categories
-3. Implement formula generation for calculations
-4. Add conditional formatting for data visualization
-5. Create pivot table templates for data analysis
-6. Implement chart generation from decision data
-7. Add metadata and documentation sheets
-
-## 4. Word Report with Templates [pending]
-### Dependencies: 9.1
-### Description: Create Word report generation with customizable templates, allowing users to select different formats and content sections.
-### Details:
-1. Integrate Word document generation library
-2. Design multiple report templates with different styles
-3. Create template selection interface
-4. Implement dynamic content population based on template
-5. Add support for custom fields and sections
-6. Create template preview functionality
-7. Implement template caching for performance
-
 ## 5. Download System Implementation [pending]
-### Dependencies: 9.2, 9.3, 9.4
+### Dependencies: 9.2, 9.3, 9.4, 9.8
 ### Description: Implement direct download functionality with immediate download without queuing and progress indicators.
 ### Details:
 1. Create unified download manager service
@@ -110,4 +86,10 @@
 5. Implement validation report with issues list
 6. Add validation bypass with confirmation for edge cases
 7. Create validation logging for audit purposes
+
+## 8. Interview Client for Report Specifications [pending]
+### Dependencies: None
+### Description: Conduct client interview to determine exact specifications and requirements for report generation. Gather information on preferred formats, required sections, branding requirements, data presentation preferences, and any compliance or industry-specific formatting needs. Document all requirements for implementation.
+### Details:
+
 

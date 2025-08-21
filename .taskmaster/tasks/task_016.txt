@@ -1,7 +1,7 @@
 # Task ID: 16
 # Title: Debug and Fix Document Extraction Pipeline Failures
-# Status: pending
-# Dependencies: 3, 5, 14
+# Status: done
+# Dependencies: 3, 5
 # Priority: high
 # Description: Investigate and resolve critical errors in the document extraction pipeline, including Mistral API "Unexpected token 'S'" errors and "Invalid 'prisma.document.create'" database issues to ensure reliable document processing.
 # Details:

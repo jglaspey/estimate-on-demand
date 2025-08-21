@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Document Upload Interface Implementation
-# Status: in-progress
+# Status: done
 # Dependencies: 1, 11
 # Priority: high
 # Description: Create a drag-and-drop file upload interface with visual feedback, document previews, and validation as specified in US-001 through US-005.

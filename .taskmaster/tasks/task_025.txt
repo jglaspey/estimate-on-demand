@@ -1,0 +1,99 @@
+# Task ID: 25
+# Title: Review Process UI Refinements and Header Enhancement
+# Status: pending
+# Dependencies: 4, 6, 8, 20
+# Priority: medium
+# Description: Improve the document review interface with enhanced visual hierarchy, refined header information display, better rule step visualization, and optimized interaction patterns to create a more intuitive and professional review workflow.
+# Details:
+1. Header Enhancement:
+   - Redesign the review page header to display contextual information including document name, job ID, and current review stage
+   - Implement collapsible/sticky header that remains accessible while scrolling through document
+   - Add progress indicators showing completed steps and remaining tasks in the review workflow
+   - Include quick-access action buttons for common tasks (save, approve, reject, request clarification)
+
+2. Visual Hierarchy Improvements:
+   - Refactor CSS to establish clearer visual distinction between primary content, supporting information, and actions
+   - Implement consistent spacing, typography, and color system for review interface elements
+   - Create visual grouping of related information with card-based components and subtle separators
+   - Enhance contrast for critical information and action items
+
+3. Rule Step Visualization:
+   - Design and implement a step indicator component showing progress through the rule review workflow
+   - Create visual differentiation between completed, current, and upcoming rule review steps
+   - Add micro-animations for transitions between steps to provide visual feedback
+   - Implement tooltips with contextual help for each rule step
+
+4. Interaction Pattern Refinements:
+   - Optimize click/tap targets for better usability on both desktop and mobile
+   - Implement keyboard shortcuts for common review actions
+   - Add confirmation dialogs for critical actions with clear, concise messaging
+   - Create smooth transitions between different states of the review process
+   - Implement "undo" functionality for accidental actions
+
+5. Contextual Information Display:
+   - Design and implement information panels that show relevant context based on current review step
+   - Create expandable/collapsible sections for detailed information to reduce visual clutter
+   - Add tooltips and help text for technical terms and complex concepts
+   - Implement visual indicators for fields with high/low confidence scores
+
+6. Integration with Existing Components:
+   - Ensure compatibility with the DocumentViewer component for highlighting relevant sections
+   - Coordinate with BusinessRuleCard components to maintain consistent styling and behavior
+   - Align with the JobDashboard component for seamless workflow transitions
+
+# Test Strategy:
+1. User Interface Testing:
+   - Conduct comprehensive visual inspection across different screen sizes (mobile, tablet, desktop)
+   - Verify all UI elements render correctly in different browsers (Chrome, Firefox, Safari, Edge)
+   - Test responsive behavior of header and rule visualization components
+   - Validate that all interactive elements have appropriate hover/focus/active states
+
+2. Usability Testing:
+   - Conduct task-based testing with sample review workflows to measure completion time and error rates
+   - Test keyboard navigation and shortcuts for accessibility compliance
+   - Verify that all interactive elements have sufficient contrast and appropriate sizing
+   - Test with screen readers to ensure accessibility for visually impaired users
+
+3. Functional Testing:
+   - Verify that header information accurately reflects current document and review state
+   - Test collapsible/sticky header behavior during scrolling
+   - Validate that progress indicators correctly update as users move through the workflow
+   - Test all action buttons and confirm they trigger the expected behaviors
+   - Verify that rule step visualization accurately reflects the current state of the review process
+
+4. Integration Testing:
+   - Test integration with DocumentViewer to ensure highlighting functionality works correctly
+   - Verify compatibility with BusinessRuleCard components
+   - Test workflow transitions between JobDashboard and the enhanced review interface
+   - Validate that contextual information displays correctly based on the current review step
+
+5. Performance Testing:
+   - Measure and optimize render times for the enhanced UI components
+   - Test scrolling performance with the sticky header
+   - Verify that animations and transitions run smoothly on target devices
+
+# Subtasks:
+## 1. Add Search Functionality to Document Viewer [pending]
+### Dependencies: None
+### Description: Implement search capabilities within the enhanced document viewer, allowing users to search for text within PDFs, highlight search results, navigate between search matches, and display search result count. Include keyboard shortcuts for search (Ctrl/Cmd+F) and navigation between results.
+### Details:
+
+
+## 2. Migrate from Radix UI to Tailwind Catalyst Components [pending]
+### Dependencies: None
+### Description: Remove all Radix UI dependencies and migrate to pure Tailwind Catalyst components. This includes replacing Radix primitives with Catalyst equivalents, updating import statements, ensuring consistent styling with Tailwind utilities, and removing Radix packages from package.json.
+### Details:
+
+
+## 3. Performance Optimization for Split-Pane Interface [pending]
+### Dependencies: None
+### Description: Implement virtualization for large document rendering, use React.memo and useMemo for expensive component calculations, optimize re-renders with proper state management, and add progressive loading for large documents (from Task 19.7)
+### Details:
+
+
+## 4. Accessibility Implementation for Job Detail Interface [pending]
+### Dependencies: None
+### Description: Ensure proper keyboard navigation throughout the interface, add ARIA attributes for screen reader compatibility, implement focus management for modal dialogs and expandable sections, and test with screen readers and keyboard-only navigation (from Task 19.8)
+### Details:
+
+

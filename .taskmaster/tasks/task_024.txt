@@ -1,0 +1,131 @@
+# Task ID: 24
+# Title: Security Hardening for File Storage and Database Access
+# Status: pending
+# Dependencies: 3, 21
+# Priority: high
+# Description: Implement comprehensive security measures for file storage and database access, including access controls, encryption, API protection, and tenant isolation to safeguard sensitive insurance documents and PII.
+# Details:
+1. File Storage Security:
+   - Implement S3/R2 cloud storage integration to replace local file storage
+   - Configure bucket policies with least privilege access controls
+   - Set up server-side encryption at rest (AES-256)
+   - Implement signed URLs with short expiration for temporary file access
+   - Create file access middleware to verify user/organization permissions
+   - Integrate virus/malware scanning for all uploaded files using ClamAV or cloud service
+   - Implement organized file structure by job/document type (replacing current timestamp naming)
+   - Create file metadata tracking system for enhanced security and auditing
+   - Implement file retention policies with automated enforcement
+   - Add file versioning for complete audit trail
+   - Configure Railway volumes as an alternative cloud storage option with appropriate security settings
+
+2. Database Security:
+   - Implement Row-Level Security (RLS) policies in PostgreSQL
+   - Create organization/tenant isolation through database schemas or tenant_id columns
+   - Set up database connection pooling with encrypted connections
+   - Implement database query parameterization to prevent SQL injection
+   - Create data access layer with permission checks before query execution
+   - Configure field-level encryption for PII fields (SSN, DOB, etc.)
+   - Configure Railway database security settings including backup policies and access controls
+
+3. API Route Protection:
+   - Implement JWT validation middleware for all protected routes
+   - Set up role-based access control (RBAC) for API endpoints
+   - Create rate limiting using Redis to prevent abuse (max 100 req/min per IP)
+   - Configure proper CORS settings to restrict cross-origin requests
+   - Implement security headers (CSP, HSTS, X-Content-Type-Options, etc.)
+   - Add request logging and audit trails for sensitive operations
+   - Develop secure file retrieval API with authentication and authorization checks
+
+4. Input Validation & Sanitization:
+   - Implement server-side validation beyond basic type checking
+   - Add content sanitization for all user inputs to prevent XSS
+   - Create file type validation with content inspection (not just extension)
+   - Implement maximum file size limits and chunked upload for large files
+   - Add JSON schema validation for all API request payloads
+
+5. Compliance & Best Practices:
+   - Implement audit logging for all security-relevant events
+   - Create secure document retention and deletion policies
+   - Set up automated security scanning in CI/CD pipeline
+   - Document security controls for compliance with insurance regulations
+   - Implement proper error handling that doesn't leak sensitive information
+   - Create security incident response procedures
+   - Ensure Railway compliance with data protection requirements for insurance documents
+
+6. Integration with Authentication:
+   - Design security components to integrate with future auth system
+   - Create placeholder hooks for user/role information
+   - Implement temporary security measures until auth system is complete
+   - Document integration points for future auth system
+
+7. Railway-Specific Security Configuration:
+   - Configure Railway environment variables securely with encryption for sensitive values
+   - Set up Railway volume security for file storage with proper access controls
+   - Implement Railway networking security with private networking where applicable
+   - Configure Railway SSL/TLS settings for all services
+   - Implement Railway access controls and team permissions with least privilege principle
+   - Configure Railway audit logging for security events
+   - Set up Railway backup and disaster recovery procedures
+
+# Test Strategy:
+1. File Storage Security Testing:
+   - Verify S3/R2 integration with mock storage tests
+   - Test file access controls with different user permissions
+   - Validate encryption at rest is properly configured
+   - Verify signed URLs expire correctly and prevent unauthorized access
+   - Test virus scanning with EICAR test files
+   - Validate file access logs capture all relevant metadata
+   - Test organized file structure implementation with various document types
+   - Verify file metadata tracking system captures all required information
+   - Test file retention policies with time-based scenarios
+   - Validate file versioning maintains proper audit trail
+   - Test Railway volume security configuration for file storage
+
+2. Database Security Testing:
+   - Test RLS policies with different user contexts
+   - Verify tenant isolation prevents cross-tenant data access
+   - Validate field-level encryption for PII data
+   - Test database connection security with network scanning tools
+   - Perform SQL injection testing against all database queries
+   - Verify query performance with security measures enabled
+   - Test Railway database security settings and backup procedures
+
+3. API Security Testing:
+   - Test JWT validation with valid, invalid, and expired tokens
+   - Verify RBAC correctly limits access based on user roles
+   - Test rate limiting by exceeding thresholds
+   - Validate CORS configuration blocks unauthorized origins
+   - Verify security headers using tools like Mozilla Observatory
+   - Test API routes without authentication to confirm proper protection
+   - Test secure file retrieval API with various authentication scenarios
+
+4. Penetration Testing:
+   - Conduct automated security scanning with OWASP ZAP
+   - Perform manual penetration testing of critical endpoints
+   - Test file upload security with malicious file types
+   - Attempt privilege escalation between different user roles
+   - Test for common OWASP Top 10 vulnerabilities
+   - Validate secure handling of error conditions
+   - Test Railway networking security with network scanning tools
+
+5. Compliance Testing:
+   - Verify audit logs capture all required information
+   - Test document retention policies with time-based scenarios
+   - Validate PII handling complies with relevant regulations
+   - Verify secure deletion of sensitive information
+   - Test security incident response procedures with simulated incidents
+   - Validate Railway compliance with data protection requirements
+
+6. Integration Testing:
+   - Verify security components work with mocked auth system
+   - Test transition from temporary to permanent security measures
+   - Validate all integration points are properly documented
+
+7. Railway-Specific Security Testing:
+   - Verify secure configuration of Railway environment variables
+   - Test Railway volume security with unauthorized access attempts
+   - Validate Railway private networking configuration
+   - Test Railway SSL/TLS configuration with SSL scanning tools
+   - Verify Railway access controls and team permissions
+   - Test Railway audit logging captures all security events
+   - Validate Railway backup and disaster recovery procedures
