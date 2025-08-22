@@ -80,7 +80,7 @@ export type EvidenceJump = {
   page: number;
   rule?: string;
   location?: string;
-  textMatch?: string;
+  textMatch?: string; // optional direct regex/snippet from left-side evidence
 };
 
 export type ViewerHandle = {
@@ -431,6 +431,24 @@ export const EnhancedDocumentViewer = forwardRef<
 
   // Always highlight text that's referenced by the current rule
   const resolveMatch = (pageNumber: number): RegExp | null => {
+    // Helper to escape user-provided text for safe regex usage
+    const escapeRegExp = (s: string) =>
+      s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // If a direct textMatch was requested for this page, prioritize it
+    if (
+      pendingTarget &&
+      pendingTarget.page === pageNumber &&
+      pendingTarget.textMatch
+    ) {
+      try {
+        // Escape dynamic text to avoid breaking regex with special chars
+        const safe = escapeRegExp(pendingTarget.textMatch);
+        return new RegExp(safe, 'i');
+      } catch {
+        // fall through to rule-based patterns
+      }
+    }
     if (!selectedRule) return null;
 
     // Get all highlights for the current rule on this page

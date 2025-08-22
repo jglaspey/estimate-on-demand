@@ -646,8 +646,22 @@ export default function JobDetailPage() {
       handleRuleDecision(rule.ruleName, decision, notes);
     };
 
+    console.log(
+      '🎯 renderRuleCard called with rule:',
+      rule.ruleName,
+      'analysisResults exists:',
+      !!analysisResults
+    );
+    console.log(
+      '🎯 analysisResults.ridgeCap exists:',
+      !!(analysisResults as any)?.ridgeCap
+    );
+
+    console.log('🔄 Switch statement - rule.ruleName:', rule.ruleName);
+
     switch (rule.ruleName) {
       case 'ridge_cap':
+        console.log('✅ Matched ridge_cap case!');
         // Use real analysis results or show processing state
         let ridgeCapData: RidgeCapData;
 
@@ -778,14 +792,36 @@ export default function JobDetailPage() {
           };
         }
 
+        // Debug evidence presence
+        const uiDataEvidence = (analysisResults as any)?.ridgeCap?.evidence;
+        const uiDataEvidenceRefs = (analysisResults as any)?.ridgeCap
+          ?.evidenceReferences;
+        const ruleEvidence = (rule as any)?.evidence;
+        const ruleEvidenceRefs = (rule as any)?.evidenceReferences;
+
+        console.log('🧪 RidgeCap evidence (uiData):', uiDataEvidence);
+        console.log(
+          '🧪 RidgeCap evidenceReferences (uiData):',
+          uiDataEvidenceRefs
+        );
+        console.log('🧪 RidgeCap evidence (rule):', ruleEvidence);
+        console.log('🧪 RidgeCap evidenceReferences (rule):', ruleEvidenceRefs);
+        console.log('🧪 Full analysisResults:', analysisResults);
+
         return (
           <RidgeCapAnalysis
             key={rule.ruleName}
             ruleNumber={currentRuleIndex + 1}
             totalRules={totalRules}
             ridgeCapData={ridgeCapData}
-            onJumpToEvidence={(location, type) => {
-              console.log('🔍 onJumpToEvidence called:', { location, type });
+            evidenceReferences={uiDataEvidenceRefs || ruleEvidenceRefs || []}
+            evidence={uiDataEvidence || ruleEvidence || []}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              console.log('🔍 onJumpToEvidence called:', {
+                docType,
+                page,
+                textMatch,
+              });
 
               // CHECK #1: Is viewerRef properly set?
               console.log('🔗 viewerRef.current exists:', !!viewerRef.current);
@@ -796,16 +832,24 @@ export default function JobDetailPage() {
                 return;
               }
 
-              const match = String(location || '').match(/page[-\s]?(\d+)/i);
-              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
-              console.log('📄 Parsed page:', page);
+              // Validate page is a number
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              console.log('📄 Page validation:', {
+                original: page,
+                valid: validPage,
+              });
+
+              // Normalize docType for EvidenceJump interface
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
 
               // Jump to evidence in document viewer
               const payload = {
-                docType: type === 'report' ? 'roof_report' : type,
-                page,
+                docType: normalizedDocType,
+                page: validPage,
                 rule: rule.ruleName,
-                location,
+                textMatch,
               } as const;
               console.log('📦 Payload created:', payload);
 
@@ -1166,17 +1210,22 @@ export default function JobDetailPage() {
                 {/* Show current rule based on navigation */}
                 {(() => {
                   const currentRule = getCurrentRule();
+                  console.log('🎲 getCurrentRule():', currentRule);
+                  console.log('🎲 ruleAnalysis array:', ruleAnalysis);
 
                   // If we have analysis results for this rule, use them
                   const analysisRule = ruleAnalysis.find(
                     rule => rule.ruleName === currentRule
                   );
+                  console.log('🎲 analysisRule found:', analysisRule);
 
                   if (analysisRule) {
+                    console.log('🎲 Using analysisRule path');
                     return renderRuleCard(analysisRule);
                   }
 
                   // Otherwise show default state for current rule
+                  console.log('🎲 Using default rule path');
                   return renderRuleCard({
                     ruleName: currentRule,
                     status: 'SUPPLEMENT_NEEDED',

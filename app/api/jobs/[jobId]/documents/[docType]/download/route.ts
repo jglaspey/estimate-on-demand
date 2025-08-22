@@ -55,33 +55,40 @@ export async function GET(
       );
 
       if (roofDoc && job.filePath) {
-        // Construct the path for the second document
         const uploadsDir = path.dirname(job.filePath);
-        const baseFileName = path.basename(job.filePath);
-        // The second file typically has _1_ instead of _0_ in the filename
-        const secondFilePath = path.join(
-          uploadsDir,
-          baseFileName.replace('_0_', '_1_')
+
+        // First, try to find the roof report file in the uploads directory
+        // This is more reliable than trying to construct the path
+        const files = await fs.readdir(uploadsDir);
+        const roofFile = files.find(
+          f =>
+            f.endsWith('.pdf') &&
+            (f.includes('hover') ||
+              f.includes('roof') ||
+              f.includes('measurement') ||
+              f.includes('pro_measurements'))
         );
 
-        // Check if the file exists
-        try {
-          await fs.access(secondFilePath);
-          filePath = secondFilePath;
+        if (roofFile) {
+          filePath = path.join(uploadsDir, roofFile);
           fileName = roofDoc.fileName;
-        } catch {
-          // If the modified path doesn't exist, try to find it in the uploads directory
-          const files = await fs.readdir(uploadsDir);
-          const roofFile = files.find(
-            f =>
-              f.includes(jobId.slice(-8)) &&
-              (f.includes('hover') ||
-                f.includes('roof') ||
-                f.includes('measurement'))
+        } else {
+          // Fallback: try the old method of replacing _0_ with _1_
+          const baseFileName = path.basename(job.filePath);
+          const secondFilePath = path.join(
+            uploadsDir,
+            baseFileName.replace('_0_', '_1_')
           );
-          if (roofFile) {
-            filePath = path.join(uploadsDir, roofFile);
+
+          try {
+            await fs.access(secondFilePath);
+            filePath = secondFilePath;
             fileName = roofDoc.fileName;
+          } catch {
+            // No roof report file found
+            console.error(
+              `Roof report file not found for job ${jobId}. Looking for files containing: hover, roof, measurement, pro_measurements`
+            );
           }
         }
       }

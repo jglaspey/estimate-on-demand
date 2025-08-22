@@ -1869,6 +1869,15 @@
             "status": "pending",
             "dependencies": [],
             "parentTaskId": 25
+          },
+          {
+            "id": 5,
+            "title": "Revisit automated estimate vs roof identification validation",
+            "description": "Circle back to automated estimate versus roof identification. Create comprehensive test for all five roof report companies to validate if a document contains content from any of these companies and integrate into existing test suite.",
+            "details": "Requirements: 1) Identify all five roof report companies 2) Create single unified test that can detect content from any of these companies 3) Integrate this validation into existing test infrastructure 4) Ensure test covers document analysis for roof-related content from these specific providers\n<info added on 2025-08-21T18:12:20.472Z>\nPrevious work on automated estimate vs roof identification validation can be found in commit 4ff210e. Refer to this commit for existing implementation details and context when implementing the comprehensive test for all five roof report companies.\n</info added on 2025-08-21T18:12:20.472Z>",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 25
           }
         ]
       },

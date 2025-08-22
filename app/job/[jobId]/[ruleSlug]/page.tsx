@@ -101,6 +101,17 @@ interface RidgeCapData {
   reasoning?: string;
   materialStatus?: 'compliant' | 'non-compliant';
   varianceType?: 'shortage' | 'adequate' | 'excess';
+  // Evidence arrays for the evidence-first architecture
+  evidence?: Array<{
+    id: string;
+    label: string;
+    value: string | number;
+    docType: 'estimate' | 'roof_report';
+    page: number;
+    textMatch?: string;
+    score: number;
+  }>;
+  evidenceReferences?: string[];
 }
 
 interface AnalysisResults {
@@ -412,19 +423,43 @@ export default function RulePage() {
             ruleNumber={progress.current}
             totalRules={progress.total}
             ridgeCapData={ridgeCapData}
-            onJumpToEvidence={(location, type) => {
-              if (!viewerRef.current) return;
+            evidence={analysisResults?.ridgeCap?.evidence || []}
+            evidenceReferences={
+              analysisResults?.ridgeCap?.evidenceReferences || []
+            }
+            onJumpToEvidence={(docType, page, textMatch) => {
+              console.log('🔍 onJumpToEvidence called:', {
+                docType,
+                page: typeof page,
+                pageValue: page,
+                textMatch,
+              });
 
-              const match = String(location || '').match(/page[-\s]?(\d+)/i);
-              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              if (!viewerRef.current) {
+                console.error('❌ viewerRef.current is null');
+                return;
+              }
+
+              // Ensure page is a valid number
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              console.log('🔢 Page validation:', {
+                original: page,
+                valid: validPage,
+              });
+
+              // Normalize docType for EvidenceJump interface
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
 
               const payload = {
-                docType: type === 'report' ? 'roof_report' : type,
-                page,
+                docType: normalizedDocType,
+                page: validPage,
                 rule: ruleSlug,
-                location,
+                textMatch,
               } as const;
 
+              console.log('📦 Payload for jumpToEvidence:', payload);
               viewerRef.current.jumpToEvidence(payload);
             }}
             onDecision={onDecision}

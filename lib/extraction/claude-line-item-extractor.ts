@@ -8,6 +8,8 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
+import { validatePageNumbers } from './utils/page-validator';
+
 // Line item structure matching our UI requirements
 export interface ExtractedLineItem {
   id: string;
@@ -107,10 +109,17 @@ export class ClaudeLineItemExtractor {
         response.content[0].type === 'text' ? response.content[0].text : '';
 
       // Parse the JSON response
-      const extractedData = this.parseExtractionResponse(
+      let extractedData = this.parseExtractionResponse(
         responseText,
         documentPages
       );
+
+      // Validate and fix page numbers
+      const pageContents = documentPages.map((page, index) => ({
+        pageNumber: index + 1,
+        rawText: page,
+      }));
+      extractedData = validatePageNumbers(extractedData, pageContents);
 
       // Filter ridge cap items
       const ridgeCapItems = extractedData.filter(item => item.isRidgeCapItem);
@@ -239,7 +248,13 @@ For each line item, extract:
 - Description (exact text)
 - Quantity and unit
 - Unit price, tax, RCV, depreciation, ACV
-- Page number where found
+- EXACT page number where found
+
+PAGE NUMBER RULES:
+- Items at the TOP of a page belong to THAT page, not the previous page
+- Look for page footers (e.g., "Page: 8") - content ABOVE belongs to that page
+- If "13. Hip / Ridge cap" appears after "Page: 7" but before "Page: 8", it's on page 8
+- Be precise: page boundaries matter for evidence tracking
 
 CRITICAL: For ridge cap items, classify the quality:
 - "purpose-built": Factory-made ridge caps, standard profile, high-profile

@@ -13,6 +13,7 @@ import {
 } from '@/lib/extraction/v2/line-item-extractors';
 import { parseRoofMeasurementsFromText } from '@/lib/extraction/v2/roof-measurement-parser';
 import { extractRoofMaterialFromPages } from '@/lib/extraction/v2/roof-material';
+import { validatePageNumbers } from '@/lib/extraction/utils/page-validator';
 
 import type { Prisma } from '../../../src/generated/prisma';
 
@@ -74,13 +75,17 @@ export class ExtractionV2Orchestrator {
         extractGutterApronItems(extractorPages),
         extractIceWaterItems(extractorPages),
       ]);
-    const lineItems = [
+    let lineItems = [
       ...ridgeRes.items,
       ...starterRes.items,
       ...dripRes.items,
       ...gutterRes.items,
       ...iceRes.items,
     ];
+
+    // Validate and fix page numbers
+    lineItems = validatePageNumbers(lineItems, pages);
+
     this.emit('line_items_complete', 75, 'Line item extraction complete');
 
     // Phase 5: Roof measurements – regex first, optional vision later

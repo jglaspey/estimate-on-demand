@@ -89,6 +89,8 @@ export async function POST(
         varianceType: results.ridgeCap.varianceType,
         materialStatus: results.ridgeCap.materialStatus,
         currentSpecification: results.ridgeCap.currentSpecification,
+        evidenceReferences: results.ridgeCap.evidenceReferences,
+        evidence: results.ridgeCap.evidence || [],
       };
 
       ridgeCapUiData = ruleAnalysisResult;
@@ -280,6 +282,8 @@ export async function GET(
         varianceType: findings?.varianceType || 'adequate',
         materialStatus: findings?.materialStatus || 'compliant',
         currentSpecification: findings?.currentSpecification || {},
+        evidenceReferences: findings?.evidenceReferences || [],
+        evidence: findings?.evidence || [],
       };
 
       ridgeCapUiData = ruleAnalysisResult;

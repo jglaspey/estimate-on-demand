@@ -17,6 +17,7 @@ import {
   safeMultiply,
   formatNumber,
 } from '../utils/number-precision';
+import type { EvidenceRef } from '../evidence/types';
 
 // Ridge cap analysis result
 export interface RidgeCapAnalysisResult {
@@ -66,6 +67,8 @@ export interface RidgeCapAnalysisResult {
   evidenceReferences: string[];
   documentationNote: string;
   supplementRecommendation: string | null;
+  // Typed evidence (new)
+  evidence?: EvidenceRef[];
 }
 
 // Input data for analysis
@@ -316,6 +319,7 @@ export class RidgeCapAnalyzer {
         varianceType === 'shortage'
           ? `Add ${formatNumber(Math.abs(varianceAmount))} LF ridge cap coverage`
           : null,
+      evidence: this.buildEvidenceRefs(input),
     };
   }
 
@@ -548,6 +552,7 @@ export class RidgeCapAnalyzer {
       evidenceReferences: [],
       documentationNote: `Ridge cap analysis could not be completed due to insufficient data: ${reason}`,
       supplementRecommendation: null,
+      evidence: [],
     };
   }
 
@@ -603,7 +608,64 @@ export class RidgeCapAnalyzer {
       evidenceReferences: this.generateEvidenceReferences(input),
       documentationNote: detailedReasoning,
       supplementRecommendation: recommendation,
+      evidence: this.buildEvidenceRefs(input),
     };
+  }
+
+  /**
+   * Build typed evidence references for UI navigation and highlighting
+   */
+  private buildEvidenceRefs(input: RidgeCapAnalysisInput): EvidenceRef[] {
+    const refs: EvidenceRef[] = [];
+
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Estimate spec evidence (use primary item if present)
+    const primary = input.ridgeCapItems[0];
+    if (primary?.source?.page) {
+      // For text matching, use a simpler pattern that's more likely to match
+      // Since "Hip / Ridge cap" is the key identifier
+      const textMatch = 'Hip.*Ridge.*cap';
+      refs.push({
+        id: 'rc-estimate-spec',
+        label: 'Estimate ridge cap spec',
+        value: `${primary.quantity.value} ${primary.quantity.unit}`,
+        docType: 'estimate',
+        page: primary.source.page,
+        textMatch,
+        score: 0.9,
+      });
+    }
+
+    // Roof report pages if known
+    const pages = (input.roofMeasurements as any)?.sourcePages as
+      | number[]
+      | undefined;
+    const firstReportPage =
+      Array.isArray(pages) && pages.length > 0 ? pages[0] : 1;
+    refs.push({
+      id: 'rc-ridges',
+      label: 'Ridges',
+      value:
+        (input.roofMeasurements.ridgeLength ??
+          input.roofMeasurements.totalRidgeHip) ||
+        null,
+      docType: 'roof_report',
+      page: firstReportPage,
+      textMatch: 'Ridges|Ridge Length',
+      score: 0.7,
+    });
+    refs.push({
+      id: 'rc-hips',
+      label: 'Hips',
+      value: input.roofMeasurements.hipLength || null,
+      docType: 'roof_report',
+      page: firstReportPage,
+      textMatch: 'Hips|Hip Length',
+      score: 0.7,
+    });
+
+    return refs;
   }
 }
 

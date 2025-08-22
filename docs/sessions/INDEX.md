@@ -68,16 +68,16 @@ Fixed critical "Processing..." button issue that prevented users from starting r
 **Branch:** `main`  
 **Status:** ✅ Complete - Build validated, downloads functional
 
-### 08.21 - Frontend Fixes and Refinements
+### 08.21 - Frontend Fixes and Refinements (Evidence-first Ridge Cap)
 **File:** [08.21-frontend-fixes-refinements.md](./08.21-frontend-fixes-refinements.md)  
-**Type:** Feature Development & UI/UX  
-**Focus:** Document Viewer & Type Detection  
+**Type:** Refactor & UI/UX  
+**Focus:** Ridge cap evidence navigation  
 
-Fixed multiple document display issue and enhanced document type detection system. Removed mock data injection, added deduplication, made TabsList dynamic, and implemented intelligent image-based fallback detection for roof reports vs estimates.
+Replaced hardcoded “page 4” ridge-cap links with dynamic pages derived from evidence references. Card now disables jumps when evidence is missing and shows `---`. This sets the stage for `EvidenceLocator` and text highlighting.
 
-**Key Fixes:** Document viewer showing single documents, roof report misidentification, image-based detection fallback  
+**Key Files:** `components/RidgeCapAnalysis.tsx`, `app/job/[jobId]/page.tsx`  
 **Branch:** `main`  
-**Status:** ✅ Complete - Build validated, all issues resolved
+**Status:** ✅ Complete
 
 ---
 

@@ -77,7 +77,16 @@ async function callClaude(
     )
     .join('\n');
 
-  const sys = `Extract only ${category} line items from the estimate text. Return strict JSON array 'items'. Each item: {category, code?, description, quantity{value,unit}?, unitPrice?, totalPrice?, sourcePages[], confidence${category === 'ridge_cap' ? ', ridgeCapQuality' : ''}}. ${promptHint}`;
+  const sys = `Extract only ${category} line items from the estimate text. Return strict JSON array 'items'. Each item: {category, code?, description, quantity{value,unit}?, unitPrice?, totalPrice?, sourcePages[], confidence${category === 'ridge_cap' ? ', ridgeCapQuality' : ''}}. 
+
+CRITICAL PAGE NUMBER RULES:
+- sourcePages[] must contain the EXACT page number(s) where the line item appears
+- If an item appears at the TOP of a page, use THAT page number, not the previous page
+- Look for page footers like "Page: X" to confirm the correct page
+- If a line item spans pages, include ALL pages in sourcePages[]
+- Page numbers in the text (like "Page: 8") indicate where content ABOVE that footer belongs
+
+${promptHint}`;
   const resp = await anthropic.messages.create({
     model: process.env.ANTHROPIC_MODEL_EXTRACTOR || 'claude-3-5-haiku-20241022',
     max_tokens: 500,
@@ -109,7 +118,7 @@ export async function extractRidgeCapItems(
   return callClaude(
     'ridge_cap',
     relevant,
-    'For each ridge/hip cap item, include ridgeCapQuality as one of "purpose-built", "high-profile", or "cut-from-3tab". Include evidence pages.'
+    'For each ridge/hip cap item, include ridgeCapQuality as one of "purpose-built", "high-profile", or "cut-from-3tab". CRITICAL: Include the EXACT page number(s) in sourcePages[] where each item appears. If "13. Hip / Ridge cap" appears after "Page: 7" footer but before "Page: 8" footer, it belongs to page 8.'
   );
 }
 
