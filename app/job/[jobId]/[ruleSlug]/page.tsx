@@ -22,6 +22,7 @@ import {
   type RuleDefinition,
 } from '@/lib/rules/rule-config';
 import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
+import { RidgeCapCardV2 } from '@/components/rules/RidgeCapCardV2';
 import { DripEdgeGutterApronCardV2 } from '@/components/rules/DripEdgeGutterApronCardV2';
 import { StarterStripCardV2 } from '@/components/rules/StarterStripCardV2';
 import { IceWaterBarrierCardV2 } from '@/components/rules/IceWaterBarrierCardV2';
@@ -393,7 +394,29 @@ export default function RulePage() {
 
     switch (ruleDefinition?.component) {
       case 'RidgeCapAnalysis':
-        // Create ridge cap data from analysis results
+        return ruleAnalysis ? (
+          <RidgeCapCardV2
+            ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.ridgeCap?.evidence || []}
+            onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
+          />
+        ) : null;
+
+      /* Legacy ridge cap component retained below (unreachable with V2 above)
         let ridgeCapData: RidgeCapData;
 
         if (analysisResults?.ridgeCap || ruleAnalysis?.currentSpecification) {
@@ -572,6 +595,7 @@ export default function RulePage() {
             onDecision={onDecision}
           />
         );
+        */
 
       case 'DripEdgeGutterApronCard':
         return ruleAnalysis ? (

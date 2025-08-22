@@ -42,6 +42,7 @@ export function OverviewPage({
   validationNotes = [],
 }: OverviewPageProps) {
   const router = useRouter();
+  // Track expanded state per rule for Overview cards (collapsed by default)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // Handle document download

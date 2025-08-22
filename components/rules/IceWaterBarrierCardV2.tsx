@@ -44,7 +44,7 @@ export function IceWaterBarrierCardV2({
   onJumpToEvidence,
 }: IceWaterBarrierCardProps) {
   const [notes, setNotes] = useState(ruleAnalysis.userNotes || '');
-  const [showCalculation, setShowCalculation] = useState(false);
+  const [showCalculation, setShowCalculation] = useState(true);
   const [expandedCompliant, setExpandedCompliant] = useState(false);
 
   // Helper for safe display (no mock values)
@@ -146,20 +146,10 @@ export function IceWaterBarrierCardV2({
             </div>
             <div className='flex items-center gap-2'>
               <RuleStatusBadge status='compliant' />
-              <button
-                type='button'
-                onClick={() => setExpandedCompliant(v => !v)}
-                className='inline-flex items-center gap-1 text-sm text-emerald-700 hover:text-emerald-900 dark:text-emerald-300'
-              >
-                {expandedCompliant ? 'Hide details' : 'Show details'}
-                <ChevronRight
-                  className={`h-4 w-4 transition-transform ${expandedCompliant ? 'rotate-90' : ''}`}
-                />
-              </button>
             </div>
           </div>
 
-          {expandedCompliant && (
+          {
             <div className='mt-4 pt-4 border-t border-emerald-200/70 dark:border-emerald-800/70 space-y-4'>
               {/* Evidence */}
               <div>
@@ -201,7 +191,7 @@ export function IceWaterBarrierCardV2({
                 </div>
               </div>
             </div>
-          )}
+          }
         </div>
       </div>
     );
