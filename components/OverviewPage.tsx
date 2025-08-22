@@ -12,6 +12,7 @@ import {
   FileText,
   BarChart3,
   Download,
+  Loader2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,10 @@ import { Badge } from '@/components/ui/badge';
 import { ChatBox } from '@/components/ChatBox';
 import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/types';
 import { EvidenceChip } from '@/components/ui/evidence-chip';
+import {
+  SkeletonField,
+  SkeletonCurrency,
+} from '@/components/ui/skeleton-field';
 
 interface OverviewPageProps {
   jobData: JobData;
@@ -30,6 +35,8 @@ interface OverviewPageProps {
   onStartReview: () => void;
   discrepantFields?: string[];
   validationNotes?: string[];
+  progress?: number;
+  isReprocessing?: boolean;
 }
 
 export function OverviewPage({
@@ -40,10 +47,43 @@ export function OverviewPage({
   onStartReview,
   discrepantFields = [],
   validationNotes = [],
+  progress,
+  isReprocessing = false,
 }: OverviewPageProps) {
   const router = useRouter();
   // Track expanded state per rule for Overview cards (collapsed by default)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Local number formatter to avoid floating point artifacts and ensure 2 decimals
+  const formatTwo = (
+    value: number | undefined | null,
+    decimals: number = 2
+  ): string => {
+    if (value === undefined || value === null || isNaN(Number(value)))
+      return '---';
+    const num = Number(value);
+    const factor = Math.pow(10, decimals);
+    const rounded = Math.round((num + Number.EPSILON) * factor) / factor;
+    return rounded.toFixed(decimals);
+  };
+
+  // Measurement formatter (SF/LF): round to 1 decimal; hide trailing .0
+  const formatMeasure = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(Number(value)))
+      return '---';
+    const num = Number(value);
+    const rounded = Math.round((num + Number.EPSILON) * 10) / 10; // 1 decimal
+    return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+  };
+
+  // One-decimal formatter for Squares
+  const formatOne = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(Number(value)))
+      return '---';
+    const num = Number(value);
+    const rounded = Math.round((num + Number.EPSILON) * 10) / 10;
+    return rounded.toFixed(1);
+  };
 
   // Handle document download
   const handleDownload = async (docType: string, docName: string) => {
@@ -163,17 +203,37 @@ export function OverviewPage({
 
   // Get button configuration based on status
   const getButtonConfig = (status: string) => {
+    // If reprocessing, always show processing state regardless of job status
+    if (isReprocessing) {
+      const progressText = progress !== undefined ? ` (${progress}%)` : '...';
+      return {
+        label: `Re-processing${progressText}`,
+        disabled: true,
+        showSpinner: true,
+      };
+    }
+
     switch (status) {
       case 'uploading':
       case 'extracting':
       case 'analyzing':
-        return { label: 'Processing...', disabled: true };
+      case 'processing':
+        const progressText = progress !== undefined ? ` (${progress}%)` : '...';
+        return {
+          label: `Processing${progressText}`,
+          disabled: true,
+          showSpinner: true,
+        };
       case 'reviewing':
-        return { label: 'Start Review', disabled: false };
+        return { label: 'Start Review', disabled: false, showSpinner: false };
       case 'complete':
-        return { label: 'View Report', disabled: false };
+        return { label: 'View Report', disabled: false, showSpinner: false };
       default:
-        return { label: 'Continue Review', disabled: false };
+        return {
+          label: 'Continue Review',
+          disabled: false,
+          showSpinner: false,
+        };
     }
   };
 
@@ -218,8 +278,14 @@ export function OverviewPage({
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Carrier:
                 </span>
-                <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.insuranceCarrier}
+                <span
+                  className='font-medium text-zinc-900 dark:text-zinc-100 max-w-[320px] sm:max-w-[380px] truncate block'
+                  title={jobData.insuranceCarrier}
+                >
+                  <SkeletonField
+                    value={jobData.insuranceCarrier}
+                    className='truncate'
+                  />
                 </span>
               </div>
               <div className='flex justify-between'>
@@ -227,7 +293,11 @@ export function OverviewPage({
                   Claim Rep:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.claimRep}
+                  <SkeletonField
+                    value={jobData.claimRep}
+                    className='font-medium text-zinc-900 dark:text-zinc-100'
+                    width='w-32'
+                  />
                   {discrepantFields.includes('claimRep') ? ' *' : ''}
                 </span>
               </div>
@@ -236,7 +306,12 @@ export function OverviewPage({
                   Estimator:
                 </span>
                 <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {jobData.estimator || '—'}
+                  <SkeletonField
+                    value={jobData.estimator}
+                    className='font-medium text-zinc-900 dark:text-zinc-100'
+                    width='w-32'
+                    placeholder='—'
+                  />
                   {discrepantFields.includes('estimator') ? ' *' : ''}
                 </span>
               </div>
@@ -244,17 +319,21 @@ export function OverviewPage({
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Claim #:
                 </span>
-                <span className='font-mono text-zinc-900 dark:text-zinc-100'>
-                  {jobData.claimNumber}
-                </span>
+                <SkeletonField
+                  value={jobData.claimNumber}
+                  className='font-mono text-zinc-900 dark:text-zinc-100'
+                  width='w-28'
+                />
               </div>
               <div className='flex justify-between'>
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Policy #:
                 </span>
-                <span className='font-mono text-zinc-900 dark:text-zinc-100'>
-                  {jobData.policyNumber}
-                </span>
+                <SkeletonField
+                  value={jobData.policyNumber}
+                  className='font-mono text-zinc-900 dark:text-zinc-100'
+                  width='w-28'
+                />
               </div>
             </div>
           </div>
@@ -274,36 +353,51 @@ export function OverviewPage({
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Date of Loss:
                 </span>
-                <span className='font-medium text-zinc-900 dark:text-zinc-100'>
-                  {new Date(jobData.dateOfLoss).toLocaleDateString()}
-                </span>
+                <SkeletonField
+                  value={
+                    jobData.dateOfLoss
+                      ? new Date(jobData.dateOfLoss).toLocaleDateString()
+                      : null
+                  }
+                  className='font-medium text-zinc-900 dark:text-zinc-100'
+                  width='w-24'
+                />
               </div>
               <div className='flex justify-between'>
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Original Estimate:
                 </span>
-                <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                  ${jobData.totalEstimateValue.toLocaleString()}
-                </span>
+                <SkeletonCurrency
+                  value={jobData.totalEstimateValue}
+                  className='font-semibold text-zinc-900 dark:text-zinc-100'
+                  width='w-24'
+                />
               </div>
               <div className='flex justify-between'>
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Potential Supplement:
                 </span>
                 <span className='font-semibold text-emerald-600 dark:text-emerald-400'>
-                  +${supplementTotal.toLocaleString()}
+                  +
+                  <SkeletonCurrency
+                    value={supplementTotal}
+                    loading={ruleAnalysis.length === 0}
+                    width='w-20'
+                  />
                 </span>
               </div>
               <div className='flex justify-between pt-2 border-t border-zinc-200 dark:border-zinc-700'>
                 <span className='text-zinc-500 dark:text-zinc-400'>
                   Total Value:
                 </span>
-                <span className='font-bold text-zinc-900 dark:text-zinc-100'>
-                  $
-                  {(
-                    jobData.totalEstimateValue + supplementTotal
-                  ).toLocaleString()}
-                </span>
+                <SkeletonCurrency
+                  value={jobData.totalEstimateValue + supplementTotal}
+                  loading={
+                    !jobData.totalEstimateValue || ruleAnalysis.length === 0
+                  }
+                  className='font-bold text-zinc-900 dark:text-zinc-100'
+                  width='w-28'
+                />
               </div>
             </div>
           </div>
@@ -384,7 +478,11 @@ export function OverviewPage({
               disabled={buttonConfig.disabled}
               className='w-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              <Play className='mr-2 h-4 w-4' />
+              {buttonConfig.showSpinner ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Play className='mr-2 h-4 w-4' />
+              )}
               {buttonConfig.label}
             </Button>
           </div>
@@ -653,7 +751,7 @@ export function OverviewPage({
                     Total Area
                   </div>
                   <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                    {roofMeasurements.totalArea} SF
+                    {formatMeasure(roofMeasurements.totalArea)} SF
                   </div>
                 </div>
                 <div>
@@ -661,7 +759,7 @@ export function OverviewPage({
                     Squares
                   </div>
                   <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                    {roofMeasurements.totalSquares}
+                    {formatOne(roofMeasurements.totalSquares)}
                   </div>
                 </div>
                 <div>
@@ -687,13 +785,21 @@ export function OverviewPage({
                     Drip Edge (total)
                   </div>
                   <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                    {Number(roofMeasurements.eavesLength || 0) +
-                      Number(roofMeasurements.rakesLength || 0)}{' '}
+                    {formatMeasure(
+                      Number(roofMeasurements.eavesLength || 0) +
+                        Number(roofMeasurements.rakesLength || 0)
+                    )}{' '}
                     LF
                   </div>
                   <div className='text-xs text-zinc-500 mt-1'>
-                    Eaves: {roofMeasurements.eavesLength ?? '—'} • Rakes:{' '}
-                    {roofMeasurements.rakesLength ?? '—'}
+                    Eaves:{' '}
+                    {roofMeasurements.eavesLength !== undefined
+                      ? formatMeasure(Number(roofMeasurements.eavesLength))
+                      : '—'}{' '}
+                    • Rakes:{' '}
+                    {roofMeasurements.rakesLength !== undefined
+                      ? formatMeasure(Number(roofMeasurements.rakesLength))
+                      : '—'}
                   </div>
                 </div>
                 <div>
@@ -701,13 +807,24 @@ export function OverviewPage({
                     Ridges/Hips (total)
                   </div>
                   <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                    {roofMeasurements.ridgesLength} LF
+                    {formatMeasure(Number(roofMeasurements.ridgesLength || 0))}{' '}
+                    LF
                   </div>
                   {(roofMeasurements as any).ridgeLength !== undefined ||
                   (roofMeasurements as any).hipsLength !== undefined ? (
                     <div className='text-xs text-zinc-500 mt-1'>
-                      Ridges: {(roofMeasurements as any).ridgeLength ?? '—'} •
-                      Hips: {(roofMeasurements as any).hipsLength ?? '—'}
+                      Ridges:{' '}
+                      {(roofMeasurements as any).ridgeLength !== undefined
+                        ? formatMeasure(
+                            Number((roofMeasurements as any).ridgeLength)
+                          )
+                        : '—'}{' '}
+                      • Hips:{' '}
+                      {(roofMeasurements as any).hipsLength !== undefined
+                        ? formatMeasure(
+                            Number((roofMeasurements as any).hipsLength)
+                          )
+                        : '—'}
                     </div>
                   ) : null}
                 </div>
@@ -716,7 +833,8 @@ export function OverviewPage({
                     Valleys
                   </div>
                   <div className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                    {roofMeasurements.valleysLength} LF
+                    {formatMeasure(Number(roofMeasurements.valleysLength || 0))}{' '}
+                    LF
                   </div>
                 </div>
               </div>

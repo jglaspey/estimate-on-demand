@@ -10,7 +10,13 @@ export interface JobData {
   adjusterName: string;
   policyNumber: string;
   totalEstimateValue: number;
-  status: 'uploading' | 'extracting' | 'analyzing' | 'reviewing' | 'complete';
+  status:
+    | 'uploading'
+    | 'extracting'
+    | 'analyzing'
+    | 'processing'
+    | 'reviewing'
+    | 'complete';
   createdAt: string;
   updatedAt: string;
   claimRep?: string;

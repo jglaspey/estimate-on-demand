@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/database/client';
 
-// Use absolute path for Railway volume mount
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
 export async function POST(request: NextRequest) {
   try {

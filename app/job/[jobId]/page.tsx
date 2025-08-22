@@ -150,6 +150,7 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [jobProgress, setJobProgress] = useState<number | undefined>(undefined);
   // const [currentPage, setCurrentPage] = useState(1);
   // Demo mode removed - now using real extracted data only
   const [isReprocessing, setIsReprocessing] = useState(false);
@@ -197,11 +198,12 @@ export default function JobDetailPage() {
           id: job.id,
           customerName: job.customerName || 'Unknown Customer',
           propertyAddress: job.customerAddress || 'Address not available',
-          insuranceCarrier: job.carrier || 'Unknown Carrier',
+          insuranceCarrier:
+            (job as any).carrierShort || job.carrier || 'Unknown Carrier',
           claimNumber: job.claimNumber || 'N/A',
           dateOfLoss: job.dateOfLoss
             ? new Date(job.dateOfLoss).toISOString().split('T')[0]
-            : '2024-01-01',
+            : '1900-01-01',
           claimRep: job.claimRep || 'N/A',
           estimator: job.estimator || 'N/A',
           policyNumber: job.policyNumber || 'N/A',
@@ -341,6 +343,46 @@ export default function JobDetailPage() {
   // Track initial load for silent refresh control (declared above) and a polling timer
   // Note: hasInitializedRef is declared near the top of component; only pollingRef is defined here
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch job progress when processing
+  useEffect(() => {
+    if (!jobId || !jobData) return;
+
+    // Only poll for progress if job is in processing state OR we're actively reprocessing
+    const processingStates = [
+      'uploading',
+      'extracting',
+      'analyzing',
+      'processing',
+    ];
+    const shouldPoll =
+      processingStates.includes(jobData.status) || isReprocessing;
+
+    if (!shouldPoll) {
+      setJobProgress(undefined);
+      return;
+    }
+
+    const fetchProgress = async () => {
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/status`);
+        if (response.ok) {
+          const data = await response.json();
+          setJobProgress(data.progress);
+        }
+      } catch (error) {
+        console.error('Failed to fetch job progress:', error);
+      }
+    };
+
+    // Fetch immediately
+    fetchProgress();
+
+    // Set up polling interval
+    const interval = setInterval(fetchProgress, 1500);
+
+    return () => clearInterval(interval);
+  }, [jobId, jobData?.status, isReprocessing]);
 
   // Load existing analysis results on mount
   useEffect(() => {
@@ -1055,6 +1097,8 @@ export default function JobDetailPage() {
             _onFieldUpdate={handleFieldUpdate}
             discrepantFields={discrepantFields as any}
             validationNotes={validationNotes}
+            progress={jobProgress}
+            isReprocessing={isReprocessing}
           />
         ) : (
           <div className='min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950'>
@@ -1142,6 +1186,24 @@ export default function JobDetailPage() {
                   className={`h-8 px-3 text-xs font-medium border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 ${isReprocessing ? 'opacity-70 cursor-not-allowed' : ''}`}
                   onClick={async () => {
                     setIsReprocessing(true);
+
+                    // Reset job data to trigger skeleton loaders
+                    if (jobData) {
+                      setJobData({
+                        ...jobData,
+                        status: 'processing',
+                        // Reset fields that will be re-extracted to show skeleton loaders
+                        insuranceCarrier: '',
+                        claimRep: '',
+                        estimator: '',
+                        dateOfLoss: '1900-01-01', // Reset to placeholder value to trigger skeleton
+                        totalEstimateValue: 0,
+                      } as any);
+                    }
+
+                    // Reset progress tracking
+                    setJobProgress(0);
+
                     try {
                       const res = await fetch(`/api/jobs/${jobId}/reprocess`, {
                         method: 'POST',
@@ -1159,6 +1221,7 @@ export default function JobDetailPage() {
                       console.error('Re-run failed', err);
                     } finally {
                       setIsReprocessing(false);
+                      setJobProgress(undefined);
                     }
                   }}
                 >

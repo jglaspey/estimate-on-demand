@@ -45,7 +45,24 @@ export async function GET(
     console.log(
       `✅ Job found: ${job.customerName || 'Unknown'} (${job.documents.length} docs)`
     );
-    return NextResponse.json({ job });
+    // Provide display-friendly truncated fields without modifying DB values
+    const truncate = (
+      text: string | null | undefined,
+      max: number
+    ): string | undefined => {
+      if (!text) return undefined;
+      if (text.length <= max) return text;
+      const softCut = text.lastIndexOf(' ', max - 1);
+      const cut = softCut > Math.floor(max * 0.6) ? softCut : max; // avoid over-truncating to first tiny word
+      return text.slice(0, cut).trimEnd() + ' …';
+    };
+
+    const jobWithDisplay = {
+      ...job,
+      carrierShort: truncate(job.carrier, 40),
+    } as any;
+
+    return NextResponse.json({ job: jobWithDisplay });
   } catch (error) {
     console.error('❌ Error fetching job details:', error);
     console.error('Error details:', {
