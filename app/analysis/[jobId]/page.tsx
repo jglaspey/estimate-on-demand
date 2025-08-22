@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { JobProgressTracker } from '@/components/JobProgressTracker';
 
 type Props = {
@@ -237,12 +239,12 @@ export default async function Analysis({ params }: Props) {
 
         {/* Navigation */}
         <div className='flex justify-between'>
-          <a
-            href='/jobs'
+          <Link
+            href='/'
             className='px-6 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors'
           >
-            ← Back to Jobs
-          </a>
+            ← Back to Dashboard
+          </Link>
           <a
             href={`/reports/${jobId}`}
             className='px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
