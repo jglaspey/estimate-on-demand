@@ -135,7 +135,7 @@ export function RidgeCapCardV2({
       </div>
 
       <div className='px-6 pb-6 space-y-6'>
-        {/* Summary */}
+        {/* Summary with value verification */}
         <div className='rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/30'>
           <div className='p-4'>
             <p className='text-sm text-zinc-600 dark:text-zinc-300 mb-2'>
@@ -160,6 +160,29 @@ export function RidgeCapCardV2({
                   {(ruleAnalysis as any)?.requiredQuantity || '—'}
                 </p>
               </div>
+            </div>
+            <div className='mt-2 text-xs text-zinc-600 dark:text-zinc-400'>
+              {(() => {
+                const cur = String(
+                  (ruleAnalysis as any)?.estimateQuantity ||
+                    (ruleAnalysis as any)?.currentSpecification?.quantity ||
+                    ''
+                )
+                  .replace(/[^\d.]/g, '')
+                  .trim();
+                const req = String(
+                  (ruleAnalysis as any)?.requiredQuantity || ''
+                )
+                  .replace(/[^\d.]/g, '')
+                  .trim();
+                if (!cur || !req) return 'Values: ---';
+                const curNum = Number(cur);
+                const reqNum = Number(req);
+                if (isNaN(curNum) || isNaN(reqNum)) return 'Values: ---';
+                if (curNum >= reqNum)
+                  return 'Values match or exceed requirement ✓';
+                return 'Values insufficient ❌';
+              })()}
             </div>
           </div>
         </div>
