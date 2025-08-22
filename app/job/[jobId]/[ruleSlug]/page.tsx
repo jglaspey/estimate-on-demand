@@ -22,9 +22,9 @@ import {
   type RuleDefinition,
 } from '@/lib/rules/rule-config';
 import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
-import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
-import { StarterStripCard } from '@/components/rules/StarterStripCard';
-import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
+import { DripEdgeGutterApronCardV2 } from '@/components/rules/DripEdgeGutterApronCardV2';
+import { StarterStripCardV2 } from '@/components/rules/StarterStripCardV2';
+import { IceWaterBarrierCardV2 } from '@/components/rules/IceWaterBarrierCardV2';
 import {
   EnhancedDocumentViewer,
   type ViewerHandle,
@@ -573,25 +573,70 @@ export default function RulePage() {
 
       case 'DripEdgeGutterApronCard':
         return ruleAnalysis ? (
-          <DripEdgeGutterApronCard
+          <DripEdgeGutterApronCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.dripEdge?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
       case 'StarterStripCard':
         return ruleAnalysis ? (
-          <StarterStripCard
+          <StarterStripCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.starterStrip?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
       case 'IceWaterBarrierCard':
         return ruleAnalysis ? (
-          <IceWaterBarrierCard
+          <IceWaterBarrierCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.iceAndWater?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
