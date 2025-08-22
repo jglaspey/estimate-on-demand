@@ -1,13 +1,18 @@
 /**
  * Upload Integration Service
- * 
+ *
  * Integrates Phase 1 extraction into the upload workflow with real-time updates
  * and graceful degradation for production use.
  */
 
 import { WebSocket } from 'ws';
 
-import { extractPhase1Fields, quickExtractPhase1, type Phase1Fields, type Phase1ExtractionResult } from './claude-phase1-extractor';
+import {
+  extractPhase1Fields,
+  quickExtractPhase1,
+  type Phase1Fields,
+  type Phase1ExtractionResult,
+} from './claude-phase1-extractor';
 
 export interface UploadExtractionOptions {
   jobId: string;
@@ -41,18 +46,28 @@ export interface UploadExtractionResponse {
 export async function executeUploadExtraction(
   options: UploadExtractionOptions
 ): Promise<UploadExtractionResponse> {
-  const { jobId, filePath, fileName, websocket, skipExtraction = false } = options;
+  const {
+    jobId,
+    filePath,
+    fileName,
+    websocket,
+    skipExtraction = false,
+  } = options;
 
   // Send initial processing update
   if (websocket) {
-    websocket.send(JSON.stringify({
-      type: 'job:progress',
-      jobId,
-      phase: 'phase1-extraction',
-      status: skipExtraction ? 'skipping' : 'processing',
-      message: skipExtraction ? 'Skipping extraction (user preference)' : 'Extracting key document fields...',
-      progress: 30
-    }));
+    websocket.send(
+      JSON.stringify({
+        type: 'job:progress',
+        jobId,
+        phase: 'phase1-extraction',
+        status: skipExtraction ? 'skipping' : 'processing',
+        message: skipExtraction
+          ? 'Skipping extraction (user preference)'
+          : 'Extracting key document fields...',
+        progress: 30,
+      })
+    );
   }
 
   // Handle skip extraction case
@@ -68,9 +83,9 @@ export async function executeUploadExtraction(
         confidence: 'low',
         processingTimeMs: 0,
         fieldsFound: 0,
-        warnings: ['Extraction skipped by user preference']
+        warnings: ['Extraction skipped by user preference'],
       },
-      nextSteps: ['Proceed to business rule analysis']
+      nextSteps: ['Proceed to business rule analysis'],
     };
   }
 
@@ -78,23 +93,25 @@ export async function executeUploadExtraction(
     // Execute extraction with detailed result
     const result = await extractPhase1Fields(filePath, {
       maxTokens: 800,
-      timeoutMs: 30000
+      timeoutMs: 45000, // Increased timeout for minimal estimates
     });
 
     // Send progress update based on result
     if (websocket) {
-      websocket.send(JSON.stringify({
-        type: 'extraction:phase1:complete',
-        jobId,
-        status: result.success ? 'completed' : 'failed',
-        message: result.success 
-          ? `Found ${result.fieldsFound}/8 key fields (${result.extractionRate}% extraction rate)`
-          : `Extraction encountered issues: ${result.error}`,
-        progress: result.success ? 45 : 35,
-        confidence: result.confidence,
-        fields: result.fields,
-        warnings: result.warnings
-      }));
+      websocket.send(
+        JSON.stringify({
+          type: 'extraction:phase1:complete',
+          jobId,
+          status: result.success ? 'completed' : 'failed',
+          message: result.success
+            ? `Found ${result.fieldsFound}/8 key fields (${result.extractionRate}% extraction rate)`
+            : `Extraction encountered issues: ${result.error}`,
+          progress: result.success ? 45 : 35,
+          confidence: result.confidence,
+          fields: result.fields,
+          warnings: result.warnings,
+        })
+      );
     }
 
     // Determine next steps based on extraction quality
@@ -112,24 +129,26 @@ export async function executeUploadExtraction(
         processingTimeMs: result.processingTimeMs,
         fieldsFound: result.fieldsFound,
         warnings: result.warnings,
-        error: result.error
+        error: result.error,
       },
-      nextSteps
+      nextSteps,
     };
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown extraction error';
-    
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown extraction error';
+
     // Send error update
     if (websocket) {
-      websocket.send(JSON.stringify({
-        type: 'extraction:phase1:error',
-        jobId,
-        status: 'failed',
-        message: `Phase 1 extraction failed: ${errorMessage}`,
-        progress: 30,
-        error: errorMessage
-      }));
+      websocket.send(
+        JSON.stringify({
+          type: 'extraction:phase1:error',
+          jobId,
+          status: 'failed',
+          message: `Phase 1 extraction failed: ${errorMessage}`,
+          progress: 30,
+          error: errorMessage,
+        })
+      );
     }
 
     return {
@@ -144,9 +163,12 @@ export async function executeUploadExtraction(
         processingTimeMs: 0,
         fieldsFound: 0,
         warnings: ['Complete extraction failure'],
-        error: errorMessage
+        error: errorMessage,
       },
-      nextSteps: ['Consider manual field entry', 'Proceed with business rule analysis']
+      nextSteps: [
+        'Consider manual field entry',
+        'Proceed with business rule analysis',
+      ],
     };
   }
 }
@@ -167,7 +189,9 @@ function determineNextSteps(result: Phase1ExtractionResult): string[] {
   } else {
     steps.push('Manual field verification recommended');
     steps.push('Consider re-extraction with different method');
-    steps.push('Proceed with business rule analysis (reduced accuracy expected)');
+    steps.push(
+      'Proceed with business rule analysis (reduced accuracy expected)'
+    );
   }
 
   // Add specific recommendations based on missing fields
@@ -194,7 +218,7 @@ function createEmptyFields(): Phase1Fields {
     estimator: null,
     propertyAddress: null,
     claimNumber: null,
-    policyNumber: null
+    policyNumber: null,
   };
 }
 
@@ -213,13 +237,13 @@ export async function quickUploadExtraction(
   recommendations: string[];
 }> {
   const result = await quickExtractPhase1(filePath);
-  
+
   const displaySummary = result.success
     ? `✅ Extracted key fields (${result.confidence} confidence)`
     : `⚠️ Extraction issues detected`;
 
   const recommendations: string[] = [];
-  
+
   if (result.confidence === 'high') {
     recommendations.push('✅ Ready for business rule analysis');
   } else if (result.confidence === 'medium') {
@@ -235,6 +259,6 @@ export async function quickUploadExtraction(
     displaySummary,
     fields: result.fields,
     confidence: result.confidence,
-    recommendations
+    recommendations,
   };
 }

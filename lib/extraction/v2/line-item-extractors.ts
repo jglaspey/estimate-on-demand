@@ -97,13 +97,13 @@ CRITICAL PAGE NUMBER RULES:
 - Page numbers in the text (like "Page: 8") indicate where content ABOVE that footer belongs
 
 ${
-  category === 'drip_edge'
-    ? `DRIP EDGE DETECTION:
-- Look for ANY of these variations: "drip edge", "drip-edge", "drip metal", "edge metal", "D.E.", "DE", "eave drip", "rake drip"
-- Include items that say "Drip edge (Rake + Eave)" or similar combined descriptions
-- Look in code columns for abbreviations like "DE" or "DRIP"
-- Common codes: RFG DRIP, DE, DRIPEDGE, etc.
-- Do NOT skip items just because they mention both rakes and eaves - include them!
+  category === 'drip_edge' || category === 'gutter_apron'
+    ? `STRICT EXTRACTION RULES FOR EDGE PROTECTION:
+- Extract ONLY real estimate line items with prices (must appear in a line-item table with QUANTITY and UNIT PRICE columns)
+- Do NOT infer or calculate items from roof-report measurements (e.g., "Perimeter", "Eaves Flashing")
+- Each returned item MUST include: description, quantity{value,unit}, sourcePages[], and either unitPrice or totalPrice
+- Prefer items that include a code (e.g., RFG DRIP, DE). If no code is present, ensure the page clearly shows it as a billed line item
+- If nothing meets these criteria, return []
 `
     : ''
 }
@@ -127,6 +127,45 @@ ${promptHint}`;
     try {
       const parsed = JSON.parse(txt) as ExtractorResult | LineItem[];
       const result = Array.isArray(parsed) ? { items: parsed } : parsed;
+
+      // Additional hardening for edge-protection categories: drop non-line-items
+      if (category === 'drip_edge' || category === 'gutter_apron') {
+        const estimateLikePages = new Set(
+          pages
+            .filter(p =>
+              /\bQUANTITY\b|\bUNIT\s*PRICE\b|\bRCV\b|\bACV\b/i.test(
+                p.rawText || ''
+              )
+            )
+            .map(p => p.pageNumber)
+        );
+
+        const before = result.items.length;
+        result.items = (result.items || []).filter(it => {
+          const hasQty =
+            !!it.quantity &&
+            typeof it.quantity.value === 'number' &&
+            it.quantity.value > 0;
+          const hasPrice =
+            (typeof it.unitPrice === 'number' && it.unitPrice > 0) ||
+            (typeof it.totalPrice === 'number' && it.totalPrice > 0);
+          const hasPages =
+            Array.isArray(it.sourcePages) && it.sourcePages.length > 0;
+          const fromEstimatePages =
+            hasPages &&
+            it.sourcePages!.every(
+              n => estimateLikePages.size === 0 || estimateLikePages.has(n)
+            );
+          return hasQty && hasPages && fromEstimatePages && hasPrice;
+        });
+        const removed = before - result.items.length;
+        if (removed > 0) {
+          console.warn(
+            `🧹 Filtered out ${removed} non-line-items for ${category}`
+          );
+        }
+      }
+
       console.log(
         `✅ ${category} extraction found ${result.items.length} items`
       );
@@ -222,7 +261,7 @@ export async function extractDripEdgeItems(
   return callClaude(
     'drip_edge',
     relevant,
-    'Extract ALL drip edge items including variations like "drip metal", "edge metal", "D.E.", etc. Include both rake and eave drip edge. Do NOT exclude items just because they mention both rakes and eaves.'
+    'Extract ONLY actual drip edge LINE ITEMS from insurance estimates with codes, descriptions, quantities and prices. Do NOT extract measurement labels from roof reports. Look for "drip edge", "drip-edge", "D.E.", "drip metal", etc. Each item MUST be from an estimate with actual pricing, NOT just a measurement label.'
   );
 }
 
@@ -238,7 +277,7 @@ export async function extractGutterApronItems(
   return callClaude(
     'gutter_apron',
     relevant,
-    'Include only eaves location (gutter apron/eave flashing). Do not include drip edge (rakes), gutter guards, or valley/step flashing.'
+    'Extract ONLY actual gutter apron LINE ITEMS from insurance estimates with quantities and prices. Do NOT extract measurement labels like "Eaves Flashing" from roof reports. Look for items with codes, descriptions, quantities, and unit prices. Exclude drip edge (rakes), gutter guards, or valley/step flashing.'
   );
 }
 

@@ -6,6 +6,17 @@ A quick reference guide to all development sessions on the EOD Insurance Supplem
 
 ## August 2025
 
+### 08.22 - Overview Loading & Server Truncation
+**File:** [08.22-overview-loading-and-truncation.md](./08.22-overview-loading-and-truncation.md)  
+**Type:** Bugfix & UX Polish  
+**Focus:** Re-run parity, measurement rounding, carrier truncation
+
+Matched re-run behavior to initial upload with skeleton loaders and progress polling. Implemented 1-decimal measurement formatting (hide .0) and moved carrier truncation to the server via `carrierShort` for deterministic UI.
+
+**Key Files Changed:** `app/job/[jobId]/page.tsx`, `components/OverviewPage.tsx`, `components/ui/skeleton-field.tsx`, `app/api/jobs/[jobId]/route.ts`, `types/index.ts`  
+**Branch:** `overview-loading-refinements`  
+**Status:** ✅ Complete
+
 ### 08.18 - Ridge Cap Analysis UI Enhancement
 **File:** [08.18-ridge-cap-analysis-ui.md](./08.18-ridge-cap-analysis-ui.md)  
 **Type:** Feature Development  
@@ -103,4 +114,4 @@ When completing a development session:
 
 ---
 
-*Last Updated: August 21, 2025*
+*Last Updated: August 22, 2025*
