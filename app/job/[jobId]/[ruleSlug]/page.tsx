@@ -145,6 +145,8 @@ export default function RulePage() {
   const previousRule = getPreviousRule(ruleSlug);
   const progress = getRuleProgress(ruleSlug);
 
+  // Debug logging removed - issue was resolved
+
   // Redirect if rule not found or not available
   useEffect(() => {
     if (!ruleDefinition) {
@@ -644,6 +646,9 @@ export default function RulePage() {
         return (
           <div className='text-center py-8'>
             <p className='text-zinc-500'>Rule component not implemented</p>
+            <p className='text-xs text-zinc-400 mt-2'>
+              Component: {ruleDefinition?.component}
+            </p>
           </div>
         );
     }
@@ -774,7 +779,13 @@ export default function RulePage() {
               selectedRule={ruleSlug}
               reloadVersion={reloadVersion}
               busy={isReprocessing}
-              evidence={analysisResults?.ridgeCap?.evidence || []}
+              evidence={
+                ruleDefinition?.analysisKey && analysisResults
+                  ? analysisResults[
+                      ruleDefinition.analysisKey as keyof AnalysisResults
+                    ]?.evidence || []
+                  : []
+              }
             />
           </div>
         </div>

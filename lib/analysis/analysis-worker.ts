@@ -141,6 +141,15 @@ export class AnalysisWorker {
       try {
         // Future implementation
         results.starterStrip = await this.runStarterStripAnalysis(jobData);
+
+        // Persist placeholder analysis so GET endpoint can surface UI data
+        if (results.starterStrip) {
+          await this.saveRuleAnalysis(
+            'STARTER_STRIP',
+            results.starterStrip as unknown as Record<string, unknown>
+          );
+        }
+
         this.updateProgress(
           'starter_strip',
           'completed',

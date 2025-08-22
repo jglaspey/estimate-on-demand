@@ -155,6 +155,20 @@ export async function POST(
       dripEdgeUiData = ruleAnalysisResult;
     }
 
+    // Map starter strip analysis to UI format (placeholder currently)
+    let starterStripUiData = null;
+    if (updatedJob && results.starterStrip) {
+      const s = results.starterStrip as any;
+      starterStripUiData = {
+        ruleName: 'starter_strip',
+        status: s.status || 'COMPLIANT',
+        confidence: s.confidence || 0,
+        reasoning: s.reasoning || 'Starter strip analysis not yet implemented',
+        costImpact: s.costImpact ?? 0,
+        evidence: s.evidence || [],
+      };
+    }
+
     // Map ice & water barrier analysis to UI format
     let iceWaterUiData = null;
     if (updatedJob && results.iceAndWater) {
@@ -194,6 +208,7 @@ export async function POST(
       uiData: {
         ridgeCap: ridgeCapUiData,
         dripEdge: dripEdgeUiData,
+        starterStrip: starterStripUiData,
         iceAndWater: iceWaterUiData,
       },
       progressUpdates,
@@ -358,6 +373,41 @@ export async function GET(
       dripEdgeUiData = ruleAnalysisResult;
     }
 
+    // Map starter strip analysis from DB (if saved by worker), else provide placeholder
+    let starterStripUiData: {
+      ruleName: string;
+      status: string;
+      confidence: number;
+      reasoning: string;
+      costImpact: number;
+      evidence: unknown[];
+    } | null = null;
+
+    const starterAnalysis = job.ruleAnalyses.find(
+      a => a.ruleType === 'STARTER_STRIP'
+    );
+    if (starterAnalysis) {
+      const f = (starterAnalysis.findings as any) || {};
+      starterStripUiData = {
+        ruleName: 'starter_strip',
+        status: f.status || 'COMPLIANT',
+        confidence: f.confidence || 0,
+        reasoning: f.reasoning || 'Starter strip analysis not yet implemented',
+        costImpact: f.costImpact ?? 0,
+        evidence: f.evidence || [],
+      };
+    } else {
+      // Provide placeholder so UI can render V2 card while analyzer is WIP
+      starterStripUiData = {
+        ruleName: 'starter_strip',
+        status: 'COMPLIANT',
+        confidence: 0,
+        reasoning: 'Starter strip analysis not yet implemented',
+        costImpact: 0,
+        evidence: [],
+      };
+    }
+
     // Map ice & water barrier analysis
     let iceWaterUiData = null;
     const iceWaterAnalysis = job.ruleAnalyses.find(
@@ -396,6 +446,7 @@ export async function GET(
       uiData: {
         ridgeCap: ridgeCapUiData,
         dripEdge: dripEdgeUiData,
+        starterStrip: starterStripUiData,
         iceAndWater: iceWaterUiData,
       },
       analyses: job.ruleAnalyses.map(analysis => {

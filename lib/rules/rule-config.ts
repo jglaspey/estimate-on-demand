@@ -61,7 +61,7 @@ export const RULE_DEFINITIONS: RuleDefinition[] = [
     category: 'coverage',
     component: 'StarterStripCard',
     analysisKey: 'starterStrip',
-    isAvailable: false, // Not yet implemented
+    isAvailable: true, // Now implemented
     priority: 3,
   },
   {
@@ -71,7 +71,7 @@ export const RULE_DEFINITIONS: RuleDefinition[] = [
     description: 'Code-compliant ice and water barrier coverage calculation',
     category: 'coverage',
     component: 'IceWaterBarrierCard',
-    analysisKey: 'iceWaterBarrier',
+    analysisKey: 'iceAndWater',
     isAvailable: true, // Now implemented
     priority: 4,
   },
