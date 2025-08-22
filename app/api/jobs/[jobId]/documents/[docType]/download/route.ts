@@ -11,6 +11,8 @@ export async function GET(
 ) {
   const { jobId, docType } = await context.params;
 
+  console.log(`Download request for job ${jobId}, docType: ${docType}`);
+
   try {
     // Get the job to find the file paths
     const job = await prisma.job.findUnique({
@@ -23,6 +25,14 @@ export async function GET(
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
+
+    console.log(
+      `Found ${job.documents.length} documents for job ${jobId}:`,
+      job.documents.map(d => ({
+        fileName: d.fileName,
+        filePath: d.filePath,
+      }))
+    );
 
     let filePath: string | null = null;
     let fileName: string = '';
@@ -40,9 +50,13 @@ export async function GET(
       );
 
       if (estimateDoc) {
-        // Use the job's filePath for the first document (estimate)
-        filePath = job.filePath;
+        console.log(
+          `Found estimate document: ${estimateDoc.fileName}, filePath: ${estimateDoc.filePath}`
+        );
+        // Use the document's filePath if available, otherwise fall back to job's filePath
+        filePath = estimateDoc.filePath || job.filePath;
         fileName = estimateDoc.fileName;
+        console.log(`Using filePath for estimate: ${filePath}`);
       }
     } else if (docType === 'roof_report') {
       // Find the roof report document
@@ -54,34 +68,52 @@ export async function GET(
           doc.fileName.toLowerCase().includes('measurement')
       );
 
-      if (roofDoc && job.filePath) {
-        // Construct the path for the second document
-        const uploadsDir = path.dirname(job.filePath);
-        const baseFileName = path.basename(job.filePath);
-        // The second file typically has _1_ instead of _0_ in the filename
-        const secondFilePath = path.join(
-          uploadsDir,
-          baseFileName.replace('_0_', '_1_')
+      if (roofDoc) {
+        console.log(
+          `Found roof document: ${roofDoc.fileName}, filePath: ${roofDoc.filePath}`
         );
-
-        // Check if the file exists
-        try {
-          await fs.access(secondFilePath);
-          filePath = secondFilePath;
+        // Use the document's filePath if available
+        if (roofDoc.filePath) {
+          filePath = roofDoc.filePath;
           fileName = roofDoc.fileName;
-        } catch {
-          // If the modified path doesn't exist, try to find it in the uploads directory
+          console.log(`Using document's filePath: ${filePath}`);
+        } else if (job.filePath) {
+          // Fallback: try to find the roof report file in the uploads directory
+          const uploadsDir = path.dirname(job.filePath);
+
+          // First, try to find the roof report file in the uploads directory
+          // This is more reliable than trying to construct the path
           const files = await fs.readdir(uploadsDir);
           const roofFile = files.find(
             f =>
-              f.includes(jobId.slice(-8)) &&
+              f.endsWith('.pdf') &&
               (f.includes('hover') ||
                 f.includes('roof') ||
-                f.includes('measurement'))
+                f.includes('measurement') ||
+                f.includes('pro_measurements'))
           );
+
           if (roofFile) {
             filePath = path.join(uploadsDir, roofFile);
             fileName = roofDoc.fileName;
+          } else {
+            // Fallback: try the old method of replacing _0_ with _1_
+            const baseFileName = path.basename(job.filePath);
+            const secondFilePath = path.join(
+              uploadsDir,
+              baseFileName.replace('_0_', '_1_')
+            );
+
+            try {
+              await fs.access(secondFilePath);
+              filePath = secondFilePath;
+              fileName = roofDoc.fileName;
+            } catch {
+              // No roof report file found
+              console.error(
+                `Roof report file not found for job ${jobId}. Looking for files containing: hover, roof, measurement, pro_measurements`
+              );
+            }
           }
         }
       }

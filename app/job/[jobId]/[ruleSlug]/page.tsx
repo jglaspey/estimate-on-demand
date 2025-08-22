@@ -101,6 +101,17 @@ interface RidgeCapData {
   reasoning?: string;
   materialStatus?: 'compliant' | 'non-compliant';
   varianceType?: 'shortage' | 'adequate' | 'excess';
+  // Evidence arrays for the evidence-first architecture
+  evidence?: Array<{
+    id: string;
+    label: string;
+    value: string | number;
+    docType: 'estimate' | 'roof_report';
+    page: number;
+    textMatch?: string;
+    score: number;
+  }>;
+  evidenceReferences?: string[];
 }
 
 interface AnalysisResults {
@@ -231,6 +242,111 @@ export default function RulePage() {
       loadAnalysisResults();
     }
   }, [jobId, ruleSlug, ruleDefinition]);
+
+  // Auto-scroll to primary evidence when analysis data is available
+  useEffect(() => {
+    if (analysisResults && viewerRef.current && ruleDefinition) {
+      // Check if auto-scroll is enabled for this rule
+      if (!ruleDefinition.autoScroll?.enabled) {
+        console.log('🔍 Auto-scroll disabled for rule:', ruleSlug);
+        return;
+      }
+
+      const autoScrollToEvidence = () => {
+        // Get the rule data using the analysisKey from rule definition
+        const analysisKey = ruleDefinition.analysisKey;
+        const ruleData =
+          analysisResults[analysisKey as keyof typeof analysisResults];
+
+        if (!ruleData?.evidence || !Array.isArray(ruleData.evidence)) {
+          console.log('🔍 No evidence data found for auto-scroll');
+          return;
+        }
+
+        // Type the evidence array properly
+        type EvidenceItem = {
+          id: string;
+          label: string;
+          value: string | number;
+          docType: 'estimate' | 'roof_report' | 'report';
+          page: number;
+          textMatch?: string;
+          score: number;
+        };
+
+        const evidence = ruleData.evidence as EvidenceItem[];
+
+        // Use configured priority for evidence selection
+        const scrollPriority =
+          ruleDefinition.autoScroll?.priority || 'estimate';
+        let primaryEvidence: EvidenceItem | undefined;
+
+        if (scrollPriority === 'estimate') {
+          // Prioritize estimate evidence first, then roof report, then any
+          const estimateEvidence = evidence.find(
+            (ev: EvidenceItem) =>
+              ev.docType === 'estimate' && ev.page && ev.textMatch
+          );
+          const roofReportEvidence = evidence.find(
+            (ev: EvidenceItem) =>
+              (ev.docType === 'roof_report' || ev.docType === 'report') &&
+              ev.page &&
+              ev.textMatch
+          );
+          primaryEvidence =
+            estimateEvidence || roofReportEvidence || evidence[0];
+        } else if (scrollPriority === 'roof_report') {
+          // Prioritize roof report evidence first, then estimate, then any
+          const roofReportEvidence = evidence.find(
+            (ev: EvidenceItem) =>
+              (ev.docType === 'roof_report' || ev.docType === 'report') &&
+              ev.page &&
+              ev.textMatch
+          );
+          const estimateEvidence = evidence.find(
+            (ev: EvidenceItem) =>
+              ev.docType === 'estimate' && ev.page && ev.textMatch
+          );
+          primaryEvidence =
+            roofReportEvidence || estimateEvidence || evidence[0];
+        } else {
+          // Use any evidence available
+          primaryEvidence =
+            evidence.find((ev: EvidenceItem) => ev.page && ev.textMatch) ||
+            evidence[0];
+        }
+
+        if (primaryEvidence && primaryEvidence.page) {
+          console.log(
+            '🎯 Auto-scrolling to primary evidence for',
+            ruleSlug,
+            ':',
+            primaryEvidence
+          );
+
+          const payload = {
+            docType:
+              primaryEvidence.docType === 'report'
+                ? 'roof_report'
+                : primaryEvidence.docType,
+            page: primaryEvidence.page,
+            rule: ruleSlug,
+            textMatch: primaryEvidence.textMatch,
+          } as const;
+
+          // Use configured delay
+          const delay = ruleDefinition.autoScroll?.delay || 200;
+          setTimeout(() => {
+            viewerRef.current?.jumpToEvidence(payload);
+          }, delay);
+        } else {
+          console.log('🔍 No suitable evidence found for auto-scroll');
+        }
+      };
+
+      autoScrollToEvidence();
+    }
+  }, [analysisResults, ruleSlug, ruleDefinition]);
 
   // Map database job status
   const mapJobStatus = (dbStatus: string): JobData['status'] => {
@@ -412,19 +528,43 @@ export default function RulePage() {
             ruleNumber={progress.current}
             totalRules={progress.total}
             ridgeCapData={ridgeCapData}
-            onJumpToEvidence={(location, type) => {
-              if (!viewerRef.current) return;
+            evidence={analysisResults?.ridgeCap?.evidence || []}
+            evidenceReferences={
+              analysisResults?.ridgeCap?.evidenceReferences || []
+            }
+            onJumpToEvidence={(docType, page, textMatch) => {
+              console.log('🔍 onJumpToEvidence called:', {
+                docType,
+                page: typeof page,
+                pageValue: page,
+                textMatch,
+              });
 
-              const match = String(location || '').match(/page[-\s]?(\d+)/i);
-              const page = match ? Math.max(1, parseInt(match[1], 10)) : 1;
+              if (!viewerRef.current) {
+                console.error('❌ viewerRef.current is null');
+                return;
+              }
+
+              // Ensure page is a valid number
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              console.log('🔢 Page validation:', {
+                original: page,
+                valid: validPage,
+              });
+
+              // Normalize docType for EvidenceJump interface
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
 
               const payload = {
-                docType: type === 'report' ? 'roof_report' : type,
-                page,
+                docType: normalizedDocType,
+                page: validPage,
                 rule: ruleSlug,
-                location,
+                textMatch,
               } as const;
 
+              console.log('📦 Payload for jumpToEvidence:', payload);
               viewerRef.current.jumpToEvidence(payload);
             }}
             onDecision={onDecision}
@@ -589,6 +729,7 @@ export default function RulePage() {
               selectedRule={ruleSlug}
               reloadVersion={reloadVersion}
               busy={isReprocessing}
+              evidence={analysisResults?.ridgeCap?.evidence || []}
             />
           </div>
         </div>

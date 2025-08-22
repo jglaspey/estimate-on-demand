@@ -49,7 +49,21 @@ interface RidgeCapAnalysisProps {
   totalRules: number;
   ridgeCapData?: RidgeCapData;
   showHighlighting?: boolean;
-  onJumpToEvidence?: (page: string, type: 'estimate' | 'report') => void;
+  evidenceReferences?: string[];
+  evidence?: Array<{
+    id?: string;
+    label?: string;
+    value?: string | number | null;
+    docType: 'estimate' | 'report' | 'roof_report';
+    page: number;
+    textMatch?: string;
+    score?: number;
+  }>;
+  onJumpToEvidence?: (
+    docType: 'estimate' | 'roof_report' | 'report',
+    page: number,
+    textMatch?: string
+  ) => void;
   onDecision?: (
     decision: 'accepted' | 'rejected' | 'modified',
     notes?: string
@@ -61,28 +75,87 @@ export function RidgeCapAnalysis({
   totalRules,
   ridgeCapData,
   showHighlighting = true,
+  evidenceReferences = [],
+  evidence = [],
   onJumpToEvidence,
   onDecision,
 }: RidgeCapAnalysisProps) {
   const [notes, setNotes] = useState(ridgeCapData?.userNotes || '');
   const [justificationCopied, setJustificationCopied] = useState(false);
 
-  // Auto-scroll to first evidence on component mount (once only)
-  useEffect(() => {
-    console.log('RidgeCapAnalysis useEffect running...');
-    console.log('onJumpToEvidence exists:', !!onJumpToEvidence);
-    console.log('ridgeCapData exists:', !!ridgeCapData);
-    if (onJumpToEvidence && ridgeCapData) {
-      console.log('Setting up auto-scroll timer...');
-      // Small delay to ensure document viewer is fully loaded
-      const timer = setTimeout(() => {
-        console.log('Auto-scroll executing: jumping to page 4 estimate');
-        // Jump to estimate page 4 where ridge cap line item is located
-        onJumpToEvidence('page 4', 'estimate');
-      }, 1000); // Increased delay to ensure viewer is ready
-      return () => clearTimeout(timer);
-    }
-  }, [onJumpToEvidence]); // Remove ridgeCapData dependency to prevent re-runs
+  // Evidence helpers parsed from provided references (prefer typed evidence)
+  const findEstimatePage = (): { page: number | null; text?: string } => {
+    const typed = (evidence || []).find(
+      e => e.docType === 'estimate' || e.docType === 'report'
+    );
+    if (typed?.page) return { page: typed.page, text: typed.textMatch };
+    const list = Array.isArray(evidenceReferences) ? evidenceReferences : [];
+    const ref =
+      list.find(r => /ridge cap line item/i.test(String(r))) ||
+      list.find(
+        r => /estimate/i.test(String(r)) && /page\s*\d+/i.test(String(r))
+      ) ||
+      null;
+    if (!ref) return { page: null, text: undefined };
+    const m = String(ref).match(/page\s*(\d+)/i);
+    return {
+      page: m ? Math.max(1, parseInt(m[1], 10)) : null,
+      text: undefined,
+    };
+  };
+
+  const findReportPages = (): {
+    ridges: { page: number | null; text?: string };
+    hips: { page: number | null; text?: string };
+  } => {
+    const pages = {
+      ridges: {
+        page: null as number | null,
+        text: undefined as string | undefined,
+      },
+      hips: {
+        page: null as number | null,
+        text: undefined as string | undefined,
+      },
+    };
+    const typedRidge = (evidence || []).find(
+      e =>
+        (e.docType === 'roof_report' || e.docType === 'report') &&
+        /ridge/i.test(String(e.label))
+    );
+    const typedHip = (evidence || []).find(
+      e =>
+        (e.docType === 'roof_report' || e.docType === 'report') &&
+        /hip/i.test(String(e.label))
+    );
+
+    if (typedRidge)
+      pages.ridges = { page: typedRidge.page, text: typedRidge.textMatch };
+    if (typedHip)
+      pages.hips = { page: typedHip.page, text: typedHip.textMatch };
+    const list = Array.isArray(evidenceReferences) ? evidenceReferences : [];
+    const rr = list.filter(
+      r =>
+        /roof|eagleview|report/i.test(String(r)) ||
+        /measurements/i.test(String(r))
+    );
+    rr.forEach(r => {
+      const m = String(r).match(/page\s*(\d+)/i);
+      const p = m ? Math.max(1, parseInt(m[1], 10)) : null;
+      if (/ridge/i.test(String(r)) && p && pages.ridges.page == null)
+        pages.ridges = { page: p, text: undefined };
+      if (/hip/i.test(String(r)) && p && pages.hips.page == null)
+        pages.hips = { page: p, text: undefined };
+      if (!/ridge|hip/i.test(String(r)) && p && pages.ridges.page == null)
+        pages.ridges = { page: p, text: undefined }; // fallback
+    });
+    return pages;
+  };
+
+  const { page: estimatePage, text: estimateMatch } = findEstimatePage();
+  const { ridges: reportRidge, hips: reportHip } = findReportPages();
+  const reportRidgePage = reportRidge.page;
+  const reportHipPage = reportHip.page;
 
   // Copy justification to clipboard
   const copyJustification = async () => {
@@ -176,28 +249,28 @@ export function RidgeCapAnalysis({
                     {display(ridgeCapData?.estimateTotal)}
                   </div>
                 </div>
-                {onJumpToEvidence ? (
+                {onJumpToEvidence && estimatePage ? (
                   <button
                     onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('Clicking Estimate p.4 link...');
-                      console.log(
-                        'onJumpToEvidence exists:',
-                        !!onJumpToEvidence
+                      const estimateEvidence = (evidence || []).find(
+                        e => e.docType === 'estimate'
                       );
-                      onJumpToEvidence('page 4', 'estimate');
+                      onJumpToEvidence(
+                        'estimate',
+                        estimatePage,
+                        estimateEvidence?.textMatch || 'Hip / Ridge cap'
+                      );
                     }}
                     className='text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 ml-2 whitespace-nowrap cursor-pointer'
                     type='button'
                   >
                     <ExternalLink className='h-3 w-3' />
-                    Estimate p.4
+                    {`Estimate p.${estimatePage}`}
                   </button>
                 ) : (
-                  <span className='text-xs text-gray-400'>
-                    No navigation available
-                  </span>
+                  <span className='text-xs text-gray-400'>Evidence: ---</span>
                 )}
               </div>
             </div>
@@ -219,20 +292,31 @@ export function RidgeCapAnalysis({
                     <span className='font-medium text-zinc-900 dark:text-zinc-100'>
                       {ridgeLength ? `${ridgeLength.toFixed(2)} LF` : '---'}
                     </span>
-                    {onJumpToEvidence && (
+                    {onJumpToEvidence && reportRidgePage ? (
                       <button
                         onClick={e => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('Clicking Ridge report link...');
-                          onJumpToEvidence('page 2', 'report');
+                          const ridgeEvidence = (evidence || []).find(
+                            e =>
+                              (e.docType === 'roof_report' ||
+                                e.docType === 'report') &&
+                              /ridge/i.test(String(e.label))
+                          );
+                          onJumpToEvidence(
+                            'roof_report',
+                            reportRidgePage,
+                            ridgeEvidence?.textMatch || 'Ridges'
+                          );
                         }}
                         className='text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer'
-                        title='Jump to roof report page 2 - Ridge measurements'
+                        title={`Jump to roof report page ${reportRidgePage} - Ridge measurements`}
                         type='button'
                       >
                         <ExternalLink className='h-3 w-3' />
                       </button>
+                    ) : (
+                      <span className='text-xs text-gray-400'>---</span>
                     )}
                   </div>
                 </div>
@@ -244,20 +328,31 @@ export function RidgeCapAnalysis({
                     <span className='font-medium text-zinc-900 dark:text-zinc-100'>
                       {hipLength ? `${hipLength.toFixed(2)} LF` : '---'}
                     </span>
-                    {onJumpToEvidence && (
+                    {onJumpToEvidence && reportHipPage ? (
                       <button
                         onClick={e => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('Clicking Hip report link...');
-                          onJumpToEvidence('page 2', 'report');
+                          const hipEvidence = (evidence || []).find(
+                            e =>
+                              (e.docType === 'roof_report' ||
+                                e.docType === 'report') &&
+                              /hip/i.test(String(e.label))
+                          );
+                          onJumpToEvidence(
+                            'roof_report',
+                            reportHipPage,
+                            hipEvidence?.textMatch || 'Hips'
+                          );
                         }}
                         className='text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer'
-                        title='Jump to roof report page 2 - Hip measurements'
+                        title={`Jump to roof report page ${reportHipPage} - Hip measurements`}
                         type='button'
                       >
                         <ExternalLink className='h-3 w-3' />
                       </button>
+                    ) : (
+                      <span className='text-xs text-gray-400'>---</span>
                     )}
                   </div>
                 </div>
