@@ -1914,11 +1914,27 @@
             "parentTaskId": 26
           }
         ]
+      },
+      {
+        "id": 27,
+        "title": "Expandable Details Section for Compliant Rule Cards",
+        "description": "Implement an expandable 'Show details' section for compliant rule cards on the Overview page that displays evidence chips, current specification details, and reasoning with navigation to specific rule pages.",
+        "details": "1. Component Enhancement:\n   - Extend the existing BusinessRuleCard component to include a collapsible details section\n   - Implement a toggle button with \"Show details\"/\"Hide details\" text that follows application styling\n   - Ensure smooth animation for expanding/collapsing with appropriate accessibility attributes\n\n2. Content Implementation:\n   - Create an EvidenceChip component that displays document reference information\n   - Implement click handler on evidence chips to navigate to the specific rule page with document viewer context\n   - Display current specification details including code, description, and quantity/rate/total values\n   - Show reasoning section with extracted justification from the analysis\n   - Implement fallback display of \"---\" for any missing or undefined data fields\n   - Ensure all data is pulled from the actual state, not hardcoded mock data\n\n3. Styling Requirements:\n   - Maintain consistent styling with existing card components\n   - Ensure proper dark mode compatibility for all new elements\n   - Use appropriate spacing, typography, and color schemes from the design system\n   - Implement responsive behavior for different screen sizes\n   - Add subtle visual indicators (icons, colors) to distinguish between different types of evidence\n\n4. Performance Considerations:\n   - Lazy load content within expandable sections to minimize initial render time\n   - Implement virtualization if evidence chips list becomes extensive\n   - Optimize re-renders using React.memo or useMemo where appropriate\n\n5. Accessibility Enhancements:\n   - Add proper ARIA attributes for expandable sections (aria-expanded, aria-controls)\n   - Ensure keyboard navigation works for all interactive elements\n   - Provide appropriate focus management when expanding/collapsing sections\n   - Add screen reader announcements for state changes",
+        "testStrategy": "1. Component Functionality Testing:\n   - Verify the \"Show details\" button correctly expands and collapses the details section\n   - Test that animation is smooth and works consistently across browsers\n   - Confirm that evidence chips display correct document reference information\n   - Validate that clicking evidence chips navigates to the correct rule page with document context\n   - Verify that \"---\" is displayed for any missing data fields instead of showing undefined/null values\n\n2. Data Integration Testing:\n   - Test with various data scenarios including complete data, partial data, and missing data\n   - Verify that all displayed information accurately reflects the current state\n   - Confirm no hardcoded mock data is used in any scenario\n   - Test with different rule types to ensure correct display of type-specific information\n\n3. Styling and Responsiveness Testing:\n   - Verify consistent styling with existing components in both light and dark modes\n   - Test responsive behavior across mobile, tablet, and desktop viewports\n   - Confirm proper text wrapping and overflow handling for long content\n   - Validate that expandable sections don't cause layout shifts or overflow issues\n\n4. Accessibility Testing:\n   - Test keyboard navigation through all interactive elements\n   - Verify screen readers correctly announce expanded/collapsed states\n   - Confirm focus management works correctly when toggling sections\n   - Validate that all interactive elements have appropriate contrast ratios\n\n5. Performance Testing:\n   - Measure render time impact of adding expandable sections\n   - Verify that collapsed state doesn't unnecessarily load or render hidden content\n   - Test with a large number of rule cards to ensure performance remains acceptable",
+        "status": "pending",
+        "dependencies": [
+          8,
+          15,
+          19,
+          25
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-22T05:39:37.676Z",
+      "updated": "2025-08-22T05:45:33.929Z",
       "description": "Tasks for master context"
     }
   }
