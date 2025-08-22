@@ -1930,11 +1930,26 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Drip Edge Extraction and Analysis Pipeline Refinement",
+        "description": "Enhance the drip edge business rule extraction and analysis pipeline with expanded pattern recognition, improved fallback mechanisms, and more robust error handling to increase accuracy and reliability.",
+        "details": "1. Extraction Enhancements in v2 Extractor:\n   - Expand pattern recognition in `lib/extraction/v2/line-item-extractors.ts` to include additional drip edge terminology variations:\n     - Add support for \"drip-edge\", \"drip metal\", \"edge metal\", \"DE/D.E.\", \"eave/rake drip\"\n     - Implement larger relevant-page window scanning to capture items that may appear on adjacent pages\n     - Create robust fallback mechanisms when primary extraction methods fail\n     - Add explicit model logging to track which extraction model was used\n     - Implement JSON recovery for handling malformed extraction results\n\n2. Analyzer Improvements:\n   - Update `lib/analysis/drip-edge-analyzer.ts` to trust v2 category classifications (drip_edge/gutter_apron)\n   - Enhance text-based heuristics for secondary validation\n   - Improve totals and units calculations for more accurate cost estimates\n   - Implement richer logging for debugging and analysis tracking\n   - Add confidence scoring based on extraction quality\n\n3. Analysis Worker Fallback System:\n   - Modify `lib/analysis/analysis-worker.ts` to implement intelligent fallback\n   - When stored v2 extraction lacks drip/gutter items, implement targeted re-extraction on persisted pages\n   - Validate page numbers to ensure correct document sections are analyzed\n   - Create merge logic to combine original and fallback extraction results before analysis\n   - Implement proper error handling for the fallback process\n\n4. Pipeline Error Handling:\n   - Add comprehensive error handling across the entire pipeline\n   - Implement detailed debug output at key processing points\n   - Create recovery paths for common failure scenarios\n   - Add telemetry to track extraction and analysis success rates\n   - Ensure graceful degradation when components fail",
+        "testStrategy": "1. Functional Testing:\n   - Identify a set of test PDFs that previously produced flaky results\n   - Verify that the rule page correctly shows drip edge as \"Partial\" or \"Compliant\" instead of \"Missing\"\n   - Confirm that logs include the expected information: model used, pages scanned, and item counts\n   - Verify the recovery path only triggers when needed (when initial extraction fails to find drip edge items)\n   - Test with a variety of document formats and layouts to ensure robust extraction\n\n2. Code Quality Verification:\n   - Run linter checks to ensure no linter errors exist\n   - Verify that the build process completes successfully\n   - Review code for adherence to project coding standards\n   - Check for proper error handling and edge cases\n\n3. Integration Testing:\n   - Test the complete pipeline from document upload through extraction to analysis\n   - Verify correct data flow between extraction and analysis components\n   - Test fallback mechanisms by intentionally introducing extraction failures\n   - Validate that the system correctly identifies and classifies drip edge items\n\n4. Performance Testing:\n   - Measure extraction and analysis times before and after changes\n   - Verify that fallback mechanisms don't significantly impact performance\n   - Test with large documents to ensure scalability\n\n5. Local Verification:\n   - Run the complete test suite locally to confirm all tests pass\n   - Manually verify results with sample documents\n   - Confirm that the UI correctly displays the analysis results",
+        "status": "pending",
+        "dependencies": [
+          7,
+          21,
+          22
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-22T05:45:33.929Z",
+      "updated": "2025-08-22T08:24:55.027Z",
       "description": "Tasks for master context"
     }
   }

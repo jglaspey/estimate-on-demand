@@ -161,13 +161,30 @@ export class DripEdgeAnalyzer {
     for (const item of lineItems) {
       const desc = (item.description || '').toLowerCase();
       const code = (item.code || '').toLowerCase();
+      const category = (
+        (item as unknown as { category?: string })?.category || ''
+      ).toLowerCase();
+
+      // Enhanced drip edge detection patterns
+      const isDripEdge =
+        category === 'drip_edge' ||
+        (desc.includes('drip') && desc.includes('edge')) ||
+        desc.includes('drip-edge') ||
+        desc.includes('drip metal') ||
+        desc.includes('edge metal') ||
+        desc.includes('eave drip') ||
+        desc.includes('rake drip') ||
+        desc.includes('d.e.') ||
+        desc === 'de' ||
+        (code.includes('drip') && code.includes('edge')) ||
+        code.includes('dripedge');
 
       console.log(
-        `   🔍 Checking item: "${item.description}" - contains drip edge? ${desc.includes('drip edge')}`
+        `   🔍 Checking item: "${item.description}" (code: "${item.code}") - is drip edge? ${isDripEdge}`
       );
 
-      // Look for drip edge items (including simple "drip edge" entries)
-      if (desc.includes('drip edge') && !desc.includes('gutter apron')) {
+      // Look for drip edge items with enhanced pattern matching
+      if (isDripEdge && !desc.includes('gutter apron')) {
         const quantity =
           typeof item.quantity === 'object'
             ? item.quantity.value
@@ -193,10 +210,12 @@ export class DripEdgeAnalyzer {
       }
 
       // Look for gutter apron items
-      if (
+      const isGutterApron =
+        category === 'gutter_apron' ||
         desc.includes('gutter apron') ||
-        (desc.includes('drip') && desc.includes('gutter'))
-      ) {
+        (desc.includes('drip') && desc.includes('gutter'));
+
+      if (isGutterApron) {
         const quantity =
           typeof item.quantity === 'object'
             ? item.quantity.value

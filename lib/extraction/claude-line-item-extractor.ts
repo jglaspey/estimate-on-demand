@@ -108,7 +108,7 @@ export class ClaudeLineItemExtractor {
       const responseText =
         response.content[0].type === 'text' ? response.content[0].text : '';
 
-      // Parse the JSON response
+      // Parse the JSON response (hardened)
       let extractedData = this.parseExtractionResponse(
         responseText,
         documentPages

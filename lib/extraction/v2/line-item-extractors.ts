@@ -59,8 +59,12 @@ function selectRelevantPages(
     const sec = pages.filter(p => secondary.test(p.rawText || ''));
     if (sec.length > 0) return uniqByPage(sec).slice(0, maxPages);
   }
-  // Fallback: take a few more pages to improve recall when keywords differ
-  return pages.slice(0, Math.min(maxPages, 8));
+  // Enhanced fallback: for critical items like drip edge, check more pages
+  // This ensures we don't miss items due to text parsing differences
+  console.log(
+    `⚠️ No pages matched primary/secondary patterns, using fallback (${Math.min(maxPages + 2, pages.length)} pages)`
+  );
+  return pages.slice(0, Math.min(maxPages + 2, pages.length));
 }
 
 async function callClaude(
@@ -68,9 +72,15 @@ async function callClaude(
   pages: ExtractorInputPage[],
   promptHint: string
 ): Promise<ExtractorResult> {
-  if (!process.env.ANTHROPIC_API_KEY) return { items: [] };
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(`❌ No ANTHROPIC_API_KEY found for ${category} extraction`);
+    return { items: [] };
+  }
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const modelUsed =
+    process.env.ANTHROPIC_MODEL_EXTRACTOR || 'claude-3-5-haiku-20241022';
+  console.log(`🤖 Using model ${modelUsed} for ${category} extraction`);
   const textBlocks = pages
     .map(
       p => `--- Page ${p.pageNumber} ---\n${(p.rawText || '').slice(0, 4000)}`
@@ -86,23 +96,77 @@ CRITICAL PAGE NUMBER RULES:
 - If a line item spans pages, include ALL pages in sourcePages[]
 - Page numbers in the text (like "Page: 8") indicate where content ABOVE that footer belongs
 
+${
+  category === 'drip_edge'
+    ? `DRIP EDGE DETECTION:
+- Look for ANY of these variations: "drip edge", "drip-edge", "drip metal", "edge metal", "D.E.", "DE", "eave drip", "rake drip"
+- Include items that say "Drip edge (Rake + Eave)" or similar combined descriptions
+- Look in code columns for abbreviations like "DE" or "DRIP"
+- Common codes: RFG DRIP, DE, DRIPEDGE, etc.
+- Do NOT skip items just because they mention both rakes and eaves - include them!
+`
+    : ''
+}
 ${promptHint}`;
-  const resp = await anthropic.messages.create({
-    model: process.env.ANTHROPIC_MODEL_EXTRACTOR || 'claude-3-5-haiku-20241022',
-    max_tokens: 500,
-    temperature: 0,
-    messages: [{ role: 'user', content: `${sys}\n\n${textBlocks}` }],
-  });
-  const content = resp.content[0];
-  if (content.type !== 'text') return { items: [] };
-  let txt = content.text.trim();
-  const fence = txt.match(/```json[\s\S]*?```/);
-  if (fence) txt = fence[0].replace(/```json|```/g, '').trim();
   try {
-    const parsed = JSON.parse(txt) as ExtractorResult | LineItem[];
-    if (Array.isArray(parsed)) return { items: parsed };
-    return parsed;
-  } catch {
+    const resp = await anthropic.messages.create({
+      model: modelUsed,
+      max_tokens: 500,
+      temperature: 0,
+      messages: [{ role: 'user', content: `${sys}\n\n${textBlocks}` }],
+    });
+    const content = resp.content[0];
+    if (content.type !== 'text') {
+      console.error(`❌ Non-text response for ${category}`);
+      return { items: [] };
+    }
+    let txt = content.text.trim();
+    const fence = txt.match(/```json[\s\S]*?```/);
+    if (fence) txt = fence[0].replace(/```json|```/g, '').trim();
+
+    try {
+      const parsed = JSON.parse(txt) as ExtractorResult | LineItem[];
+      const result = Array.isArray(parsed) ? { items: parsed } : parsed;
+      console.log(
+        `✅ ${category} extraction found ${result.items.length} items`
+      );
+      if (category === 'drip_edge' && result.items.length === 0) {
+        console.warn(
+          `⚠️ No drip edge items found. Raw response: ${txt.slice(0, 200)}...`
+        );
+      }
+      return result;
+    } catch (parseErr) {
+      console.error(
+        `❌ Failed to parse ${category} response: ${parseErr}. Attempting recovery. Raw: ${txt.slice(0, 200)}...`
+      );
+      // Recovery: try to extract first JSON array or object from the text
+      const arrayMatch = txt.match(/\[[\s\S]*\]/);
+      const objectMatch = txt.match(/\{[\s\S]*\}/);
+      const candidate =
+        (arrayMatch && arrayMatch[0]) || (objectMatch && objectMatch[0]) || '';
+      if (candidate) {
+        try {
+          const recovered = JSON.parse(candidate) as
+            | ExtractorResult
+            | LineItem[];
+          const result = Array.isArray(recovered)
+            ? { items: recovered }
+            : recovered;
+          console.log(
+            `🛠️ Recovered ${category} JSON with ${result.items.length} items`
+          );
+          return result;
+        } catch (recoverErr) {
+          console.error(
+            `❌ Recovery parse failed for ${category}: ${recoverErr}`
+          );
+        }
+      }
+      return { items: [] };
+    }
+  } catch (apiErr) {
+    console.error(`❌ API error for ${category}: ${apiErr}`);
     return { items: [] };
   }
 }
@@ -141,13 +205,24 @@ export async function extractDripEdgeItems(
 ): Promise<ExtractorResult> {
   const relevant = selectRelevantPages(
     pages,
-    /(\bdrip\s*edge\b|RFG\s*DRIP)/i,
-    /(drip\s*metal|eave\s*drip|drip\s*cap)/i
+    // Enhanced primary pattern - more variations
+    /(\bdrip[\s\-]*edge\b|RFG[\s\-]*DRIP|drip[\s\-]*metal|eave[\s\-]*drip|drip[\s\-]*cap|D\.E\.|DE\b)/i,
+    // Enhanced secondary pattern - catch more variations
+    /(metal[\s\-]*edge|rake[\s\-]*edge|eave[\s\-]*edge|aluminum[\s\-]*drip|steel[\s\-]*drip|edge[\s\-]*metal|edge[\s\-]*flashing)/i,
+    8 // Increase pages to check for better coverage
   );
+
+  // Log what pages we're checking
+  console.log(`🔍 Drip edge extraction: checking ${relevant.length} pages`);
+  relevant.forEach(p => {
+    const preview = (p.rawText || '').slice(0, 200).replace(/\n/g, ' ');
+    console.log(`   Page ${p.pageNumber}: ${preview}...`);
+  });
+
   return callClaude(
     'drip_edge',
     relevant,
-    'Differentiate from gutter apron; include only rakes for drip edge.'
+    'Extract ALL drip edge items including variations like "drip metal", "edge metal", "D.E.", etc. Include both rake and eave drip edge. Do NOT exclude items just because they mention both rakes and eaves.'
   );
 }
 

@@ -7,6 +7,12 @@
  */
 
 import { prisma, RuleType, RuleStatus } from '../database/client';
+import {
+  extractDripEdgeItems,
+  extractGutterApronItems,
+  type ExtractorInputPage,
+} from '../extraction/v2/line-item-extractors';
+import { validatePageNumbers } from '../extraction/utils/page-validator';
 
 import {
   ridgeCapAnalyzer,
@@ -367,13 +373,55 @@ export class AnalysisWorker {
     );
 
     // Use v2.lineItems which contains the complete line item data (4 items vs 1 in top-level)
-    const v2LineItems =
+    let v2LineItems =
       ((extractedData as any).v2?.lineItems as any[]) ||
       ((extractedData as any).lineItems as any[]) ||
       [];
     console.log(
       `🔍 Drip Edge Analysis - Using ${v2LineItems.length} line items from v2 data`
     );
+
+    // If we have no drip/gutter categories present, run a targeted fallback
+    const hasEdgeItems = v2LineItems.some(
+      li =>
+        typeof li?.category === 'string' &&
+        ['drip_edge', 'gutter_apron'].includes(
+          (li.category as string).toLowerCase()
+        )
+    );
+
+    if (!hasEdgeItems) {
+      try {
+        console.warn(
+          '🛠️ No drip/gutter items present in stored v2; running targeted fallback extractors'
+        );
+        const pages: ExtractorInputPage[] = (
+          (jobData as any).documents?.flatMap((d: any) => d.pages) || []
+        ).map((p: any) => ({
+          pageNumber: p.pageNumber,
+          rawText: p.rawText || '',
+        }));
+
+        const [dripRes, gutterRes] = await Promise.all([
+          extractDripEdgeItems(pages),
+          extractGutterApronItems(pages),
+        ]);
+        let extracted = [...dripRes.items, ...gutterRes.items];
+        extracted = validatePageNumbers(extracted as any, pages) as any[];
+
+        console.log(
+          `🧩 Fallback extracted ${extracted.length} edge-protection items (drip+gutter)`
+        );
+        if (extracted.length > 0) {
+          v2LineItems = [...v2LineItems, ...extracted];
+        }
+      } catch (fallbackErr) {
+        console.error(
+          '❌ Fallback drip/gutter extraction failed:',
+          fallbackErr
+        );
+      }
+    }
 
     // Prepare analysis input with proper type casting and actual measurements
     const analysisInput: DripEdgeAnalysisInput = {
