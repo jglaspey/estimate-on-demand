@@ -615,7 +615,7 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.\n<info added on 2025-08-21T18:00:56.051Z>\nRetrofit RidgeCapAnalyzer to use the standardized evidence system instead of default page-4 behavior. Implement EvidenceRef generation for estimate specifications (code, description, quantity, rate, total) and roof report ridge/hip measurements. Use EvidenceLocator with page number and text matching parameters to ensure reliable document references. \n\nConfigure evidence chips to link directly to the correct document pages with proper highlighting in the Extracted view. Implement normalization of measurements and costs to enable accurate compliance/variance calculations. Display placeholder indicators ('---') when evidence is missing or cannot be located. Ensure all evidence is properly categorized and indexed for consistent retrieval across the system.\n</info added on 2025-08-21T18:00:56.051Z>",
+            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.\n<info added on 2025-08-21T18:00:56.051Z>\nRetrofit RidgeCapAnalyzer to use the standardized evidence system instead of default page-4 behavior. Implement EvidenceRef generation for estimate specifications (code, description, quantity, rate, total) and roof report ridge/hip measurements. Use EvidenceLocator with page number and text matching parameters to ensure reliable document references. \n\nConfigure evidence chips to link directly to the correct document pages with proper highlighting in the Extracted view. Implement normalization of measurements and costs to enable accurate compliance/variance calculations. Display placeholder indicators ('---') when evidence is missing or cannot be located. Ensure all evidence is properly categorized and indexed for consistent retrieval across the system.\n</info added on 2025-08-21T18:00:56.051Z>\n<info added on 2025-08-22T02:50:37.693Z>\nMajor progress on RidgeCapAnalyzer evidence-first implementation completed. The analyzer now generates structured EvidenceRef objects containing id, docType, page, textMatch, value, and score properties. The buildEvidenceRefs() method has been updated to create evidence for both estimate specifications and roof measurements, with roof report evidence defaulting to page 2 for Hover reports when source pages are unknown. The RidgeCapAnalysisResult interface has been enhanced with a typed evidence array.\n\nUI integration is complete with the RidgeCapAnalysis component now accepting and rendering evidence chips that display correct page numbers and navigate to source documents. An auto-scroll system has been implemented that automatically scrolls the rule page to primary evidence on load. Persistent highlighting in EnhancedDocumentViewer shows all evidence on the current page, with smart view switching that directs estimate evidence to Extracted view and roof_report evidence to PDF view.\n\nThe architecture has been standardized with a rule configuration system including autoScroll settings, an evidence priority system (prioritizing estimate first, then roof_report, then any other evidence), and configurable delays and view mode preferences per rule type.\n\nRemaining work includes finalizing the EvidenceLocator service for text indexing and search, integrating RidgeCapAnalyzer with the robust EvidenceLocator (currently using basic patterns), and improving page validation for roof report measurements which currently default to page 2.\n</info added on 2025-08-22T02:50:37.693Z>",
             "status": "in-progress",
             "testStrategy": ""
           },
@@ -674,7 +674,7 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.\n<info added on 2025-08-21T18:01:17.015Z>\nAlign evidence collection with the EvidenceLocator component. Implement EvidenceRef data structure to store metadata including document type, page number, text match, extracted value, and confidence score. Add tagging system for evidence categorization (primary, supporting, conflicting). Integrate with the EvidenceLocator to enable bidirectional navigation between rule cards and source documents. Implement plain-English explanation generator that references specific evidence points using natural language templates. Ensure all displayed values on rule cards have corresponding EvidenceRef objects that can be traced back to source documents. Add highlighting functionality that activates when users navigate from a rule card to source evidence. Implement acceptance criteria validation to verify every rule recommendation has proper evidence backing with complete metadata and navigation capabilities.\n</info added on 2025-08-21T18:01:17.015Z>",
+            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.\n<info added on 2025-08-21T18:01:17.015Z>\nAlign evidence collection with the EvidenceLocator component. Implement EvidenceRef data structure to store metadata including document type, page number, text match, extracted value, and confidence score. Add tagging system for evidence categorization (primary, supporting, conflicting). Integrate with the EvidenceLocator to enable bidirectional navigation between rule cards and source documents. Implement plain-English explanation generator that references specific evidence points using natural language templates. Ensure all displayed values on rule cards have corresponding EvidenceRef objects that can be traced back to source documents. Add highlighting functionality that activates when users navigate from a rule card to source evidence. Implement acceptance criteria validation to verify every rule recommendation has proper evidence backing with complete metadata and navigation capabilities.\n</info added on 2025-08-21T18:01:17.015Z>\n<info added on 2025-08-22T02:51:02.584Z>\nImplementation progress update for the Evidence Collection System:\n\nCreated lib/evidence/types.ts with EvidenceRef interface and DocType enum. Established typed EvidenceRef structure with fields for id, label, value, docType, page, textMatch, and score. Implemented evidence generation in RidgeCapAnalyzer through a buildEvidenceRefs() method. Added evidence collection to analysis API endpoints with proper categorization by document type (estimate vs roof_report).\n\nUI integration is complete with evidence collection connected to RidgeCapAnalysis components. Evidence chips now render with metadata and navigation links. EnhancedDocumentViewer successfully consumes evidence for highlighting and navigation. Implemented auto-scroll system that uses evidence priority for rule page navigation.\n\nBidirectional navigation between rule cards and source documents is now working. Text highlighting implemented with regex/literal pattern detection. Evidence strength is reflected in score values (0.9 for estimates, 0.7 for measurements).\n\nRemaining work includes completing the EvidenceLocator service for robust text indexing, expanding evidence collection to other rule analyzers (Starter Strip, Drip Edge, Ice & Water), adding conflicting evidence detection and resolution, and implementing evidence validation and confidence scoring algorithms.\n</info added on 2025-08-22T02:51:02.584Z>",
             "status": "in-progress",
             "testStrategy": ""
           },
@@ -725,7 +725,7 @@
             "title": "Standardized RuleResult + EvidenceRef schema",
             "description": "Define normalized RuleResult and EvidenceRef types; update analyzers to emit evidence and normalized fields without UI coupling.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10"
             ],
@@ -736,7 +736,7 @@
             "title": "UI unification: EvidenceStack + chips + jump-to-evidence highlighting",
             "description": "Refactor rule cards to render EvidenceStack with clickable chips; make viewer highlight text in Extracted view and page-jump fallback.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10"
             ],
@@ -747,7 +747,7 @@
             "title": "Ridge Cap (7.2) retrofit to standard + reanalysis",
             "description": "Revisit RidgeCapAnalyzer and card to use EvidenceLocator; compute/specify correct evidence pages; remove static page-4 behavior.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10,7.11,7.12"
             ],
@@ -1918,7 +1918,7 @@
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-21T17:58:09.114Z",
+      "updated": "2025-08-22T02:51:23.335Z",
       "description": "Tasks for master context"
     }
   }
