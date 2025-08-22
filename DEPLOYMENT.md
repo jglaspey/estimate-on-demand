@@ -61,6 +61,7 @@ ALLOWED_GOOGLE_DOMAIN=client.com (optional)
 # App Configuration
 NEXT_PUBLIC_WS_URL=wss://your-app.railway.app
 NODE_ENV=production
+UPLOAD_DIR=/app/uploads  # Must match Railway volume mount path
 ```
 
 **Authentication Implementation**: See `USER-AUTH-GUIDANCE.md` for complete Auth.js v5 + Prisma + invite-only onboarding setup.
