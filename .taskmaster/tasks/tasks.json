@@ -615,7 +615,7 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.\n<info added on 2025-08-21T18:00:56.051Z>\nRetrofit RidgeCapAnalyzer to use the standardized evidence system instead of default page-4 behavior. Implement EvidenceRef generation for estimate specifications (code, description, quantity, rate, total) and roof report ridge/hip measurements. Use EvidenceLocator with page number and text matching parameters to ensure reliable document references. \n\nConfigure evidence chips to link directly to the correct document pages with proper highlighting in the Extracted view. Implement normalization of measurements and costs to enable accurate compliance/variance calculations. Display placeholder indicators ('---') when evidence is missing or cannot be located. Ensure all evidence is properly categorized and indexed for consistent retrieval across the system.\n</info added on 2025-08-21T18:00:56.051Z>",
+            "details": "Implement ridge length calculation algorithms, material requirement estimation, and specific validation rules. Include logic for determining if ridge cap is needed based on roof geometry. Add specialized evidence collection for ridge cap recommendations and implement confidence scoring based on available roof data.\n<info added on 2025-08-21T18:00:56.051Z>\nRetrofit RidgeCapAnalyzer to use the standardized evidence system instead of default page-4 behavior. Implement EvidenceRef generation for estimate specifications (code, description, quantity, rate, total) and roof report ridge/hip measurements. Use EvidenceLocator with page number and text matching parameters to ensure reliable document references. \n\nConfigure evidence chips to link directly to the correct document pages with proper highlighting in the Extracted view. Implement normalization of measurements and costs to enable accurate compliance/variance calculations. Display placeholder indicators ('---') when evidence is missing or cannot be located. Ensure all evidence is properly categorized and indexed for consistent retrieval across the system.\n</info added on 2025-08-21T18:00:56.051Z>\n<info added on 2025-08-22T02:50:37.693Z>\nMajor progress on RidgeCapAnalyzer evidence-first implementation completed. The analyzer now generates structured EvidenceRef objects containing id, docType, page, textMatch, value, and score properties. The buildEvidenceRefs() method has been updated to create evidence for both estimate specifications and roof measurements, with roof report evidence defaulting to page 2 for Hover reports when source pages are unknown. The RidgeCapAnalysisResult interface has been enhanced with a typed evidence array.\n\nUI integration is complete with the RidgeCapAnalysis component now accepting and rendering evidence chips that display correct page numbers and navigate to source documents. An auto-scroll system has been implemented that automatically scrolls the rule page to primary evidence on load. Persistent highlighting in EnhancedDocumentViewer shows all evidence on the current page, with smart view switching that directs estimate evidence to Extracted view and roof_report evidence to PDF view.\n\nThe architecture has been standardized with a rule configuration system including autoScroll settings, an evidence priority system (prioritizing estimate first, then roof_report, then any other evidence), and configurable delays and view mode preferences per rule type.\n\nRemaining work includes finalizing the EvidenceLocator service for text indexing and search, integrating RidgeCapAnalyzer with the robust EvidenceLocator (currently using basic patterns), and improving page validation for roof report measurements which currently default to page 2.\n</info added on 2025-08-22T02:50:37.693Z>",
             "status": "in-progress",
             "testStrategy": ""
           },
@@ -674,7 +674,7 @@
             "dependencies": [
               "7.1"
             ],
-            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.\n<info added on 2025-08-21T18:01:17.015Z>\nAlign evidence collection with the EvidenceLocator component. Implement EvidenceRef data structure to store metadata including document type, page number, text match, extracted value, and confidence score. Add tagging system for evidence categorization (primary, supporting, conflicting). Integrate with the EvidenceLocator to enable bidirectional navigation between rule cards and source documents. Implement plain-English explanation generator that references specific evidence points using natural language templates. Ensure all displayed values on rule cards have corresponding EvidenceRef objects that can be traced back to source documents. Add highlighting functionality that activates when users navigate from a rule card to source evidence. Implement acceptance criteria validation to verify every rule recommendation has proper evidence backing with complete metadata and navigation capabilities.\n</info added on 2025-08-21T18:01:17.015Z>",
+            "details": "Implement evidence source tracking from documents and calculations. Add metadata tagging for evidence categorization. Create evidence strength scoring algorithm. Implement plain English explanation generation for technical evidence. Add visual evidence highlighting capabilities with document references.\n<info added on 2025-08-21T18:01:17.015Z>\nAlign evidence collection with the EvidenceLocator component. Implement EvidenceRef data structure to store metadata including document type, page number, text match, extracted value, and confidence score. Add tagging system for evidence categorization (primary, supporting, conflicting). Integrate with the EvidenceLocator to enable bidirectional navigation between rule cards and source documents. Implement plain-English explanation generator that references specific evidence points using natural language templates. Ensure all displayed values on rule cards have corresponding EvidenceRef objects that can be traced back to source documents. Add highlighting functionality that activates when users navigate from a rule card to source evidence. Implement acceptance criteria validation to verify every rule recommendation has proper evidence backing with complete metadata and navigation capabilities.\n</info added on 2025-08-21T18:01:17.015Z>\n<info added on 2025-08-22T02:51:02.584Z>\nImplementation progress update for the Evidence Collection System:\n\nCreated lib/evidence/types.ts with EvidenceRef interface and DocType enum. Established typed EvidenceRef structure with fields for id, label, value, docType, page, textMatch, and score. Implemented evidence generation in RidgeCapAnalyzer through a buildEvidenceRefs() method. Added evidence collection to analysis API endpoints with proper categorization by document type (estimate vs roof_report).\n\nUI integration is complete with evidence collection connected to RidgeCapAnalysis components. Evidence chips now render with metadata and navigation links. EnhancedDocumentViewer successfully consumes evidence for highlighting and navigation. Implemented auto-scroll system that uses evidence priority for rule page navigation.\n\nBidirectional navigation between rule cards and source documents is now working. Text highlighting implemented with regex/literal pattern detection. Evidence strength is reflected in score values (0.9 for estimates, 0.7 for measurements).\n\nRemaining work includes completing the EvidenceLocator service for robust text indexing, expanding evidence collection to other rule analyzers (Starter Strip, Drip Edge, Ice & Water), adding conflicting evidence detection and resolution, and implementing evidence validation and confidence scoring algorithms.\n</info added on 2025-08-22T02:51:02.584Z>",
             "status": "in-progress",
             "testStrategy": ""
           },
@@ -700,7 +700,7 @@
             "title": "Standardize Business Rule Implementation",
             "description": "Ensure all business rules are consistently implemented across the codebase. Remove one-off implementations from previous design iterations, consolidate rule logic into unified architecture, standardize data structures and interfaces, and ensure all four rules (Ridge Cap, Starter Strip, Drip Edge, Ice & Water) follow the same patterns for extraction, analysis, and UI presentation.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.1",
               "7.2",
@@ -725,7 +725,7 @@
             "title": "Standardized RuleResult + EvidenceRef schema",
             "description": "Define normalized RuleResult and EvidenceRef types; update analyzers to emit evidence and normalized fields without UI coupling.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10"
             ],
@@ -736,7 +736,7 @@
             "title": "UI unification: EvidenceStack + chips + jump-to-evidence highlighting",
             "description": "Refactor rule cards to render EvidenceStack with clickable chips; make viewer highlight text in Extracted view and page-jump fallback.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10"
             ],
@@ -747,7 +747,7 @@
             "title": "Ridge Cap (7.2) retrofit to standard + reanalysis",
             "description": "Revisit RidgeCapAnalyzer and card to use EvidenceLocator; compute/specify correct evidence pages; remove static page-4 behavior.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [
               "7.10,7.11,7.12"
             ],
@@ -1914,11 +1914,27 @@
             "parentTaskId": 26
           }
         ]
+      },
+      {
+        "id": 27,
+        "title": "Expandable Details Section for Compliant Rule Cards",
+        "description": "Implement an expandable 'Show details' section for compliant rule cards on the Overview page that displays evidence chips, current specification details, and reasoning with navigation to specific rule pages.",
+        "details": "1. Component Enhancement:\n   - Extend the existing BusinessRuleCard component to include a collapsible details section\n   - Implement a toggle button with \"Show details\"/\"Hide details\" text that follows application styling\n   - Ensure smooth animation for expanding/collapsing with appropriate accessibility attributes\n\n2. Content Implementation:\n   - Create an EvidenceChip component that displays document reference information\n   - Implement click handler on evidence chips to navigate to the specific rule page with document viewer context\n   - Display current specification details including code, description, and quantity/rate/total values\n   - Show reasoning section with extracted justification from the analysis\n   - Implement fallback display of \"---\" for any missing or undefined data fields\n   - Ensure all data is pulled from the actual state, not hardcoded mock data\n\n3. Styling Requirements:\n   - Maintain consistent styling with existing card components\n   - Ensure proper dark mode compatibility for all new elements\n   - Use appropriate spacing, typography, and color schemes from the design system\n   - Implement responsive behavior for different screen sizes\n   - Add subtle visual indicators (icons, colors) to distinguish between different types of evidence\n\n4. Performance Considerations:\n   - Lazy load content within expandable sections to minimize initial render time\n   - Implement virtualization if evidence chips list becomes extensive\n   - Optimize re-renders using React.memo or useMemo where appropriate\n\n5. Accessibility Enhancements:\n   - Add proper ARIA attributes for expandable sections (aria-expanded, aria-controls)\n   - Ensure keyboard navigation works for all interactive elements\n   - Provide appropriate focus management when expanding/collapsing sections\n   - Add screen reader announcements for state changes",
+        "testStrategy": "1. Component Functionality Testing:\n   - Verify the \"Show details\" button correctly expands and collapses the details section\n   - Test that animation is smooth and works consistently across browsers\n   - Confirm that evidence chips display correct document reference information\n   - Validate that clicking evidence chips navigates to the correct rule page with document context\n   - Verify that \"---\" is displayed for any missing data fields instead of showing undefined/null values\n\n2. Data Integration Testing:\n   - Test with various data scenarios including complete data, partial data, and missing data\n   - Verify that all displayed information accurately reflects the current state\n   - Confirm no hardcoded mock data is used in any scenario\n   - Test with different rule types to ensure correct display of type-specific information\n\n3. Styling and Responsiveness Testing:\n   - Verify consistent styling with existing components in both light and dark modes\n   - Test responsive behavior across mobile, tablet, and desktop viewports\n   - Confirm proper text wrapping and overflow handling for long content\n   - Validate that expandable sections don't cause layout shifts or overflow issues\n\n4. Accessibility Testing:\n   - Test keyboard navigation through all interactive elements\n   - Verify screen readers correctly announce expanded/collapsed states\n   - Confirm focus management works correctly when toggling sections\n   - Validate that all interactive elements have appropriate contrast ratios\n\n5. Performance Testing:\n   - Measure render time impact of adding expandable sections\n   - Verify that collapsed state doesn't unnecessarily load or render hidden content\n   - Test with a large number of rule cards to ensure performance remains acceptable",
+        "status": "pending",
+        "dependencies": [
+          8,
+          15,
+          19,
+          25
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-12T00:49:13.012Z",
-      "updated": "2025-08-21T17:58:09.114Z",
+      "updated": "2025-08-22T05:45:33.929Z",
       "description": "Tasks for master context"
     }
   }

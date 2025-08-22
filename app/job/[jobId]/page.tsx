@@ -364,7 +364,12 @@ export default function JobDetailPage() {
             }
 
             // Add other rules as they become available
-            // if (data.uiData.starterStrip) rules.push(data.uiData.starterStrip);
+            if (data.uiData.starterStrip) {
+              rules.push({
+                ...data.uiData.starterStrip,
+                ruleName: 'starter_strip',
+              });
+            }
             if (data.uiData.dripEdge) {
               rules.push({
                 ...data.uiData.dripEdge,
@@ -380,7 +385,12 @@ export default function JobDetailPage() {
 
             // If backend UI data doesn't include all rules yet, call analyze to get full results
             try {
-              if (!data.uiData.dripEdge || !data.uiData.iceAndWater) {
+              if (
+                !data.uiData.ridgeCap ||
+                !data.uiData.dripEdge ||
+                !data.uiData.starterStrip ||
+                !data.uiData.iceAndWater
+              ) {
                 const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
                   method: 'POST',
                 });
@@ -413,6 +423,13 @@ export default function JobDetailPage() {
                   ) {
                     addRule('drip_edge', results.dripEdge);
                   }
+                  // Starter Strip
+                  if (
+                    !rules.find(r => r.ruleName === 'starter_strip') &&
+                    results.starterStrip
+                  ) {
+                    addRule('starter_strip', results.starterStrip);
+                  }
                   // Ice & Water Barrier
                   if (
                     !rules.find(r => r.ruleName === 'ice_water_barrier') &&
@@ -430,50 +447,7 @@ export default function JobDetailPage() {
             }
 
             setRuleAnalysis(rules);
-
-            // Always refresh with a fresh analysis run to avoid stale DB state
-            try {
-              const postRes = await fetch(`/api/jobs/${jobId}/analyze`, {
-                method: 'POST',
-              });
-              if (postRes.ok) {
-                const fresh = await postRes.json();
-                const ui = fresh?.uiData || {};
-                const keyToRule: Record<string, string> = {
-                  ridgeCap: 'ridge_cap',
-                  dripEdge: 'drip_edge',
-                  starterStrip: 'starter_strip',
-                  iceAndWater: 'ice_water_barrier',
-                };
-
-                // Build in stable UI order based on availableRules
-                const orderedKeys = [
-                  'ridgeCap',
-                  'dripEdge',
-                  'starterStrip',
-                  'iceAndWater',
-                ];
-                const freshRules: RuleAnalysisResult[] = [];
-                orderedKeys.forEach(k => {
-                  if ((ui as any)[k]) {
-                    freshRules.push({
-                      ...(ui as any)[k],
-                      ruleName: keyToRule[k],
-                    } as any);
-                  }
-                });
-
-                if (freshRules.length > 0) {
-                  setRuleAnalysis(freshRules);
-                  setAnalysisResults(ui);
-                }
-              }
-            } catch (e) {
-              console.warn(
-                'Optional fresh analysis failed; using existing UI data',
-                e
-              );
-            }
+            // Removed unconditional fresh POST refresh; rely on Re-Run button instead
           }
         }
       } catch (error) {

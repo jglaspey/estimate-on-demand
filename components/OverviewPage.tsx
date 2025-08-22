@@ -13,12 +13,14 @@ import {
   BarChart3,
   Download,
 } from 'lucide-react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChatBox } from '@/components/ChatBox';
 import { JobData, RoofMeasurements, RuleAnalysisResult } from '@/types';
+import { EvidenceChip } from '@/components/ui/evidence-chip';
 
 interface OverviewPageProps {
   jobData: JobData;
@@ -40,6 +42,8 @@ export function OverviewPage({
   validationNotes = [],
 }: OverviewPageProps) {
   const router = useRouter();
+  // Track expanded state per rule for Overview cards (collapsed by default)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // Handle document download
   const handleDownload = async (docType: string, docName: string) => {
@@ -465,13 +469,14 @@ export function OverviewPage({
                   const StatusIcon = statusConfig.icon;
 
                   const ruleSlug = getRuleSlug(rule.ruleName);
+                  const isExpanded = Boolean(expanded[rule.ruleName]);
 
                   return (
                     <div
                       key={rule.ruleName}
                       className={`flex items-center justify-between p-5 rounded-lg border border-zinc-200 transition-colors dark:border-zinc-700 ${statusConfig.bgClass}`}
                     >
-                      <div className='flex items-center gap-4 min-w-0 flex-1'>
+                      <div className='flex items-start gap-4 min-w-0 flex-1'>
                         <div
                           className={`flex h-12 w-12 items-center justify-center rounded-lg ${
                             rule.status === 'COMPLIANT'
@@ -508,10 +513,112 @@ export function OverviewPage({
                                 opportunity
                               </p>
                             )}
+
+                          {/* Expandable details for compliant rules */}
+                          {rule.status === 'COMPLIANT' && isExpanded && (
+                            <div className='mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3'>
+                              {/* Evidence */}
+                              <div>
+                                <div className='text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1'>
+                                  Evidence
+                                </div>
+                                <div className='flex flex-wrap gap-2'>
+                                  {Array.isArray((rule as any).evidence) &&
+                                  (rule as any).evidence.length > 0 ? (
+                                    (rule as any).evidence.map(
+                                      (ev: any, idx: number) => (
+                                        <EvidenceChip
+                                          key={idx}
+                                          docType={
+                                            (ev?.docType as any) || 'estimate'
+                                          }
+                                          page={Number(ev?.page) || 1}
+                                          label={ev?.label}
+                                          onClick={() =>
+                                            router.push(
+                                              `/job/${jobData.id}/${ruleSlug}`
+                                            )
+                                          }
+                                        />
+                                      )
+                                    )
+                                  ) : (
+                                    <span className='text-xs text-zinc-400'>
+                                      ---
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Current Specification */}
+                              {rule.currentSpecification && (
+                                <div className='grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm'>
+                                  <div>
+                                    <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                      Code
+                                    </div>
+                                    <div className='font-medium text-zinc-900 dark:text-zinc-100'>
+                                      {rule.currentSpecification.code || '—'}
+                                    </div>
+                                  </div>
+                                  <div className='sm:col-span-2'>
+                                    <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                      Description
+                                    </div>
+                                    <div className='font-medium text-zinc-900 dark:text-zinc-100'>
+                                      {rule.currentSpecification.description ||
+                                        '—'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className='text-xs text-zinc-500 dark:text-zinc-400'>
+                                      Qty • Rate • Total
+                                    </div>
+                                    <div className='font-medium text-zinc-900 dark:text-zinc-100'>
+                                      {rule.currentSpecification.quantity ||
+                                        '—'}
+                                      {' • '}
+                                      {rule.currentSpecification.rate || '—'}
+                                      {' • '}
+                                      {rule.currentSpecification.total || '—'}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Reasoning */}
+                              <div>
+                                <div className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>
+                                  Reasoning
+                                </div>
+                                <div className='text-sm text-zinc-700 dark:text-zinc-300'>
+                                  {rule.reasoning || '—'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <div className='flex items-center gap-3'>
+                        {rule.status === 'COMPLIANT' && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() =>
+                              setExpanded(prev => ({
+                                ...prev,
+                                [rule.ruleName]: !prev[rule.ruleName],
+                              }))
+                            }
+                            className='gap-1 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400'
+                          >
+                            {isExpanded ? 'Hide details' : 'Show details'}
+                            <ChevronRight
+                              className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                          </Button>
+                        )}
                         <Button
                           variant='outline'
                           size='sm'

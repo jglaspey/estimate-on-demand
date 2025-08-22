@@ -22,9 +22,10 @@ import {
   type RuleDefinition,
 } from '@/lib/rules/rule-config';
 import { RidgeCapAnalysis } from '@/components/RidgeCapAnalysis';
-import { DripEdgeGutterApronCard } from '@/components/rules/DripEdgeGutterApronCard';
-import { StarterStripCard } from '@/components/rules/StarterStripCard';
-import { IceWaterBarrierCard } from '@/components/rules/IceWaterBarrierCard';
+import { RidgeCapCardV2 } from '@/components/rules/RidgeCapCardV2';
+import { DripEdgeGutterApronCardV2 } from '@/components/rules/DripEdgeGutterApronCardV2';
+import { StarterStripCardV2 } from '@/components/rules/StarterStripCardV2';
+import { IceWaterBarrierCardV2 } from '@/components/rules/IceWaterBarrierCardV2';
 import {
   EnhancedDocumentViewer,
   type ViewerHandle,
@@ -144,6 +145,8 @@ export default function RulePage() {
   const nextRule = getNextRule(ruleSlug);
   const previousRule = getPreviousRule(ruleSlug);
   const progress = getRuleProgress(ruleSlug);
+
+  // Debug logging removed - issue was resolved
 
   // Redirect if rule not found or not available
   useEffect(() => {
@@ -391,7 +394,29 @@ export default function RulePage() {
 
     switch (ruleDefinition?.component) {
       case 'RidgeCapAnalysis':
-        // Create ridge cap data from analysis results
+        return ruleAnalysis ? (
+          <RidgeCapCardV2
+            ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.ridgeCap?.evidence || []}
+            onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
+          />
+        ) : null;
+
+      /* Legacy ridge cap component retained below (unreachable with V2 above)
         let ridgeCapData: RidgeCapData;
 
         if (analysisResults?.ridgeCap || ruleAnalysis?.currentSpecification) {
@@ -570,28 +595,74 @@ export default function RulePage() {
             onDecision={onDecision}
           />
         );
+        */
 
       case 'DripEdgeGutterApronCard':
         return ruleAnalysis ? (
-          <DripEdgeGutterApronCard
+          <DripEdgeGutterApronCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.dripEdge?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
       case 'StarterStripCard':
         return ruleAnalysis ? (
-          <StarterStripCard
+          <StarterStripCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.starterStrip?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
       case 'IceWaterBarrierCard':
         return ruleAnalysis ? (
-          <IceWaterBarrierCard
+          <IceWaterBarrierCardV2
             ruleAnalysis={ruleAnalysis}
+            evidence={analysisResults?.iceAndWater?.evidence || []}
             onDecision={onDecision}
+            onJumpToEvidence={(docType, page, textMatch) => {
+              if (!viewerRef.current) return;
+              const validPage =
+                typeof page === 'number' && !isNaN(page) ? page : 1;
+              const normalizedDocType =
+                docType === 'report' ? 'roof_report' : docType;
+              const payload = {
+                docType: normalizedDocType,
+                page: validPage,
+                rule: ruleSlug,
+                textMatch,
+              } as const;
+              viewerRef.current.jumpToEvidence(payload);
+            }}
           />
         ) : null;
 
@@ -599,6 +670,9 @@ export default function RulePage() {
         return (
           <div className='text-center py-8'>
             <p className='text-zinc-500'>Rule component not implemented</p>
+            <p className='text-xs text-zinc-400 mt-2'>
+              Component: {ruleDefinition?.component}
+            </p>
           </div>
         );
     }
@@ -729,7 +803,13 @@ export default function RulePage() {
               selectedRule={ruleSlug}
               reloadVersion={reloadVersion}
               busy={isReprocessing}
-              evidence={analysisResults?.ridgeCap?.evidence || []}
+              evidence={
+                ruleDefinition?.analysisKey && analysisResults
+                  ? analysisResults[
+                      ruleDefinition.analysisKey as keyof AnalysisResults
+                    ]?.evidence || []
+                  : []
+              }
             />
           </div>
         </div>
