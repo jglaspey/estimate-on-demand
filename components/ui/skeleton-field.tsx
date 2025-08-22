@@ -84,7 +84,7 @@ export function SkeletonCurrency({
     );
   }
 
-  let displayValue: string | number = value ?? placeholder;
+  let displayValue: string | number = value ?? '---';
   if (typeof value === 'number') {
     const factor = Math.pow(10, 2);
     const rounded = Math.round((value + Number.EPSILON) * factor) / factor;

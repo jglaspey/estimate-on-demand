@@ -69,7 +69,12 @@ export function JobsDashboard({
       },
     };
 
-    const config = statusConfig[status];
+    const config =
+      statusConfig[
+        (status === 'processing'
+          ? 'extracting'
+          : status) as keyof typeof statusConfig
+      ];
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
