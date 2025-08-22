@@ -15,6 +15,11 @@ export interface RuleDefinition {
   analysisKey: string; // Key in analysis results
   isAvailable: boolean; // Whether the rule is implemented
   priority: number; // Display order (1 = highest priority)
+  autoScroll?: {
+    enabled: boolean; // Whether to auto-scroll to evidence
+    priority: 'estimate' | 'roof_report' | 'any'; // Which evidence to prioritize
+    delay?: number; // Delay in ms before scrolling (default: 200)
+  };
 }
 
 // Master rule configuration
@@ -30,6 +35,11 @@ export const RULE_DEFINITIONS: RuleDefinition[] = [
     analysisKey: 'ridgeCap',
     isAvailable: true,
     priority: 1,
+    autoScroll: {
+      enabled: true,
+      priority: 'estimate', // Prioritize estimate evidence for supplement writers
+      delay: 200,
+    },
   },
   {
     slug: 'drip-edge-gutter-apron',

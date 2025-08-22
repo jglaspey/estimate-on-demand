@@ -641,8 +641,10 @@ export class RidgeCapAnalyzer {
     const pages = (input.roofMeasurements as any)?.sourcePages as
       | number[]
       | undefined;
+    // For Hover reports, measurements are typically on page 2
+    // Use detected page if available, otherwise default to page 2 for roof reports
     const firstReportPage =
-      Array.isArray(pages) && pages.length > 0 ? pages[0] : 1;
+      Array.isArray(pages) && pages.length > 0 ? pages[0] : 2;
     refs.push({
       id: 'rc-ridges',
       label: 'Ridges',

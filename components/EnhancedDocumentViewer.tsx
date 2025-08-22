@@ -62,6 +62,15 @@ interface EnhancedDocumentViewerProps {
   selectedRule: string | null;
   reloadVersion?: number; // bump to re-fetch
   busy?: boolean; // external loading state for skeletons
+  evidence?: Array<{
+    id: string;
+    label: string;
+    value: string | number;
+    docType: 'estimate' | 'roof_report';
+    page: number;
+    textMatch?: string;
+    score: number;
+  }>; // Evidence array for persistent highlighting
 }
 
 interface DocumentHighlight {
@@ -96,6 +105,7 @@ export const EnhancedDocumentViewer = forwardRef<
     selectedRule,
     reloadVersion = 0,
     busy = false,
+    evidence = [],
   }: EnhancedDocumentViewerProps,
   ref
 ) {
@@ -172,11 +182,39 @@ export const EnhancedDocumentViewer = forwardRef<
           );
         }
 
-        console.log('🖥️  Setting view mode to extracted');
-        setViewMode('extracted'); // Use extracted view for working navigation
+        // Resolve best page for roof_report by scanning extracted pages if possible
+        let resolvedPage = t.page;
+        if (targetDoc && t.docType === 'roof_report') {
+          try {
+            if (t.textMatch && Array.isArray(targetDoc.pages)) {
+              const rx = new RegExp(t.textMatch, 'i');
+              const hit = targetDoc.pages.find(p => rx.test(p.rawText || ''));
+              if (hit?.pageNumber) {
+                resolvedPage = hit.pageNumber;
+              }
+            }
+            // If still page 1 on a Hover-like doc, default to 2 (measurements page)
+            if (
+              resolvedPage === 1 &&
+              /hover|measurement|pro_measurements|roof/i.test(
+                targetDoc.fileName || ''
+              )
+            ) {
+              resolvedPage = 2;
+            }
+          } catch {}
+        }
+
+        // Choose view mode based on document type
+        // Roof reports: PDF view (measurements are clearer in original format)
+        // Estimates: Extracted view (better for text highlighting)
+        const targetViewMode =
+          t.docType === 'roof_report' ? 'pdf' : 'extracted';
+        console.log('🖥️  Setting view mode to:', targetViewMode);
+        setViewMode(targetViewMode);
 
         const clamped = Math.min(
-          Math.max(1, t.page),
+          Math.max(1, resolvedPage),
           targetDoc?.pageCount ?? t.page
         );
         console.log(
@@ -295,8 +333,19 @@ export const EnhancedDocumentViewer = forwardRef<
       setCurrentPage(1);
       return;
     }
-    setCurrentPage(prev => Math.min(Math.max(1, prev), doc.pageCount || 1));
-  }, [activeTab]);
+    // If a jump is in-flight and targets this document, use its page
+    const targetPageForThisDoc =
+      pendingTarget &&
+      documents.find(d => d.id === activeTab)?.fileType ===
+        pendingTarget.docType
+        ? pendingTarget.page
+        : undefined;
+
+    setCurrentPage(prev => {
+      const base = targetPageForThisDoc ?? prev;
+      return Math.min(Math.max(1, base), doc.pageCount || 1);
+    });
+  }, [activeTab, pendingTarget, documents]);
 
   // Get highlights based on the selected rule
   const getHighlights = (rule: string | null): DocumentHighlight[] => {
@@ -435,31 +484,67 @@ export const EnhancedDocumentViewer = forwardRef<
     const escapeRegExp = (s: string) =>
       s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // If a direct textMatch was requested for this page, prioritize it
+    // Helper to safely create regex from textMatch
+    const createRegexFromTextMatch = (textMatch: string): string | null => {
+      try {
+        // Check if textMatch is already a regex pattern (contains regex metacharacters)
+        const hasRegexChars =
+          /[.*+?^${}()|[\]\\]/.test(textMatch) && !textMatch.includes('\\');
+
+        if (hasRegexChars) {
+          // Use as-is for regex patterns like "Hip.*Ridge.*cap"
+          return textMatch;
+        } else {
+          // Escape literal text to avoid breaking regex with special chars
+          return escapeRegExp(textMatch);
+        }
+      } catch {
+        return null;
+      }
+    };
+
+    // Collect all patterns to highlight on this page
+    const patterns: string[] = [];
+
+    // 1. Always highlight evidence for the current rule (PERSISTENT HIGHLIGHTING)
+    if (evidence && evidence.length > 0) {
+      const pageEvidence = evidence.filter(
+        ev => ev.page === pageNumber && ev.textMatch
+      );
+
+      pageEvidence.forEach(ev => {
+        const pattern = createRegexFromTextMatch(ev.textMatch!);
+        if (pattern && !patterns.includes(pattern)) {
+          patterns.push(pattern);
+        }
+      });
+    }
+
+    // 2. If a direct textMatch was requested for this page (from evidence clicks), add it too
     if (
       pendingTarget &&
       pendingTarget.page === pageNumber &&
       pendingTarget.textMatch
     ) {
-      try {
-        // Escape dynamic text to avoid breaking regex with special chars
-        const safe = escapeRegExp(pendingTarget.textMatch);
-        return new RegExp(safe, 'i');
-      } catch {
-        // fall through to rule-based patterns
+      const pattern = createRegexFromTextMatch(pendingTarget.textMatch);
+      if (pattern && !patterns.includes(pattern)) {
+        patterns.push(pattern);
       }
     }
-    if (!selectedRule) return null;
 
-    // Get all highlights for the current rule on this page
-    const pageHighlights = getHighlights(selectedRule).filter(
-      h => h.page === pageNumber && h.textMatch
-    );
+    // 3. Also get highlights from the legacy system
+    if (selectedRule) {
+      const pageHighlights = getHighlights(selectedRule).filter(
+        h => h.page === pageNumber && h.textMatch
+      );
 
-    if (pageHighlights.length === 0) return null;
-
-    // Combine all textMatch patterns for this page into one regex
-    const patterns = pageHighlights.map(h => h.textMatch!).filter(Boolean);
+      pageHighlights.forEach(h => {
+        const pattern = createRegexFromTextMatch(h.textMatch!);
+        if (pattern && !patterns.includes(pattern)) {
+          patterns.push(pattern);
+        }
+      });
+    }
 
     if (patterns.length === 0) return null;
 
@@ -467,10 +552,11 @@ export const EnhancedDocumentViewer = forwardRef<
       // Create a single regex that matches any of the patterns
       const combinedPattern = patterns.join('|');
       return new RegExp(`(${combinedPattern})`, 'gi');
-    } catch {
+    } catch (error) {
+      console.warn('❌ Failed to create combined regex:', error);
       // If combined regex fails, try the first pattern only
       try {
-        return new RegExp(patterns[0], 'i');
+        return new RegExp(`(${patterns[0]})`, 'i');
       } catch {
         return null;
       }
@@ -638,9 +724,18 @@ export const EnhancedDocumentViewer = forwardRef<
 
     const pageElement = scrollContainer.querySelector(
       `[data-page-number="${pageNumber}"]`
-    );
+    ) as HTMLElement | null;
     if (pageElement) {
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (viewMode === 'pdf') {
+      // In PDF view, the browser handles paging via #page param on the embed src.
+      // Give it a brief moment to render then nudge the container.
+      setTimeout(() => {
+        const pdfEmbed = scrollContainer.querySelector(
+          'embed[type="application/pdf"]'
+        ) as HTMLElement | null;
+        pdfEmbed?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     }
     setCurrentPage(pageNumber);
   };
@@ -1056,13 +1151,14 @@ export const EnhancedDocumentViewer = forwardRef<
         >
           {(() => {
             const rx = resolveMatch(page.pageNumber);
-            return rx
-              ? processedMarkdown.replace(
-                  rx,
-                  (match: string) =>
-                    `<mark class="evidence-highlight">${match}</mark>`
-                )
-              : processedMarkdown;
+            if (rx) {
+              return processedMarkdown.replace(
+                rx,
+                (match: string) =>
+                  `<mark class="evidence-highlight">${match}</mark>`
+              );
+            }
+            return processedMarkdown;
           })()}
         </ReactMarkdown>
       </div>
@@ -1095,6 +1191,7 @@ export const EnhancedDocumentViewer = forwardRef<
       <div className='w-full h-full bg-white rounded-lg shadow-sm'>
         <div className='w-full h-[calc(100vh-16rem)] sm:h-[calc(100vh-14rem)] lg:h-[calc(100vh-12rem)]'>
           <embed
+            key={`${pdfUrl}#${pageNum}`}
             src={`${pdfUrl}#page=${pageNum}&toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
             type='application/pdf'
             className='w-full h-full rounded-lg'
